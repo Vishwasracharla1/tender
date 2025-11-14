@@ -7,7 +7,7 @@ import { DurationTrendline } from '../components/DurationTrendline';
 import { ComplianceLeaderboard } from '../components/ComplianceLeaderboard';
 import { LeadershipFooter } from '../components/LeadershipFooter';
 import { Activity, Clock, Target, AlertTriangle, Filter, Users, TrendingUp, Award, ShieldAlert } from 'lucide-react';
-import { MOCK_TENDERS, VendorData, TenderData } from '../data/mockTenderData';
+import { MOCK_TENDERS, VendorData } from '../data/mockTenderData';
 
 interface LeadershipDashboardPageProps {
   onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
@@ -367,21 +367,29 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
             />
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+          <div className="relative overflow-hidden rounded-2xl p-6 mb-10 bg-gradient-to-br from-white via-sky-50 to-sky-100 border border-sky-100">
+            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-sky-200 to-blue-200 opacity-50 blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-cyan-100 to-slate-100 opacity-60 blur-3xl pointer-events-none" />
+
+            <div className="relative flex items-center gap-2 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-inner">
+                <Filter className="w-5 h-5 text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.3em] text-indigo-500 uppercase">Filters</p>
+                <h2 className="text-lg font-semibold text-slate-900">Personalize the Executive View</h2>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="relative grid grid-cols-4 gap-6">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
                   Department
                 </label>
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors"
                 >
                   {departments.map((dept) => (
                     <option key={dept} value={dept}>
@@ -392,13 +400,13 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -409,13 +417,13 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
                   Phase
                 </label>
                 <select
                   value={selectedPhase}
                   onChange={(e) => setSelectedPhase(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors"
                 >
                   {phases.map((phase) => (
                     <option key={phase} value={phase}>
@@ -426,13 +434,13 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
                   Risk Level
                 </label>
                 <select
                   value={selectedRiskLevel}
                   onChange={(e) => setSelectedRiskLevel(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors"
                 >
                   {riskLevels.map((level) => (
                     <option key={level} value={level}>

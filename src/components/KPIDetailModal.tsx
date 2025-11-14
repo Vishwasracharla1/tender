@@ -23,54 +23,139 @@ export function KPIDetailModal({
 }: KPIDetailModalProps) {
   if (!isOpen) return null;
 
+  const themes: Record<
+    string,
+    {
+      container: string;
+      iconWrap: string;
+      iconColor: string;
+      titleColor: string;
+      valueColor: string;
+      detailBg: string;
+      detailTitle: string;
+      detailValue: string;
+      detailText: string;
+    }
+  > = {
+    'active tenders': {
+      container: 'from-emerald-50 via-white to-emerald-100',
+      iconWrap: 'from-emerald-400 to-teal-400',
+      iconColor: 'text-white',
+      titleColor: 'text-emerald-700',
+      valueColor: 'text-emerald-900',
+      detailBg: 'from-white via-emerald-50/80 to-emerald-100/70',
+      detailTitle: 'text-emerald-800',
+      detailValue: 'text-emerald-900',
+      detailText: 'text-emerald-700',
+    },
+    'avg eval duration': {
+      container: 'from-indigo-50 via-white to-purple-100',
+      iconWrap: 'from-indigo-400 to-purple-400',
+      iconColor: 'text-white',
+      titleColor: 'text-indigo-700',
+      valueColor: 'text-indigo-900',
+      detailBg: 'from-white via-indigo-50/90 to-purple-50/90',
+      detailTitle: 'text-indigo-800',
+      detailValue: 'text-indigo-900',
+      detailText: 'text-indigo-600',
+    },
+    'compliance rate': {
+      container: 'from-sky-50 via-white to-cyan-100',
+      iconWrap: 'from-sky-400 to-blue-400',
+      iconColor: 'text-white',
+      titleColor: 'text-sky-700',
+      valueColor: 'text-sky-900',
+      detailBg: 'from-white via-sky-50/90 to-blue-50/80',
+      detailTitle: 'text-sky-800',
+      detailValue: 'text-sky-900',
+      detailText: 'text-sky-600',
+    },
+    'critical alerts': {
+      container: 'from-rose-50 via-white to-amber-100',
+      iconWrap: 'from-rose-400 to-amber-400',
+      iconColor: 'text-white',
+      titleColor: 'text-rose-700',
+      valueColor: 'text-rose-900',
+      detailBg: 'from-white via-rose-50/90 to-amber-50/80',
+      detailTitle: 'text-rose-800',
+      detailValue: 'text-rose-900',
+      detailText: 'text-rose-600',
+    },
+    default: {
+      container: 'from-white via-slate-50 to-slate-100',
+      iconWrap: 'from-slate-500 to-slate-700',
+      iconColor: 'text-white',
+      titleColor: 'text-slate-800',
+      valueColor: 'text-slate-900',
+      detailBg: 'from-white via-slate-50/90 to-slate-100/80',
+      detailTitle: 'text-slate-700',
+      detailValue: 'text-slate-900',
+      detailText: 'text-slate-500',
+    },
+  };
+
+  const theme =
+    themes[title.toLowerCase() as keyof typeof themes] ?? themes.default;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-emerald-600" />
+      <div
+        className={`
+          relative rounded-3xl border border-white/40 shadow-[0_35px_100px_rgba(15,23,42,0.25)] max-w-xl w-full mx-4
+          max-h-[90vh] overflow-hidden backdrop-blur-xl bg-gradient-to-br ${theme.container}
+        `}
+      >
+        <div className="sticky top-0 bg-white/60 backdrop-blur px-6 py-5 flex items-center justify-between border-b border-white/50">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${theme.iconWrap} flex items-center justify-center shadow-inner`}>
+              <Icon className={`w-6 h-6 ${theme.iconColor}`} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{mainValue}</p>
+              <p className={`text-xs font-semibold tracking-[0.3em] uppercase ${theme.titleColor}`}>
+                Insight
+              </p>
+              <h2 className={`text-xl font-semibold ${theme.titleColor}`}>{title}</h2>
+              <p className={`text-3xl font-bold mt-1 ${theme.valueColor}`}>{mainValue}</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-white/70 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="space-y-4">
-            {details.map((detail, index) => (
-              <div
-                key={index}
-                className="bg-gray-50 border border-gray-200 rounded-lg p-4"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    {detail.label}
-                  </span>
-                  <span className="text-lg font-semibold text-gray-900">
-                    {detail.value}
-                  </span>
-                </div>
+        <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+          {details.map((detail, index) => (
+            <div
+              key={index}
+              className={`
+                rounded-2xl border border-white/60 p-4 flex items-center justify-between gap-4
+                bg-gradient-to-br ${theme.detailBg} shadow-[0_15px_35px_rgba(15,23,42,0.08)]
+              `}
+            >
+              <div className="flex-1">
+                <p className={`text-xs font-semibold tracking-wide ${theme.detailTitle}`}>
+                  {detail.label}
+                </p>
                 {detail.description && (
-                  <p className="text-xs text-gray-500 mt-1">{detail.description}</p>
+                  <p className={`text-sm font-medium mt-1 ${theme.detailText}`}>
+                    {detail.description}
+                  </p>
                 )}
               </div>
-            ))}
-          </div>
+              <span className={`text-xl font-semibold ${theme.detailValue}`}>
+                {detail.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
