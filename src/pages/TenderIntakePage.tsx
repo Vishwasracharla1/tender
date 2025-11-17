@@ -10,7 +10,7 @@ import { Sidebar } from '../components/Sidebar';
 import { DepartmentSelector } from '../components/DepartmentSelector';
 import { TenderCategorySelector } from '../components/TenderCategorySelector';
 import { getDepartmentAllowedCategories } from '../data/departments';
-import { CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
 import type { TenderDocument } from '../lib/supabase';
 
 interface TenderIntakePageProps {
@@ -116,7 +116,7 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
   return (
     <>
       <Sidebar currentPage="intake" onNavigate={onNavigate} />
-      <div className="min-h-screen bg-gray-50 pb-24 lg:pl-64">
+      <div className="app-shell min-h-screen bg-gray-50 pb-24">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -183,10 +183,15 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
         {categoryConfigured && (
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">
-                  Upload Documents
-                </h2>
+              <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-indigo-50 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-inner">
+                    <FileText className="w-4 h-4 text-white" />
+                  </div>
+                  <h2 className="text-base font-semibold text-gray-900">
+                    Upload Documents
+                  </h2>
+                </div>
                 <FileUpload
                   tenderId={tenderId}
                   onFilesUploaded={handleFilesUploaded}

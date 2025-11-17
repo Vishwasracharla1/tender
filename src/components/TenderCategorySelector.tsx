@@ -140,13 +140,18 @@ export function TenderCategorySelector({ onCategorySelect, allowedCategories }: 
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+    <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-indigo-50 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden">
+      <div className="relative px-6 py-4 border-b border-white/40 flex items-center justify-between backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-gray-600" />
-          <h3 className="text-base font-semibold text-gray-900">
-            Tender Classification
-          </h3>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-inner">
+            <FileText className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              Tender Classification
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">Select Category & Subcategory</p>
+          </div>
         </div>
       </div>
 
@@ -158,31 +163,40 @@ export function TenderCategorySelector({ onCategorySelect, allowedCategories }: 
           <div className="grid grid-cols-2 gap-3">
             {categories
               .filter((category) => !allowedCategories || allowedCategories.includes(category.code))
-              .map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryChange(category.id)}
-                className={`
-                  p-4 text-left border-2 rounded-lg transition-all
-                  ${selectedCategory === category.id
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }
-                `}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="text-sm font-semibold text-gray-900">
-                    {category.name}
-                  </h4>
-                  {selectedCategory === category.id && (
-                    <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                  )}
-                </div>
-                <p className="text-xs text-gray-600">
-                  {category.description}
-                </p>
-              </button>
-            ))}
+              .map((category) => {
+                const isSelected = selectedCategory === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id)}
+                    className={`
+                      group relative p-4 text-left rounded-2xl transition-all duration-300
+                      ${isSelected
+                        ? 'bg-gradient-to-br from-violet-50 via-white to-purple-100 border-2 border-violet-500 shadow-[0_18px_40px_rgba(139,92,246,0.15)]'
+                        : 'bg-gradient-to-br from-white via-slate-50 to-white border-2 border-slate-200 hover:border-violet-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]'
+                      }
+                      hover:-translate-y-0.5
+                    `}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className={`text-sm font-semibold ${isSelected ? 'text-violet-900' : 'text-gray-900'}`}>
+                        {category.name}
+                      </h4>
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center shadow-inner">
+                          <CheckCircle className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-xs ${isSelected ? 'text-violet-700' : 'text-gray-600'}`}>
+                      {category.description}
+                    </p>
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-violet-500 shadow-lg" />
+                    )}
+                  </button>
+                );
+              })}
           </div>
         </div>
 
@@ -192,37 +206,43 @@ export function TenderCategorySelector({ onCategorySelect, allowedCategories }: 
               Select Subcategory
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {subcategories[selectedCategory]?.map((sub) => (
-                <button
-                  key={sub.id}
-                  onClick={() => setSelectedSubcategory(sub.id)}
-                  className={`
-                    p-3 text-left border-2 rounded-lg transition-all
-                    ${selectedSubcategory === sub.id
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }
-                  `}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <h4 className="text-sm font-medium text-gray-900">
-                      {sub.name}
-                    </h4>
-                    {selectedSubcategory === sub.id && (
-                      <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-600">
-                    {sub.description}
-                  </p>
-                </button>
-              ))}
+              {subcategories[selectedCategory]?.map((sub) => {
+                const isSelected = selectedSubcategory === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setSelectedSubcategory(sub.id)}
+                    className={`
+                      group relative p-3 text-left rounded-xl transition-all duration-300
+                      ${isSelected
+                        ? 'bg-gradient-to-br from-indigo-50 via-white to-indigo-100 border-2 border-indigo-500 shadow-[0_18px_40px_rgba(79,70,229,0.15)]'
+                        : 'bg-gradient-to-br from-white via-slate-50 to-white border-2 border-slate-200 hover:border-indigo-300 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]'
+                      }
+                      hover:-translate-y-0.5
+                    `}
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <h4 className={`text-sm font-medium ${isSelected ? 'text-indigo-900' : 'text-gray-900'}`}>
+                        {sub.name}
+                      </h4>
+                      {isSelected && (
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-inner">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-xs ${isSelected ? 'text-indigo-700' : 'text-gray-600'}`}>
+                      {sub.description}
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {capturedCriteria.length > 0 && (
-          <div className="pt-6 border-t border-gray-200">
+          <div className="pt-6 border-t border-white/40">
             <h4 className="text-sm font-semibold text-gray-900 mb-3">
               Auto-Captured Evaluation Criteria
             </h4>
@@ -230,37 +250,40 @@ export function TenderCategorySelector({ onCategorySelect, allowedCategories }: 
               {capturedCriteria.map((criterion, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
+                  className="flex items-start gap-3 p-4 bg-gradient-to-br from-emerald-50 via-white to-emerald-100 border border-emerald-200 rounded-xl shadow-sm"
                 >
-                  <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-inner flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </div>
                   <div className="flex-1">
-                    <h5 className="text-sm font-medium text-gray-900">
+                    <h5 className="text-sm font-semibold text-emerald-900">
                       {criterion.name}
                     </h5>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="text-xs text-emerald-700 mt-0.5">
                       {criterion.description}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-gray-700">
+                  <span className="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">
                     Max: {criterion.maxScore}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-emerald-700 mt-3 font-medium">
-              ✓ {capturedCriteria.length} evaluation criteria automatically configured
+            <p className="text-xs text-emerald-700 mt-3 font-semibold flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              {capturedCriteria.length} evaluation criteria automatically configured
             </p>
           </div>
         )}
 
-        <div className="flex items-center justify-end pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-end pt-4 border-t border-white/40">
           <button
             onClick={handleComplete}
             disabled={!selectedCategory || !selectedSubcategory || capturedCriteria.length === 0}
             className={`
-              px-5 py-2 text-sm font-medium rounded-lg transition-colors
+              px-6 py-2.5 text-sm font-semibold rounded-xl transition-all duration-300
               ${selectedCategory && selectedSubcategory && capturedCriteria.length > 0
-                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                ? 'text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
                 : 'text-gray-400 bg-gray-100 cursor-not-allowed'
               }
             `}
