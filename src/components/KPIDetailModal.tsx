@@ -23,21 +23,20 @@ export function KPIDetailModal({
 }: KPIDetailModalProps) {
   if (!isOpen) return null;
 
-  const themes: Record<
-    string,
-    {
-      container: string;
-      iconWrap: string;
-      iconColor: string;
-      titleColor: string;
-      valueColor: string;
-      detailBg: string;
-      detailTitle: string;
-      detailValue: string;
-      detailText: string;
-    }
-  > = {
-    'active tenders': {
+  type Theme = {
+    container: string;
+    iconWrap: string;
+    iconColor: string;
+    titleColor: string;
+    valueColor: string;
+    detailBg: string;
+    detailTitle: string;
+    detailValue: string;
+    detailText: string;
+  };
+
+  const themeCatalog: Record<string, Theme> = {
+    emerald: {
       container: 'from-emerald-50 via-white to-emerald-100',
       iconWrap: 'from-emerald-400 to-teal-400',
       iconColor: 'text-white',
@@ -48,7 +47,29 @@ export function KPIDetailModal({
       detailValue: 'text-emerald-900',
       detailText: 'text-emerald-700',
     },
-    'avg eval duration': {
+    amber: {
+      container: 'from-amber-50 via-white to-yellow-100',
+      iconWrap: 'from-amber-400 to-orange-400',
+      iconColor: 'text-white',
+      titleColor: 'text-amber-700',
+      valueColor: 'text-amber-900',
+      detailBg: 'from-white via-amber-50/80 to-yellow-100/70',
+      detailTitle: 'text-amber-800',
+      detailValue: 'text-amber-900',
+      detailText: 'text-amber-700',
+    },
+    fuchsia: {
+      container: 'from-sky-50 via-white to-cyan-100',
+      iconWrap: 'from-sky-400 to-blue-400',
+      iconColor: 'text-white',
+      titleColor: 'text-sky-700',
+      valueColor: 'text-sky-900',
+      detailBg: 'from-white via-sky-50/80 to-blue-100/70',
+      detailTitle: 'text-sky-800',
+      detailValue: 'text-sky-900',
+      detailText: 'text-sky-700',
+    },
+    indigo: {
       container: 'from-indigo-50 via-white to-purple-100',
       iconWrap: 'from-indigo-400 to-purple-400',
       iconColor: 'text-white',
@@ -59,7 +80,7 @@ export function KPIDetailModal({
       detailValue: 'text-indigo-900',
       detailText: 'text-indigo-600',
     },
-    'compliance rate': {
+    sky: {
       container: 'from-sky-50 via-white to-cyan-100',
       iconWrap: 'from-sky-400 to-blue-400',
       iconColor: 'text-white',
@@ -70,7 +91,7 @@ export function KPIDetailModal({
       detailValue: 'text-sky-900',
       detailText: 'text-sky-600',
     },
-    'critical alerts': {
+    rose: {
       container: 'from-rose-50 via-white to-amber-100',
       iconWrap: 'from-rose-400 to-amber-400',
       iconColor: 'text-white',
@@ -81,7 +102,7 @@ export function KPIDetailModal({
       detailValue: 'text-rose-900',
       detailText: 'text-rose-600',
     },
-    default: {
+    slate: {
       container: 'from-white via-slate-50 to-slate-100',
       iconWrap: 'from-slate-500 to-slate-700',
       iconColor: 'text-white',
@@ -94,13 +115,28 @@ export function KPIDetailModal({
     },
   };
 
-  const theme =
-    themes[title.toLowerCase() as keyof typeof themes] ?? themes.default;
+  const themeRules: { keywords: string[]; theme: Theme }[] = [
+    { keywords: ['processing time saved', 'time saved'], theme: themeCatalog.emerald },
+    { keywords: ['active tender', 'active vendor', 'vendor analytics'], theme: themeCatalog.emerald },
+    { keywords: ['bid value', 'avg bid', 'saving'], theme: themeCatalog.amber },
+    { keywords: ['top performer', 'performer', 'top vendor'], theme: themeCatalog.fuchsia },
+    { keywords: ['duration', 'time'], theme: themeCatalog.indigo },
+    { keywords: ['compliance', 'alignment'], theme: themeCatalog.sky },
+    { keywords: ['alert', 'risk'], theme: themeCatalog.rose },
+  ];
+
+  const normalizedTitle = title.toLowerCase();
+  const matchedRule =
+    themeRules.find((rule) =>
+      rule.keywords.some((keyword) => normalizedTitle.includes(keyword))
+    ) ?? null;
+
+  const theme = matchedRule?.theme ?? themeCatalog.slate;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/20 backdrop-blur"
         onClick={onClose}
       />
 

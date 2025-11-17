@@ -167,7 +167,7 @@
 
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Clock } from 'lucide-react';
 
 interface DurationData {
   period: string;
@@ -301,35 +301,37 @@ export function DurationTrendline({ data }: DurationTrendlineProps) {
           <ReactECharts option={option} />
         </div>
 
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-10 grid grid-cols-3 gap-3">
           {data.slice(-3).map((point, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-600 mb-1">{point.period}</div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-lg font-bold text-gray-900">
+            <div key={index} className="bg-gradient-to-br from-white via-blue-50/40 to-slate-50 rounded-lg p-3 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow">
+                  <Calendar className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">{point.period}</div>
+              </div>
+              <div className="flex items-baseline gap-1.5 mb-2">
+                <span className="text-2xl font-extrabold text-slate-900">
                   {point.avgDuration}
                 </span>
-                <span className="text-xs text-gray-500">days</span>
+                <span className="text-xs font-semibold text-slate-500">days</span>
               </div>
-              <div className={`text-xs mt-1 ${point.variance < 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              <div className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                point.variance < 0 
+                  ? 'text-emerald-700 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200' 
+                  : 'text-red-700 bg-gradient-to-r from-red-50 to-rose-50 border-red-200'
+              }`}>
+                {point.variance < 0 ? (
+                  <TrendingDown className="w-3 h-3" />
+                ) : (
+                  <TrendingUp className="w-3 h-3" />
+                )}
                 {point.variance > 0 ? '+' : ''}{point.variance} vs target
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="flex items-center justify-center gap-6 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-blue-600"></div>
-              <span className="text-gray-600">Actual Duration</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-0.5 bg-gray-400 border-t-2 border-dashed border-gray-400"></div>
-              <span className="text-gray-600">Target Duration</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

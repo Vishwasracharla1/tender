@@ -78,10 +78,10 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
+          relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300
           ${isDragging
-            ? 'border-emerald-500 bg-emerald-50'
-            : 'border-gray-300 bg-white hover:border-gray-400'
+            ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 via-white to-emerald-100 shadow-[0_18px_40px_rgba(5,150,105,0.15)]'
+            : 'border-slate-300 bg-gradient-to-br from-white via-slate-50 to-white hover:border-indigo-400 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]'
           }
         `}
       >
@@ -94,16 +94,20 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
 
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-            <Upload className="w-6 h-6 text-gray-600" />
+        <div className="flex flex-col items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-inner transition-all duration-300 ${
+            isDragging
+              ? 'from-emerald-500 to-teal-500'
+              : 'from-indigo-500 to-purple-500'
+          }`}>
+            <Upload className={`w-8 h-8 text-white`} />
           </div>
 
           <div>
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-semibold text-gray-900">
               Drop files here or click to upload
             </p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1.5">
               PDF, XLS, or ZIP files up to 50MB
             </p>
           </div>
@@ -111,23 +115,25 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
       </div>
 
       {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-900">Uploaded Files</h3>
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-900">Uploaded Files</h3>
           <div className="space-y-2">
             {uploadedFiles.map((file) => (
               <div
                 key={file.id}
-                className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                className="flex items-center gap-3 p-4 bg-gradient-to-br from-white via-slate-50 to-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-md transition-all duration-300"
               >
                 <div className="flex-shrink-0">
-                  <FileText className="w-5 h-5 text-gray-400" />
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-inner">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {file.filename}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {formatFileSize(file.file_size)} • {file.file_type}
                   </p>
                 </div>
@@ -136,9 +142,9 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
                   {getStatusIcon(file.validation_status)}
                   <button
                     onClick={() => removeFile(file.id)}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <X className="w-4 h-4 text-gray-400" />
+                    <X className="w-4 h-4 text-gray-400 hover:text-red-600" />
                   </button>
                 </div>
               </div>

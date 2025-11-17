@@ -1,5 +1,5 @@
 import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface SidebarProps {
   currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration';
@@ -8,6 +8,21 @@ interface SidebarProps {
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
+
+  useEffect(() => {
+    const updateOffset = () => {
+      const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+      const offset = isDesktop && isOpen ? '16rem' : '0px';
+      document.documentElement.style.setProperty('--sidebar-offset', offset);
+    };
+
+    updateOffset();
+    window.addEventListener('resize', updateOffset);
+    return () => {
+      document.documentElement.style.setProperty('--sidebar-offset', '0px');
+      window.removeEventListener('resize', updateOffset);
+    };
+  }, [isOpen]);
 
   const menuItems = [
     {

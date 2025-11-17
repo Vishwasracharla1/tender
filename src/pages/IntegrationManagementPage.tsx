@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { CheckCircle, XCircle, AlertCircle, Settings, RefreshCw, Database, FileText, Globe, Users } from 'lucide-react';
+import { KPIWidget } from '../components/KPIWidget';
+import { CheckCircle, XCircle, AlertCircle, Settings, RefreshCw, Database, FileText, Globe, Users, Plug2, ArrowLeftRight, ArrowDown, ArrowUp, Info } from 'lucide-react';
 
 interface IntegrationManagementPageProps {
   onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
@@ -196,6 +197,43 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
     },
   ];
 
+  const getStatusConfig = (status: Integration['status']) => {
+    switch (status) {
+      case 'active':
+        return {
+          bg: 'bg-gradient-to-r from-emerald-50 to-teal-50',
+          text: 'text-emerald-700',
+          border: 'border-emerald-200',
+          badge: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+          icon: CheckCircle,
+        };
+      case 'inactive':
+        return {
+          bg: 'bg-gradient-to-r from-slate-50 to-slate-100',
+          text: 'text-slate-700',
+          border: 'border-slate-200',
+          badge: 'bg-gradient-to-r from-slate-400 to-slate-500',
+          icon: XCircle,
+        };
+      case 'error':
+        return {
+          bg: 'bg-gradient-to-r from-red-50 to-rose-50',
+          text: 'text-red-700',
+          border: 'border-red-200',
+          badge: 'bg-gradient-to-r from-red-500 to-rose-500',
+          icon: AlertCircle,
+        };
+      case 'configuring':
+        return {
+          bg: 'bg-gradient-to-r from-amber-50 to-orange-50',
+          text: 'text-amber-700',
+          border: 'border-amber-200',
+          badge: 'bg-gradient-to-r from-amber-500 to-orange-500',
+          icon: Settings,
+        };
+    }
+  };
+
   const getStatusColor = (status: Integration['status']) => {
     switch (status) {
       case 'active':
@@ -222,22 +260,39 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
     }
   };
 
-  const getTypeIcon = (type: Integration['type']) => {
+  const getTypeConfig = (type: Integration['type']) => {
     switch (type) {
       case 'ERP':
-        return <Database className="w-5 h-5 text-blue-600" />;
+        return { icon: Database, gradient: 'from-blue-500 to-cyan-500', bg: 'from-blue-50 to-cyan-50', border: 'border-blue-200', text: 'text-blue-700' };
       case 'Procurement':
-        return <FileText className="w-5 h-5 text-purple-600" />;
+        return { icon: FileText, gradient: 'from-purple-500 to-indigo-500', bg: 'from-purple-50 to-indigo-50', border: 'border-purple-200', text: 'text-purple-700' };
       case 'Financial':
-        return <Database className="w-5 h-5 text-green-600" />;
+        return { icon: Database, gradient: 'from-emerald-500 to-teal-500', bg: 'from-emerald-50 to-teal-50', border: 'border-emerald-200', text: 'text-emerald-700' };
       case 'HRMS':
-        return <Users className="w-5 h-5 text-orange-600" />;
+        return { icon: Users, gradient: 'from-orange-500 to-amber-500', bg: 'from-orange-50 to-amber-50', border: 'border-orange-200', text: 'text-orange-700' };
       case 'Document':
-        return <FileText className="w-5 h-5 text-indigo-600" />;
+        return { icon: FileText, gradient: 'from-indigo-500 to-purple-500', bg: 'from-indigo-50 to-purple-50', border: 'border-indigo-200', text: 'text-indigo-700' };
       case 'Vendor':
-        return <Users className="w-5 h-5 text-pink-600" />;
+        return { icon: Users, gradient: 'from-pink-500 to-rose-500', bg: 'from-pink-50 to-rose-50', border: 'border-pink-200', text: 'text-pink-700' };
       case 'Custom':
-        return <Globe className="w-5 h-5 text-gray-600" />;
+        return { icon: Globe, gradient: 'from-slate-500 to-slate-600', bg: 'from-slate-50 to-slate-100', border: 'border-slate-200', text: 'text-slate-700' };
+    }
+  };
+
+  const getTypeIcon = (type: Integration['type']) => {
+    const config = getTypeConfig(type);
+    const Icon = config.icon;
+    return <Icon className="w-5 h-5" style={{ color: 'inherit' }} />;
+  };
+
+  const getFlowIcon = (flow: Integration['dataFlow']) => {
+    switch (flow) {
+      case 'bidirectional':
+        return ArrowLeftRight;
+      case 'inbound':
+        return ArrowDown;
+      case 'outbound':
+        return ArrowUp;
     }
   };
 
@@ -250,7 +305,7 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
   return (
     <>
       <Sidebar currentPage="integration" onNavigate={onNavigate} />
-      <div className="min-h-screen bg-gray-50 pb-24 lg:pl-64">
+      <div className="app-shell min-h-screen bg-gray-50 pb-24">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -279,217 +334,295 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
 
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="grid grid-cols-4 gap-6 mb-8">
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-600">Total Integrations</h3>
-                <Database className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{integrations.length}</p>
-              <p className="text-xs text-gray-500 mt-1">{activeCount} active connections</p>
-            </div>
+            <KPIWidget
+              title="Total Integrations"
+              value={integrations.length}
+              subtitle={`${activeCount} active connections`}
+              icon={Plug2}
+            />
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-600">Records Synced</h3>
-                <RefreshCw className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{totalRecords.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1">Last 24 hours</p>
-            </div>
+            <KPIWidget
+              title="Records Synced"
+              value={totalRecords.toLocaleString()}
+              subtitle="Last 24 hours"
+              icon={RefreshCw}
+            />
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-600">System Types</h3>
-                <Globe className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">7</p>
-              <p className="text-xs text-gray-500 mt-1">ERP, HRMS, Custom, etc.</p>
-            </div>
+            <KPIWidget
+              title="System Types"
+              value="7"
+              subtitle="ERP, HRMS, Custom, etc."
+              icon={Globe}
+            />
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-gray-600">Avg Sync Time</h3>
-                <Settings className="w-5 h-5 text-gray-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900">8.4m</p>
-              <p className="text-xs text-gray-500 mt-1">Average across all systems</p>
-            </div>
+            <KPIWidget
+              title="Avg Sync Time"
+              value="8.4m"
+              subtitle="Average across all systems"
+              icon={Settings}
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2 space-y-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">
-                  Integration Systems
-                </h2>
+            <div className="col-span-2">
+              <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-white via-indigo-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden">
+                <div className="px-6 py-4 border-b-2 border-slate-200 bg-gradient-to-r from-white via-indigo-50/50 to-white backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                      <Plug2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">
+                        Integration Systems
+                      </h2>
+                      <p className="text-xs text-slate-500">Connected systems and platforms</p>
+                    </div>
+                  </div>
+                </div>
 
-                <div className="space-y-3">
-                  {integrations.map((integration) => (
-                    <div
-                      key={integration.id}
-                      onClick={() => setSelectedIntegration(integration.id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedIntegration === integration.id
-                          ? 'border-blue-300 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="mt-1">{getTypeIcon(integration.type)}</div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <h3 className="text-sm font-semibold text-gray-900">
-                                {integration.name}
-                              </h3>
-                              <p className="text-xs text-gray-600 mt-0.5">
-                                {integration.system}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded border flex items-center gap-1 ${getStatusColor(
-                                  integration.status
-                                )}`}
-                              >
-                                {getStatusIcon(integration.status)}
-                                {integration.status}
-                              </span>
-                            </div>
+                <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+                  {integrations.map((integration) => {
+                    const typeConfig = getTypeConfig(integration.type);
+                    const statusConfig = getStatusConfig(integration.status);
+                    const TypeIcon = typeConfig.icon;
+                    const StatusIcon = statusConfig.icon;
+                    const FlowIcon = getFlowIcon(integration.dataFlow);
+                    const isSelected = selectedIntegration === integration.id;
+                    
+                    return (
+                      <div
+                        key={integration.id}
+                        onClick={() => setSelectedIntegration(integration.id)}
+                        className={`group relative rounded-xl border-2 p-4 cursor-pointer transition-all duration-300 ${
+                          isSelected
+                            ? `${statusConfig.border} ${statusConfig.bg} shadow-lg scale-[1.02]`
+                            : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${typeConfig.gradient} flex items-center justify-center shadow-md flex-shrink-0`}>
+                            <TypeIcon className="w-5 h-5 text-white" />
                           </div>
 
-                          <p className="text-xs text-gray-600 mb-3">
-                            {integration.description}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                                  {integration.name}
+                                </h3>
+                                <p className="text-xs font-medium text-slate-600">
+                                  {integration.system}
+                                </p>
+                              </div>
 
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-4 text-gray-500">
-                              <span>
-                                Last sync: <span className="font-medium">{integration.lastSync}</span>
-                              </span>
-                              <span>
-                                Records: <span className="font-medium">{integration.recordsSync.toLocaleString()}</span>
-                              </span>
-                              <span>
-                                Flow: <span className="font-medium capitalize">{integration.dataFlow}</span>
-                              </span>
+                              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg border-2 shadow-sm ${statusConfig.badge} text-white`}
+                                >
+                                  <StatusIcon className="w-3.5 h-3.5" />
+                                  {integration.status}
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="text-xs font-medium text-slate-600 mb-3">
+                              {integration.description}
+                            </p>
+
+                            <div className="flex items-center gap-4 flex-wrap">
+                              <div className="flex items-center gap-1.5">
+                                <RefreshCw className="w-3 h-3 text-slate-400" />
+                                <span className="text-xs text-slate-600">
+                                  <span className="font-semibold">Last sync:</span> {integration.lastSync}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Database className="w-3 h-3 text-slate-400" />
+                                <span className="text-xs text-slate-600">
+                                  <span className="font-semibold">Records:</span> {integration.recordsSync.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border ${
+                                integration.dataFlow === 'bidirectional'
+                                  ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200'
+                                  : integration.dataFlow === 'inbound'
+                                  ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'
+                                  : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'
+                              }`}>
+                                <FlowIcon className={`w-3.5 h-3.5 ${
+                                  integration.dataFlow === 'bidirectional'
+                                    ? 'text-blue-600'
+                                    : integration.dataFlow === 'inbound'
+                                    ? 'text-emerald-600'
+                                    : 'text-amber-600'
+                                }`} />
+                                <span className={`text-xs font-bold capitalize ${
+                                  integration.dataFlow === 'bidirectional'
+                                    ? 'text-blue-700'
+                                    : integration.dataFlow === 'inbound'
+                                    ? 'text-emerald-700'
+                                    : 'text-amber-700'
+                                }`}>
+                                  {integration.dataFlow}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div>
               {selectedIntegrationData ? (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h2 className="text-base font-semibold text-gray-900 mb-4">
-                    Integration Details
-                  </h2>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        System Name
-                      </label>
-                      <p className="text-sm text-gray-900">{selectedIntegrationData.name}</p>
+                <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-white via-indigo-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden">
+                  <div className="px-6 py-4 border-b-2 border-slate-200 bg-gradient-to-r from-white via-indigo-50/50 to-white backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                        <Info className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold text-slate-900">
+                          Integration Details
+                        </h2>
+                        <p className="text-xs text-slate-500">System configuration</p>
+                      </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Platform
-                      </label>
-                      <p className="text-sm text-gray-900">{selectedIntegrationData.system}</p>
-                    </div>
+                  <div className="p-6 max-h-[600px] overflow-y-auto custom-scrollbar">
+                    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-5 border-2 border-slate-200 space-y-4">
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          System Name
+                        </label>
+                        <p className="text-sm font-bold text-slate-900">{selectedIntegrationData.name}</p>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Type
-                      </label>
-                      <span className="inline-flex items-center gap-2 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 rounded">
-                        {getTypeIcon(selectedIntegrationData.type)}
-                        {selectedIntegrationData.type}
-                      </span>
-                    </div>
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Platform
+                        </label>
+                        <p className="text-sm font-bold text-slate-900">{selectedIntegrationData.system}</p>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Status
-                      </label>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${getStatusColor(
-                          selectedIntegrationData.status
-                        )}`}
-                      >
-                        {getStatusIcon(selectedIntegrationData.status)}
-                        {selectedIntegrationData.status}
-                      </span>
-                    </div>
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Type
+                        </label>
+                        {(() => {
+                          const typeConfig = getTypeConfig(selectedIntegrationData.type);
+                          const TypeIcon = typeConfig.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold rounded-lg border-2 shadow-sm bg-gradient-to-r ${typeConfig.bg} ${typeConfig.border} ${typeConfig.text}`}>
+                              <TypeIcon className="w-4 h-4" />
+                              {selectedIntegrationData.type}
+                            </span>
+                          );
+                        })()}
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        API Endpoint
-                      </label>
-                      <p className="text-xs text-gray-900 font-mono bg-gray-50 p-2 rounded border border-gray-200 break-all">
-                        {selectedIntegrationData.endpoint}
-                      </p>
-                    </div>
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Status
+                        </label>
+                        {(() => {
+                          const statusConfig = getStatusConfig(selectedIntegrationData.status);
+                          const StatusIcon = statusConfig.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border-2 shadow-sm ${statusConfig.badge} text-white`}>
+                              <StatusIcon className="w-4 h-4" />
+                              {selectedIntegrationData.status}
+                            </span>
+                          );
+                        })()}
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Authentication
-                      </label>
-                      <p className="text-sm text-gray-900">{selectedIntegrationData.authMethod}</p>
-                    </div>
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          API Endpoint
+                        </label>
+                        <p className="text-xs text-slate-900 font-mono bg-slate-50 p-3 rounded-lg border border-slate-200 break-all">
+                          {selectedIntegrationData.endpoint}
+                        </p>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Data Flow
-                      </label>
-                      <p className="text-sm text-gray-900 capitalize">{selectedIntegrationData.dataFlow}</p>
-                    </div>
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Authentication
+                        </label>
+                        <span className="inline-flex items-center px-3 py-1.5 text-xs font-bold text-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 border-2 border-slate-200 rounded-lg shadow-sm">
+                          {selectedIntegrationData.authMethod}
+                        </span>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Connected Departments
-                      </label>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {selectedIntegrationData.department.map((dept) => (
-                          <span
-                            key={dept}
-                            className="px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-full"
-                          >
-                            {dept}
-                          </span>
-                        ))}
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Data Flow
+                        </label>
+                        {(() => {
+                          const FlowIcon = getFlowIcon(selectedIntegrationData.dataFlow);
+                          return (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border-2 shadow-sm capitalize ${
+                              selectedIntegrationData.dataFlow === 'bidirectional'
+                                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200 text-blue-700'
+                                : selectedIntegrationData.dataFlow === 'inbound'
+                                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 text-emerald-700'
+                                : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 text-amber-700'
+                            }`}>
+                              <FlowIcon className="w-4 h-4" />
+                              {selectedIntegrationData.dataFlow}
+                            </span>
+                          );
+                        })()}
+                      </div>
+
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Connected Departments
+                        </label>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {selectedIntegrationData.department.map((dept) => (
+                            <span
+                              key={dept}
+                              className="px-3 py-1.5 text-xs font-bold text-blue-700 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg shadow-sm"
+                            >
+                              {dept}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pb-3 border-b border-slate-200 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Last Sync
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4 text-slate-400" />
+                          <p className="text-sm font-bold text-slate-900">{selectedIntegrationData.lastSync}</p>
+                        </div>
+                      </div>
+
+                      <div className="pb-3 border-b-0 last:border-b-0 last:pb-0">
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">
+                          Records Synced (24h)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <Database className="w-4 h-4 text-slate-400" />
+                          <p className="text-sm font-black text-slate-900">
+                            {selectedIntegrationData.recordsSync.toLocaleString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Last Sync
-                      </label>
-                      <p className="text-sm text-gray-900">{selectedIntegrationData.lastSync}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">
-                        Records Synced (24h)
-                      </label>
-                      <p className="text-sm text-gray-900">
-                        {selectedIntegrationData.recordsSync.toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-gray-200 space-y-2">
+                    <div className="pt-4 space-y-3">
                       <button
                         onClick={() => alert(`Syncing ${selectedIntegrationData.name}...`)}
-                        className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                        className="w-full px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105"
                       >
                         <div className="flex items-center justify-center gap-2">
                           <RefreshCw className="w-4 h-4" />
@@ -499,7 +632,7 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
 
                       <button
                         onClick={() => setShowConfigModal(true)}
-                        className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="w-full px-4 py-3 text-sm font-bold text-slate-700 bg-white border-2 border-slate-300 rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm hover:shadow-md"
                       >
                         <div className="flex items-center justify-center gap-2">
                           <Settings className="w-4 h-4" />
@@ -510,10 +643,12 @@ export function IntegrationManagementPage({ onNavigate }: IntegrationManagementP
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <div className="text-center py-12">
-                    <Database className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-sm text-gray-500">
+                <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-br from-white via-slate-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden">
+                  <div className="p-12 text-center">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center mx-auto mb-4">
+                      <Info className="w-8 h-8 text-slate-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-500">
                       Select an integration to view details
                     </p>
                   </div>

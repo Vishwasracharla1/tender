@@ -369,7 +369,7 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
   return (
     <>
       <Sidebar currentPage="integrity" onNavigate={onNavigate} />
-      <div className="min-h-screen bg-gray-50 pb-24 lg:pl-64">
+      <div className="app-shell min-h-screen bg-gray-50 pb-24">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -392,21 +392,26 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="w-5 h-5 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-900">Filters</h2>
+          <div className="relative rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 shadow-[0_20px_45px_rgba(59,130,246,0.12)] overflow-hidden p-6 mb-8">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
+                <Filter className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-blue-700 uppercase tracking-wider">Filters</h2>
+                <p className="text-xs text-blue-600 mt-0.5">Personalize the Integrity View</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
                   Department
                 </label>
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
                 >
                   <option value="all">All Departments</option>
                   {RAK_DEPARTMENTS.map((dept) => (
@@ -418,13 +423,13 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
                 >
                   <option value="all">All Categories</option>
                   <option value="WORKS">Works & Construction</option>
@@ -435,13 +440,13 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
                   Tender
                 </label>
                 <select
                   value={selectedTender}
                   onChange={(e) => setSelectedTender(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
                 >
                   <option value="all">All Tenders</option>
                   {filteredTenders.map((tender) => (
@@ -463,22 +468,22 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
             </div>
 
             {(selectedDepartment !== 'all' || selectedCategory !== 'all' || selectedTender !== 'all') && (
-              <div className="mt-4 flex items-center gap-2">
-                <span className="text-xs text-gray-600">
+              <div className="mt-5 pt-5 border-t border-blue-200/50 flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-medium text-blue-700">
                   Showing {filteredAlerts.length} alerts for:
                 </span>
                 {selectedDepartment !== 'all' && (
-                  <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                  <span className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-300 shadow-sm">
                     {selectedDepartment}
                   </span>
                 )}
                 {selectedCategory !== 'all' && (
-                  <span className="px-2 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
+                  <span className="px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full border border-emerald-300 shadow-sm">
                     {selectedCategory}
                   </span>
                 )}
                 {selectedTender !== 'all' && (
-                  <span className="px-2 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
+                  <span className="px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full border border-purple-300 shadow-sm">
                     {selectedTender}
                   </span>
                 )}
@@ -489,7 +494,7 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
                     setSelectedTender('all');
                     setDateRange({ start: '', end: '' });
                   }}
-                  className="ml-auto text-xs text-gray-600 hover:text-gray-900 underline"
+                  className="ml-auto px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                 >
                   Clear all filters
                 </button>
@@ -530,17 +535,18 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mb-8">
-            <div>
+          <div className="grid grid-cols-2 gap-6 mb-8 items-stretch">
+            <div className="flex">
               <IntegrityAlertList
                 alerts={alerts}
                 onMarkCleared={handleMarkCleared}
                 onEscalate={handleEscalate}
               />
             </div>
+            <div className="flex">
+              <FlaggedEvaluatorsList evaluators={flaggedEvaluators} />
+            </div>
           </div>
-
-          <FlaggedEvaluatorsList evaluators={flaggedEvaluators} />
         </main>
 
         <IntegrityFooter

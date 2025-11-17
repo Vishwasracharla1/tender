@@ -31,3 +31,14 @@
     border-radius: 9999px;
   }
 }
+
+@layer base {
+  :root {
+    --sidebar-offset: 0px;
+  }
+
+  .app-shell {
+    padding-left: var(--sidebar-offset);
+    transition: padding-left 0.3s ease;
+  }
+}

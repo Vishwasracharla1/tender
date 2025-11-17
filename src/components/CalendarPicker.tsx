@@ -1,5 +1,5 @@
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface CalendarPickerProps {
   startDate: string;
@@ -14,11 +14,44 @@ export function CalendarPicker({ startDate, endDate, onDateChange, label = 'Date
   const [tempStart, setTempStart] = useState(startDate);
   const [tempEnd, setTempEnd] = useState(endDate);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTempStart(startDate);
     setTempEnd(endDate);
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const buttonRect = buttonRef.current.getBoundingClientRect();
+      const dropdownHeight = 400; // Approximate height of the dropdown
+      const dropdownWidth = 600; // Approximate width of the dropdown
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      let top = buttonRect.bottom + 8;
+      let left = buttonRect.left;
+
+      // Adjust if dropdown would go below viewport
+      if (top + dropdownHeight > viewportHeight) {
+        top = buttonRect.top - dropdownHeight - 8;
+      }
+
+      // Adjust if dropdown would go beyond right edge
+      if (left + dropdownWidth > viewportWidth) {
+        left = viewportWidth - dropdownWidth - 16;
+      }
+
+      // Ensure it doesn't go beyond left edge
+      if (left < 16) {
+        left = 16;
+      }
+
+      setDropdownPosition({ top, left });
+    }
+  }, [isOpen]);
 
   const formatDisplayDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -149,13 +182,14 @@ export function CalendarPicker({ startDate, endDate, onDateChange, label = 'Date
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">{label}</label>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-gray-700 bg-white/80 backdrop-blur-sm border-2 border-blue-200 rounded-xl hover:border-blue-300 shadow-sm transition-all duration-200"
       >
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-gray-500" />
+          <Calendar className="w-4 h-4 text-blue-600" />
           <span>
             {startDate && endDate
               ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
@@ -170,7 +204,14 @@ export function CalendarPicker({ startDate, endDate, onDateChange, label = 'Date
             className="fixed inset-0 z-30"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-40 overflow-hidden">
+          <div
+            ref={dropdownRef}
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-40 overflow-hidden"
+            style={{
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+            }}
+          >
             <div className="flex">
               <div className="w-48 border-r border-gray-200 p-3 bg-gray-50">
                 <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Quick Select</p>

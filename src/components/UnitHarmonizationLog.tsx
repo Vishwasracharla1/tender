@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 
 interface LogEntry {
   timestamp: string;
@@ -22,44 +22,59 @@ export function UnitHarmonizationLog({ entries }: UnitHarmonizationLogProps) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-base font-semibold text-gray-900">
-          Unit Harmonization Logs
-        </h2>
+    <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-indigo-50 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden">
+      <div className="relative px-6 py-4 border-b border-white/40 flex items-center justify-between backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-inner">
+            <RefreshCw className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">
+              Unit Harmonization Logs
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">{entries.length} recent entries</p>
+          </div>
+        </div>
       </div>
 
-      <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+      <div className="p-6 max-h-64 overflow-y-auto space-y-2">
         {entries.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm text-gray-500">No harmonization logs yet</p>
           </div>
         ) : (
           entries.map((entry, index) => (
-            <div key={index} className="p-3 hover:bg-gray-50 transition-colors">
+            <div 
+              key={index} 
+              className="p-4 rounded-xl bg-gradient-to-br from-white via-slate-50 to-white border border-slate-200 hover:border-cyan-300 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+            >
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-16">
-                  <span className="text-xs text-gray-500 font-mono">
-                    {formatTime(entry.timestamp)}
-                  </span>
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-inner">
+                    <span className="text-xs font-bold text-white">
+                      {formatTime(entry.timestamp).split(':')[0]}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-gray-900">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-gray-900">
                       {entry.field}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      • {entry.vendor}
+                    <span className="px-2 py-0.5 text-xs font-medium text-cyan-700 bg-cyan-100 rounded-full border border-cyan-200">
+                      {entry.vendor}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 font-mono bg-gray-50 px-2 py-0.5 rounded">
+                    <span className="text-sm text-slate-600 font-mono bg-gradient-to-br from-slate-100 to-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 font-semibold">
                       {entry.originalValue}
                     </span>
-                    <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                    <span className="text-sm text-emerald-700 font-mono bg-emerald-50 px-2 py-0.5 rounded">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-400 flex items-center justify-center shadow-inner">
+                      <ArrowRight className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="text-sm text-emerald-700 font-mono bg-gradient-to-br from-emerald-50 to-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 font-semibold">
                       {entry.normalizedValue}
                     </span>
                   </div>
