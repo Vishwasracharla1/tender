@@ -14,7 +14,7 @@ import { CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
 import type { TenderDocument } from '../lib/supabase';
 
 interface TenderIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-overview' | 'monitoring' | 'integration' | 'tender-article') => void;
 }
 
 export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
@@ -24,6 +24,7 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [categoryConfigured, setCategoryConfigured] = useState(false);
   const [evaluationCriteria, setEvaluationCriteria] = useState<any[]>([]);
+
 
   const validationItems = [
     { label: 'Document format verification', status: 'completed' as const },
@@ -103,6 +104,10 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
 
   const handleProceedToEvaluation = () => {
     onNavigate('evaluation');
+  };
+
+  const handleSubmitToOverview = () => {
+    onNavigate('tender-overview');
   };
 
   const validatedCount = uploadedFiles.filter(f => f.validation_status === 'passed').length;
@@ -195,6 +200,7 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
                 <FileUpload
                   tenderId={tenderId}
                   onFilesUploaded={handleFilesUploaded}
+                  onSubmitToOverview={handleSubmitToOverview}
                 />
               </div>
 

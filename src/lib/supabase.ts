@@ -34,6 +34,7 @@ export interface TenderDocument {
   upload_status: UploadStatus;
   validation_status: ValidationStatus;
   uploaded_at: string;
+  cdn_url?: string;
 }
 
 export interface ValidationLog {

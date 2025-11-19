@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { KPIWidget } from '../components/KPIWidget';
 import { KPIDetailModal } from '../components/KPIDetailModal';
@@ -8,9 +8,10 @@ import { ComplianceLeaderboard } from '../components/ComplianceLeaderboard';
 import { LeadershipFooter } from '../components/LeadershipFooter';
 import { Activity, Clock, Target, AlertTriangle, Filter, Users, TrendingUp, Award, ShieldAlert } from 'lucide-react';
 import { MOCK_TENDERS, VendorData } from '../data/mockTenderData';
+import { getActiveTendersData, ActiveTendersData, getAvgEvalDurationData, AvgEvalDurationData, getComplianceRateData, ComplianceRateData, getCriticalAlertsData, CriticalAlertsData } from '../services/api';
 
 interface LeadershipDashboardPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
 }
 
 export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageProps) {
@@ -21,6 +22,24 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
   const [selectedPhase, setSelectedPhase] = useState('all');
   const [selectedRiskLevel, setSelectedRiskLevel] = useState('all');
   const [activeModal, setActiveModal] = useState<'tenders' | 'duration' | 'compliance' | 'alerts' | 'vendors' | 'avgBid' | 'topVendor' | 'riskVendors' | null>(null);
+  const [activeTendersData, setActiveTendersData] = useState<ActiveTendersData | null>(null);
+  const [isLoadingTenders, setIsLoadingTenders] = useState(true);
+  const [tendersError, setTendersError] = useState<string | null>(null);
+  const [avgEvalDurationData, setAvgEvalDurationData] = useState<AvgEvalDurationData | null>(null);
+  const [isLoadingDuration, setIsLoadingDuration] = useState(true);
+  const [durationError, setDurationError] = useState<string | null>(null);
+  const [complianceRateData, setComplianceRateData] = useState<ComplianceRateData | null>(null);
+  const [isLoadingCompliance, setIsLoadingCompliance] = useState(true);
+  const [complianceError, setComplianceError] = useState<string | null>(null);
+  const [criticalAlertsData, setCriticalAlertsData] = useState<CriticalAlertsData | null>(null);
+  const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
+  
+  // Refs to prevent duplicate calls in React StrictMode
+  const hasFetchedTendersRef = useRef(false);
+  const hasFetchedDurationRef = useRef(false);
+  const hasFetchedComplianceRef = useRef(false);
+  const hasFetchedAlertsRef = useRef(false);
 
   const departments = [
     'all',
@@ -208,6 +227,176 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
     alert('Opening review scheduling dialog...');
   };
 
+  // Fetch active tenders data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedTendersRef.current) {
+      return;
+    }
+    hasFetchedTendersRef.current = true;
+
+    const fetchActiveTenders = async () => {
+      try {
+        console.log('Starting to fetch active tenders data...');
+        setIsLoadingTenders(true);
+        setTendersError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        console.log('Token found, making API call...');
+        
+        const data = await getActiveTendersData();
+        console.log('Active tenders data received:', data);
+        setActiveTendersData(data);
+      } catch (error) {
+        console.error('Error fetching active tenders:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch active tenders data';
+        setTendersError(errorMessage);
+        console.error('Error details:', {
+          message: errorMessage,
+          error: error
+        });
+      } finally {
+        setIsLoadingTenders(false);
+      }
+    };
+
+    fetchActiveTenders();
+  }, []);
+
+  // Fetch average evaluation duration data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedDurationRef.current) {
+      return;
+    }
+    hasFetchedDurationRef.current = true;
+
+    const fetchAvgEvalDuration = async () => {
+      try {
+        console.log('Starting to fetch avg eval duration data...');
+        setIsLoadingDuration(true);
+        setDurationError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getAvgEvalDurationData();
+        console.log('Avg eval duration data received:', data);
+        setAvgEvalDurationData(data);
+      } catch (error) {
+        console.error('Error fetching avg eval duration:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch avg eval duration data';
+        setDurationError(errorMessage);
+      } finally {
+        setIsLoadingDuration(false);
+      }
+    };
+
+    fetchAvgEvalDuration();
+  }, []);
+
+  // Fetch compliance rate data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedComplianceRef.current) {
+      return;
+    }
+    hasFetchedComplianceRef.current = true;
+
+    const fetchComplianceRate = async () => {
+      try {
+        console.log('Starting to fetch compliance rate data...');
+        setIsLoadingCompliance(true);
+        setComplianceError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getComplianceRateData();
+        console.log('Compliance rate data received:', data);
+        setComplianceRateData(data);
+      } catch (error) {
+        console.error('Error fetching compliance rate:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch compliance rate data';
+        setComplianceError(errorMessage);
+      } finally {
+        setIsLoadingCompliance(false);
+      }
+    };
+
+    fetchComplianceRate();
+  }, []);
+
+  // Fetch critical alerts data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedAlertsRef.current) {
+      return;
+    }
+    hasFetchedAlertsRef.current = true;
+
+    const fetchCriticalAlerts = async () => {
+      try {
+        console.log('Starting to fetch critical alerts data...');
+        setIsLoadingAlerts(true);
+        setAlertsError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getCriticalAlertsData();
+        console.log('Critical alerts data received:', data);
+        setCriticalAlertsData(data);
+      } catch (error) {
+        console.error('Error fetching critical alerts:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch critical alerts data';
+        setAlertsError(errorMessage);
+      } finally {
+        setIsLoadingAlerts(false);
+      }
+    };
+
+    fetchCriticalAlerts();
+  }, []);
+
+  // Format total estimated value
+  const formatTotalValue = (value: number | null | undefined): string => {
+    if (!value) return 'AED 0';
+    if (value >= 1000000) {
+      return `AED ${(value / 1000000).toFixed(2)}M`;
+    }
+    if (value >= 1000) {
+      return `AED ${(value / 1000).toFixed(2)}K`;
+    }
+    return `AED ${value.toFixed(2)}`;
+  };
+
+  // Format average time in system
+  const formatAvgTime = (days: number | null | undefined): string => {
+    if (!days && days !== 0) return '0 days';
+    const rounded = Math.round(days);
+    return `${rounded} day${rounded !== 1 ? 's' : ''}`;
+  };
+
+  // Format percentage
+  const formatPercentage = (value: number | null | undefined): string => {
+    if (!value && value !== 0) return '0%';
+    return `${value.toFixed(1)}%`;
+  };
+
   const filteredIntegrityData = integrityData.filter(item => {
     if (selectedDepartment !== 'all' && item.department !== selectedDepartment) return false;
     if (selectedPhase !== 'all' && item.phase.toLowerCase() !== selectedPhase.toLowerCase()) return false;
@@ -296,7 +485,10 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
 
   return (
     <>
-      <Sidebar currentPage="leadership" onNavigate={onNavigate} />
+      <Sidebar 
+        currentPage="leadership" 
+        onNavigate={onNavigate} 
+      />
       <div className="app-shell min-h-screen bg-gray-50 pb-24">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -334,34 +526,34 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
           <div className="grid grid-cols-4 gap-6 mb-8">
             <KPIWidget
               title="Active Tenders"
-              value="28"
-              subtitle="Across all departments"
+              value={isLoadingTenders ? '...' : (activeTendersData?.active_tenders?.toString() || '0')}
+              subtitle={tendersError ? 'Error loading data' : (activeTendersData ? 'Across all departments' : 'Loading...')}
               icon={Activity}
-              trend={{ value: '12%', isPositive: true }}
+              trend={activeTendersData ? { value: '12%', isPositive: true } : undefined}
               onClick={() => setActiveModal('tenders')}
             />
 
             <KPIWidget
               title="Avg Eval Duration"
-              value="31 days"
-              subtitle="9 days under target"
+              value={isLoadingDuration ? '...' : (avgEvalDurationData ? formatAvgTime(avgEvalDurationData.avg_eval_duration) : '0 days')}
+              subtitle={durationError ? 'Error loading data' : (avgEvalDurationData ? `${Math.round(avgEvalDurationData.time_saved_days || 0)} days under target` : 'Loading...')}
               icon={Clock}
-              trend={{ value: '22%', isPositive: true }}
+              trend={avgEvalDurationData ? { value: `${Math.abs(avgEvalDurationData.faster_pct || 0).toFixed(0)}%`, isPositive: (avgEvalDurationData.faster_pct || 0) > 0 } : undefined}
               onClick={() => setActiveModal('duration')}
             />
 
             <KPIWidget
               title="Compliance Rate"
-              value="87.3%"
-              subtitle="69 of 79 tenders compliant"
+              value={isLoadingCompliance ? '...' : (complianceRateData ? `${complianceRateData.compliance_rate_pct.toFixed(1)}%` : '0%')}
+              subtitle={complianceError ? 'Error loading data' : (complianceRateData ? `${complianceRateData.compliant_tenders} of ${complianceRateData.total_tenders} tenders compliant` : 'Loading...')}
               icon={Target}
               onClick={() => setActiveModal('compliance')}
             />
 
             <KPIWidget
               title="Critical Alerts"
-              value="3"
-              subtitle="Requires immediate attention"
+              value={isLoadingAlerts ? '...' : (criticalAlertsData?.critical_alerts?.toString() || '0')}
+              subtitle={alertsError ? 'Error loading data' : (criticalAlertsData ? 'Requires immediate attention' : 'Loading...')}
               icon={AlertTriangle}
               onClick={() => setActiveModal('alerts')}
             />
@@ -518,14 +710,45 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Active Tenders"
         icon={Activity}
-        mainValue="28"
-        details={[
-          { label: 'Intake Phase', value: '8', description: '5 pending validation, 3 normalized' },
-          { label: 'Evaluation Phase', value: '12', description: '7 in scoring, 5 in review' },
-          { label: 'Benchmark Phase', value: '5', description: '3 market analysis, 2 outlier review' },
-          { label: 'Award Phase', value: '3', description: '2 final approval, 1 contract prep' },
-          { label: 'Total Value', value: 'AED 45.2M', description: 'Combined estimated value' },
-          { label: 'Avg Time in System', value: '18 days', description: 'From intake to current phase' },
+        mainValue={activeTendersData?.active_tenders?.toString() || '0'}
+        details={activeTendersData ? [
+          { 
+            label: 'Intake Phase', 
+            value: activeTendersData.intake_total.toString(), 
+            description: `${activeTendersData.intake_pending_validation} pending validation, ${activeTendersData.intake_normalized} normalized` 
+          },
+          { 
+            label: 'Evaluation Phase', 
+            value: (activeTendersData.evaluation_scoring + activeTendersData.evaluation_review).toString(), 
+            description: `${activeTendersData.evaluation_scoring} in scoring, ${activeTendersData.evaluation_review} in review` 
+          },
+          { 
+            label: 'Benchmark Phase', 
+            value: activeTendersData.benchmark_total.toString(), 
+            description: `${activeTendersData.benchmark_market_analysis} market analysis, ${activeTendersData.benchmark_outlier_review} outlier review` 
+          },
+          { 
+            label: 'Award Phase', 
+            value: activeTendersData.award_total.toString(), 
+            description: `${activeTendersData.award_final_approval} final approval, ${activeTendersData.award_contract_prep} contract prep` 
+          },
+          { 
+            label: 'Justification Phase', 
+            value: activeTendersData.justification_total.toString(), 
+            description: 'Tenders in justification phase' 
+          },
+          { 
+            label: 'Total Value', 
+            value: formatTotalValue(activeTendersData.total_estimated_value), 
+            description: 'Combined estimated value' 
+          },
+          { 
+            label: 'Avg Time in System', 
+            value: formatAvgTime(activeTendersData.avg_time_in_system), 
+            description: 'From intake to current phase' 
+          },
+        ] : [
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
@@ -534,14 +757,40 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Avg Evaluation Duration"
         icon={Clock}
-        mainValue="31 days"
-        details={[
-          { label: 'Target Duration', value: '40 days', description: 'Organizational benchmark' },
-          { label: 'Time Saved', value: '9 days', description: '22% faster than target' },
-          { label: 'Fastest Department', value: 'Water Mgmt', description: '24 days average' },
-          { label: 'Slowest Department', value: 'HR', description: '42 days average' },
-          { label: 'Bottleneck Phase', value: 'Evaluation', description: '14 days average' },
-          { label: 'Tenders On-Time', value: '23/28', description: '82% within target timeframe' },
+        mainValue={avgEvalDurationData ? formatAvgTime(avgEvalDurationData.avg_eval_duration) : '0 days'}
+        details={avgEvalDurationData ? [
+          { 
+            label: 'Target Duration', 
+            value: formatAvgTime(avgEvalDurationData.target_duration), 
+            description: 'Organizational benchmark' 
+          },
+          { 
+            label: 'Time Saved', 
+            value: formatAvgTime(avgEvalDurationData.time_saved_days), 
+            description: `${formatPercentage(avgEvalDurationData.faster_pct)} faster than target` 
+          },
+          { 
+            label: 'Fastest Department', 
+            value: avgEvalDurationData.fastest_department_name || 'N/A', 
+            description: `${formatAvgTime(avgEvalDurationData.fastest_department_avg_days)} average` 
+          },
+          { 
+            label: 'Slowest Department', 
+            value: avgEvalDurationData.slowest_department_name || 'N/A', 
+            description: `${formatAvgTime(avgEvalDurationData.slowest_department_avg_days)} average` 
+          },
+          { 
+            label: 'Bottleneck Phase', 
+            value: 'Evaluation', 
+            description: `${formatAvgTime(avgEvalDurationData.bottleneck_phase_avg_days)} average` 
+          },
+          { 
+            label: 'Tenders On-Time', 
+            value: `${avgEvalDurationData.tenders_on_time || 0}/${avgEvalDurationData.active_tenders || 0}`, 
+            description: `${avgEvalDurationData.active_tenders ? Math.round(((avgEvalDurationData.tenders_on_time || 0) / avgEvalDurationData.active_tenders) * 100) : 0}% within target timeframe` 
+          },
+        ] : [
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
@@ -550,14 +799,40 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Compliance Rate"
         icon={Target}
-        mainValue="87.3%"
-        details={[
-          { label: 'Compliant Tenders', value: '69/79', description: 'Meeting all policy requirements' },
-          { label: 'Policy Adherence', value: '91.2%', description: 'Following tender procedures' },
-          { label: 'Risk Mitigation', value: '84.5%', description: 'Risks identified and managed' },
-          { label: 'Documentation', value: '89.8%', description: 'Complete required documentation' },
-          { label: 'Timeline Compliance', value: '82.1%', description: 'Meeting deadline requirements' },
-          { label: 'Minor Issues', value: '10', description: 'Non-critical compliance gaps' },
+        mainValue={complianceRateData ? `${complianceRateData.compliance_rate_pct.toFixed(1)}%` : '0%'}
+        details={complianceRateData ? [
+          { 
+            label: 'Compliant Tenders', 
+            value: `${complianceRateData.compliant_tenders}/${complianceRateData.total_tenders}`, 
+            description: 'Meeting all policy requirements' 
+          },
+          { 
+            label: 'Policy Adherence', 
+            value: `${complianceRateData.policy_adherence_pct.toFixed(1)}%`, 
+            description: 'Following tender procedures' 
+          },
+          { 
+            label: 'Risk Mitigation', 
+            value: `${complianceRateData.risk_mitigation_pct.toFixed(1)}%`, 
+            description: 'Risks identified and managed' 
+          },
+          { 
+            label: 'Documentation', 
+            value: `${complianceRateData.documentation_pct.toFixed(1)}%`, 
+            description: 'Complete required documentation' 
+          },
+          { 
+            label: 'Timeline Compliance', 
+            value: `${complianceRateData.timeline_compliance_pct.toFixed(1)}%`, 
+            description: 'Meeting deadline requirements' 
+          },
+          { 
+            label: 'Minor Issues', 
+            value: `${complianceRateData.minor_issues || 0}`, 
+            description: 'Non-critical compliance gaps' 
+          },
+        ] : [
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
@@ -566,14 +841,32 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Critical Alerts"
         icon={AlertTriangle}
-        mainValue="3"
-        details={[
-          { label: 'TND-010 (HR)', value: 'Critical', description: 'Integrity score 45% - immediate review required' },
-          { label: 'TND-006 (Tolls)', value: 'High Risk', description: 'Evaluation delayed by 12 days' },
-          { label: 'TND-008 (Maintenance)', value: 'High Risk', description: 'Missing compliance documentation' },
-          { label: 'Total High Risk', value: '8', description: 'Including 3 critical alerts' },
-          { label: 'Resolved Today', value: '2', description: 'Down from 5 critical alerts' },
-          { label: 'Avg Resolution Time', value: '4.2 days', description: 'For critical alerts' },
+        mainValue={criticalAlertsData?.critical_alerts?.toString() || '0'}
+        details={criticalAlertsData ? [
+          ...(criticalAlertsData.critical_alert_list && criticalAlertsData.critical_alert_list.length > 0
+            ? criticalAlertsData.critical_alert_list.map((alert, index) => ({
+                label: alert.id || `Alert ${index + 1}`,
+                value: alert.riskLevel || 'Critical',
+                description: `${alert.riskAlertMessage || 'No message'} - Integrity score: ${alert.riskIntegrityScore?.toFixed(0) || 0}%`
+              }))
+            : []),
+          { 
+            label: 'Total High Risk', 
+            value: criticalAlertsData.total_high_risk?.toString() || '0', 
+            description: `Including ${criticalAlertsData.critical_alerts || 0} critical alerts` 
+          },
+          { 
+            label: 'Resolved Today', 
+            value: criticalAlertsData.resolved_today?.toString() || '0', 
+            description: 'Alerts resolved today' 
+          },
+          { 
+            label: 'Avg Resolution Time', 
+            value: criticalAlertsData.avg_resolution_time ? `${criticalAlertsData.avg_resolution_time.toFixed(1)} days` : 'N/A', 
+            description: 'For critical and high risk alerts' 
+          },
+        ] : [
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
