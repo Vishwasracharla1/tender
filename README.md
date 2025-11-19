@@ -113,11 +113,22 @@ npm run build
 ```
 
 ### Environment Variables
-Create a `.env` file:
+Create a `.env` file in the root directory:
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_API_AUTHORIZATION_TOKEN=your_authorization_token_here
+VITE_AGENT_AUTHORIZATION_TOKEN=your_agent_authorization_token_here
 ```
+
+**Important:** 
+- `VITE_API_AUTHORIZATION_TOKEN` is required for API calls to schema services and other APIs
+- `VITE_AGENT_AUTHORIZATION_TOKEN` is required specifically for agent orchestration framework calls
+- Both should be valid JWT Bearer tokens. If you're getting "invalid token" errors, make sure:
+  1. The tokens are set in your `.env` file
+  2. The tokens are not expired
+  3. The tokens have the required permissions
+  4. You restart the dev server after updating the `.env` file
 
 ## 📖 Documentation
 
@@ -277,5 +288,6 @@ Tender Intake → Select RAK Municipality → Choose Works & Construction
 **Built with ❤️ for RAK Government Digital Transformation**
 
 For questions or support: [View DEMO_GUIDE.md](./DEMO_GUIDE.md)
-#   t e n d e r  
+#   t e n d e r 
+ 
  

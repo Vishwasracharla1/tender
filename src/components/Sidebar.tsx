@@ -1,13 +1,34 @@
-import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X } from 'lucide-react';
+import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
+  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview';
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Map routes to page IDs
+  const routeToPageId: Record<string, string> = {
+    '/': 'leadership',
+    '/intake': 'intake',
+    '/tender-overview': 'tender-overview',
+    '/tender-article': 'tender-article',
+    '/evaluation': 'evaluation',
+    '/benchmark': 'benchmark',
+    '/integrity': 'integrity',
+    '/justification': 'justification',
+    '/award': 'award',
+    '/monitoring': 'monitoring',
+    '/integration': 'integration',
+  };
+
+  // Get current page from route
+  const activePageId = routeToPageId[location.pathname] || 'leadership';
 
   useEffect(() => {
     const updateOffset = () => {
@@ -30,56 +51,84 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       label: 'Leadership Dashboard',
       icon: LayoutDashboard,
       description: 'Executive Overview',
+      path: '/',
     },
     {
       id: 'intake' as const,
       label: 'Tender Intake',
       icon: FileText,
       description: 'Upload & Validate',
+      path: '/intake',
+    },
+    {
+      id: 'tender-overview' as const,
+      label: 'Tender Overview',
+      icon: FileSearch,
+      description: 'Evaluation Framework',
+      path: '/tender-overview',
+    },
+    {
+      id: 'tender-article' as const,
+      label: 'Tender Article',
+      icon: ClipboardList,
+      description: 'Procurement Dashboard',
+      path: '/tender-article',
     },
     {
       id: 'evaluation' as const,
       label: 'Evaluation Matrix',
       icon: BarChart3,
       description: 'Score & Compare',
+      path: '/evaluation',
     },
     {
       id: 'benchmark' as const,
       label: 'Benchmark Dashboard',
       icon: TrendingUp,
       description: 'Market Analysis',
+      path: '/benchmark',
     },
     {
       id: 'integrity' as const,
       label: 'Integrity Analytics',
       icon: ShieldAlert,
       description: 'Fraud Detection',
+      path: '/integrity',
     },
     {
       id: 'justification' as const,
       label: 'Justification Composer',
       icon: FileEdit,
       description: 'Report Writing',
+      path: '/justification',
     },
     {
       id: 'award' as const,
       label: 'Award Simulation',
       icon: Award,
       description: 'Scenario Analysis',
+      path: '/award',
     },
     {
       id: 'monitoring' as const,
       label: 'Agent Monitoring',
       icon: Activity,
       description: 'AI Performance',
+      path: '/monitoring',
     },
     {
       id: 'integration' as const,
       label: 'Integration Management',
       icon: Plug,
       description: 'System Integrations',
+      path: '/integration',
     },
   ];
+
+  const handleNavigation = (pageId: string, path: string) => {
+    navigate(path);
+    onNavigate(pageId as any);
+  };
 
   return (
     <>
@@ -113,12 +162,12 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <nav className="sidebar-scroll flex-1 p-4 space-y-3 overflow-y-auto pr-2">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = currentPage === item.id;
+              const isActive = activePageId === item.id;
 
               return (
                 <button
                   key={item.id}
-                  onClick={() => onNavigate(item.id)}
+                  onClick={() => handleNavigation(item.id, item.path)}
                   className={`
                     group flex w-full items-start gap-3 p-3 rounded-xl border text-left
                     transition-all duration-300 transform

@@ -1,15 +1,18 @@
-import { Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import type { TenderDocument } from '../lib/supabase';
+import { uploadFileToCDN, ingestFileToSchema } from '../services/api';
 
 interface FileUploadProps {
   tenderId: string;
   onFilesUploaded: (files: TenderDocument[]) => void;
+  onSubmitToOverview?: () => void;
 }
 
-export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
+export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<TenderDocument[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -36,30 +39,107 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
   };
 
   const handleFiles = async (files: File[]) => {
-    const newDocs: TenderDocument[] = files.map(file => ({
-      id: crypto.randomUUID(),
-      tender_id: tenderId,
-      filename: file.name,
-      file_type: file.name.split('.').pop()?.toUpperCase() || 'UNKNOWN',
-      file_size: file.size,
-      upload_status: Math.random() > 0.3 ? 'validated' : 'processing',
-      validation_status: Math.random() > 0.3 ? 'passed' : 'warning',
-      uploaded_at: new Date().toISOString(),
-    }));
+    const uploadPromises = files.map(async (file) => {
+      const fileId = crypto.randomUUID();
+      const tempDoc: TenderDocument = {
+        id: fileId,
+        tender_id: tenderId,
+        filename: file.name,
+        file_type: file.name.split('.').pop()?.toUpperCase() || 'UNKNOWN',
+        file_size: file.size,
+        upload_status: 'uploading',
+        validation_status: 'pending',
+        uploaded_at: new Date().toISOString(),
+      };
 
-    setUploadedFiles(prev => [...prev, ...newDocs]);
-    onFilesUploaded(newDocs);
+      // Add to uploading set
+      setUploadingFiles(prev => new Set(prev).add(fileId));
+      
+      // Add temporary doc to show upload in progress
+      setUploadedFiles(prev => [...prev, tempDoc]);
+
+      try {
+        // Upload file to CDN
+        const uploadResponse = await uploadFileToCDN(file, 'CMS');
+        
+        // Update document with CDN URL
+        const finalDoc: TenderDocument = {
+          ...tempDoc,
+          upload_status: 'validated',
+          validation_status: 'passed',
+          cdn_url: uploadResponse.cdn_url,
+        };
+
+        // Ingest file data into schema (filename and CDN URL)
+        if (uploadResponse.cdn_url) {
+          try {
+            await ingestFileToSchema(file.name, uploadResponse.cdn_url);
+            console.log(`✅ File ${file.name} ingested into schema successfully`);
+          } catch (schemaError) {
+            console.error(`⚠️ Failed to ingest ${file.name} into schema:`, schemaError);
+            // Don't fail the upload if schema ingestion fails, just log the error
+          }
+        }
+
+        // Remove from uploading set
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
+
+        // Update the file in the list
+        setUploadedFiles(prev => {
+          return prev.map(f => f.id === fileId ? finalDoc : f);
+        });
+
+        return finalDoc;
+      } catch (error) {
+        console.error(`Error uploading ${file.name}:`, error);
+        
+        // Update document with error status
+        const errorDoc: TenderDocument = {
+          ...tempDoc,
+          upload_status: 'error',
+          validation_status: 'failed',
+        };
+
+        // Remove from uploading set
+        setUploadingFiles(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(fileId);
+          return newSet;
+        });
+
+        // Update the file in the list
+        setUploadedFiles(prev => prev.map(f => f.id === fileId ? errorDoc : f));
+
+        return errorDoc;
+      }
+    });
+
+    // Wait for all uploads to complete
+    const uploadedDocs = await Promise.all(uploadPromises);
+    
+    // Only call callback with successfully uploaded files
+    const successfulUploads = uploadedDocs.filter(doc => doc.upload_status === 'validated');
+    if (successfulUploads.length > 0) {
+      onFilesUploaded(successfulUploads);
+    }
   };
 
   const removeFile = (id: string) => {
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  const getStatusIcon = (status: string) => {
-    if (status === 'validated' || status === 'passed') {
+  const getStatusIcon = (file: TenderDocument) => {
+    if (uploadingFiles.has(file.id)) {
+      return <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />;
+    }
+    if (file.upload_status === 'validated' || file.validation_status === 'passed') {
       return <CheckCircle className="w-4 h-4 text-emerald-600" />;
     }
-    if (status === 'error' || status === 'failed') {
+    if (file.upload_status === 'error' || file.validation_status === 'failed') {
       return <AlertCircle className="w-4 h-4 text-red-600" />;
     }
     return <AlertCircle className="w-4 h-4 text-yellow-600" />;
@@ -69,6 +149,12 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const getFileNameWithoutExtension = (filename: string) => {
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex === -1) return filename;
+    return filename.substring(0, lastDotIndex);
   };
 
   return (
@@ -89,7 +175,6 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
           type="file"
           id="file-upload"
           multiple
-          accept=".pdf,.xls,.xlsx,.zip"
           onChange={handleFileSelect}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -108,7 +193,7 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
               Drop files here or click to upload
             </p>
             <p className="text-xs text-gray-500 mt-1.5">
-              PDF, XLS, or ZIP files up to 50MB
+              All file types supported (PDF, DOC, DOCX, XLS, XLSX, ZIP, etc.)
             </p>
           </div>
         </div>
@@ -131,7 +216,7 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">
-                    {file.filename}
+                    {getFileNameWithoutExtension(file.filename)}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {formatFileSize(file.file_size)} • {file.file_type}
@@ -139,17 +224,48 @@ export function FileUpload({ tenderId, onFilesUploaded }: FileUploadProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {getStatusIcon(file.validation_status)}
-                  <button
-                    onClick={() => removeFile(file.id)}
-                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4 text-gray-400 hover:text-red-600" />
-                  </button>
+                  {getStatusIcon(file)}
+                  {file.cdn_url && (
+                    <a
+                      href={file.cdn_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                      title="View file"
+                    >
+                      View
+                    </a>
+                  )}
+                  {!uploadingFiles.has(file.id) && (
+                    <button
+                      onClick={() => removeFile(file.id)}
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="w-4 h-4 text-gray-400 hover:text-red-600" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Submit Button - Small, below uploaded files */}
+          {onSubmitToOverview && (
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => {
+                  setUploadedFiles([]);
+                  setUploadingFiles(new Set());
+                  // Navigate to overview page
+                  onSubmitToOverview();
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                Submit
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
