@@ -1,7 +1,7 @@
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import type { TenderDocument } from '../lib/supabase';
-import { uploadFileToCDN, ingestFileToSchema } from '../services/api';
+import { uploadFileToCDN, ingestFilesToSchema } from '../services/api';
 
 interface FileUploadProps {
   tenderId: string;
@@ -70,16 +70,8 @@ export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: Fi
           cdn_url: uploadResponse.cdn_url,
         };
 
-        // Ingest file data into schema (filename and CDN URL)
-        if (uploadResponse.cdn_url) {
-          try {
-            await ingestFileToSchema(file.name, uploadResponse.cdn_url);
-            console.log(`✅ File ${file.name} ingested into schema successfully`);
-          } catch (schemaError) {
-            console.error(`⚠️ Failed to ingest ${file.name} into schema:`, schemaError);
-            // Don't fail the upload if schema ingestion fails, just log the error
-          }
-        }
+        // Store file info for batch ingestion after all uploads complete
+        // (We'll ingest all files together at the end)
 
         // Remove from uploading set
         setUploadingFiles(prev => {
@@ -123,7 +115,26 @@ export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: Fi
     
     // Only call callback with successfully uploaded files
     const successfulUploads = uploadedDocs.filter(doc => doc.upload_status === 'validated');
+    
+    // Batch ingest all successfully uploaded files to schema
     if (successfulUploads.length > 0) {
+      try {
+        const filesToIngest = successfulUploads
+          .filter(doc => doc.cdn_url)
+          .map(doc => ({
+            filename: doc.filename,
+            cdnUrl: doc.cdn_url!,
+          }));
+        
+        if (filesToIngest.length > 0) {
+          await ingestFilesToSchema(filesToIngest);
+          console.log(`✅ Successfully ingested ${filesToIngest.length} file(s) to schema`);
+        }
+      } catch (schemaError) {
+        console.error(`⚠️ Failed to ingest files to schema:`, schemaError);
+        // Don't fail the upload if schema ingestion fails, just log the error
+      }
+      
       onFilesUploaded(successfulUploads);
     }
   };
