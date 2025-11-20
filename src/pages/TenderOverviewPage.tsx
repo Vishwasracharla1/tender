@@ -1,10 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Chatbot } from '../components/Chatbot';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
 import { interactWithAgent, fetchSchemaInstances, type SchemaInstanceListItem } from '../services/api';
 import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import '../styles/TenderEvaluationTable.css';
+
+// Function to aggressively remove Jotform agent elements
+const removeJotformAgent = () => {
+  // Remove main container
+  const jotformContainer = document.getElementById('JotformAgent-019aa102d4617a04838c7ef39132e1adea2b');
+  if (jotformContainer) {
+    jotformContainer.remove();
+  }
+  
+  // Remove any elements with Jotform-related IDs or classes
+  const selectors = [
+    '[id*="Jotform"]',
+    '[id*="jotform"]',
+    '[class*="jotform"]',
+    '[class*="agent-widget"]',
+    '[class*="jf-agent"]',
+  ];
+  
+  selectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      el.remove();
+    });
+  });
+  
+  // Remove any iframes that might be Jotform agent
+  document.querySelectorAll('iframe').forEach(iframe => {
+    const src = iframe.getAttribute('src') || '';
+    if (src.includes('noupe.com') || src.includes('jotform') || src.includes('agent')) {
+      iframe.remove();
+    }
+  });
+};
 
 interface TenderOverviewPageProps {
   onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
@@ -123,7 +157,154 @@ const defaultTechnicalCriteria = [
   { category: 'Similar Experience & Business Case Alignment', weight: 15 }
 ];
 
-const COLORS = ['#0ea5e9', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+const COLORS = ['#f97316', '#3b82f6', '#fb923c', '#60a5fa', '#fdba74']; // Orange-blue color scheme
+
+// Technical Pie Chart Component using ECharts
+const TechnicalPieChart = ({ 
+  data, 
+  activeCategories, 
+  setActiveCategories 
+}: { 
+  data: Array<{ category: string; weight: number }>; 
+  activeCategories: Set<string>; 
+  setActiveCategories: (set: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<echarts.EChartsType | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    if (!chartRef.current) {
+      chartRef.current = echarts.init(containerRef.current, undefined, {
+        renderer: "canvas",
+      });
+    }
+
+    if (!data || data.length === 0) {
+      chartRef.current?.clear();
+      return;
+    }
+
+    const palette = [
+      "#7c3aed", // purple
+      "#22c55e", // green
+      "#3b82f6", // blue
+      "#f59e0b", // amber
+      "#ef4444", // red
+      "#06b6d4", // cyan
+      "#8b5cf6", // violet
+      "#10b981", // emerald
+      "#ec4899", // pink
+      "#6366f1", // indigo
+    ];
+
+    // Filter out hidden categories
+    const filteredData = data.filter((item) => !activeCategories.has(item.category));
+
+    // Build all pie data (including hidden ones for legend)
+    const allPieData = data.map((item) => {
+      const originalIndex = data.findIndex((d) => d.category === item.category);
+      const isHidden = activeCategories.has(item.category);
+      return {
+        name: item.category,
+        value: isHidden ? 0 : Number(item.weight || 0),
+        itemStyle: { 
+          color: palette[originalIndex % palette.length],
+          opacity: isHidden ? 0 : 1
+        },
+      };
+    });
+
+    const option: echarts.EChartsOption = {
+      tooltip: {
+        trigger: "item",
+        formatter: (p: any) => {
+          if (p.value === 0) return '';
+          const total = filteredData.reduce((sum, item) => sum + (item.weight || 0), 0);
+          const percent = total > 0 ? ((p.value / total) * 100).toFixed(1) : 0;
+          return `${p.name}: ${p.value}% (${percent}%)`;
+        },
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        borderColor: '#e0f2fe',
+        borderWidth: 1,
+        borderRadius: 12,
+        textStyle: {
+          color: '#1e293b',
+          fontSize: 13
+        },
+        padding: [12, 16]
+      },
+      legend: {
+        type: "scroll",
+        top: 8,
+        orient: "horizontal",
+        left: 0,
+        right: 0,
+        data: data.map((item) => item.category),
+        selected: Object.fromEntries(
+          data.map((item) => [item.category, !activeCategories.has(item.category)])
+        ),
+      },
+      series: [
+        {
+          name: "Weight Distribution",
+          type: "pie",
+          radius: ["35%", "70%"],
+          center: ["50%", "55%"],
+          avoidLabelOverlap: true,
+          label: {
+            show: false,
+          },
+          labelLine: { 
+            show: false
+          },
+          data: allPieData,
+          animationDuration: 450,
+        } as echarts.SeriesOption,
+      ],
+    };
+
+    chartRef.current.setOption(option, true);
+
+    // Handle legend click - prevent default behavior and use our state
+    const legendSelectHandler = (params: any) => {
+      const selected = params.selected;
+      setActiveCategories((prev) => {
+        const newSet = new Set(prev);
+        data.forEach((item) => {
+          if (!selected[item.category]) {
+            newSet.add(item.category);
+          } else {
+            newSet.delete(item.category);
+          }
+        });
+        return newSet;
+      });
+    };
+
+    // Remove old listener and add new one
+    chartRef.current.off('legendselectchanged');
+    chartRef.current.on('legendselectchanged', legendSelectHandler);
+
+    const handleResize = () => chartRef.current?.resize();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [data, activeCategories, setActiveCategories]);
+
+  return (
+    <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl p-8 shadow-xl border border-sky-100">
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Weight Distribution</h3>
+        <p className="text-sm text-gray-600">Technical evaluation criteria breakdown</p>
+      </div>
+      <div ref={containerRef} className="w-full h-[500px] rounded-xl" />
+    </div>
+  );
+};
 
 // Helper function to parse agent response JSON from text field
 const parseAgentResponse = (response: any): AgentTenderOverview | null => {
@@ -702,34 +883,40 @@ const TenderEvaluationTableView = ({ agentTableData }: { agentTableData?: any })
               </tr>
             </thead>
             <tbody>
-              {data.map((row, rowIdx) => (
-                <tr key={rowIdx} className={row.scoringArea === 'Disqualification' ? 'disqualification-row' : ''}>
-                  {columns.map((col, colIdx) => {
-                    const cellValue = row[col.key as keyof TableRow];
-                    // Handle object values (like {value, unit}) and convert to string
-                    let displayValue: string;
-                    if (cellValue === null || cellValue === undefined) {
-                      displayValue = '';
-                    } else if (typeof cellValue === 'object') {
-                      // Handle object with value/unit structure
-                      const obj = cellValue as { value?: string | number; unit?: string };
-                      if ('value' in obj && 'unit' in obj) {
-                        displayValue = `${obj.value || ''}${obj.unit || ''}`.trim();
+              {data.map((row, rowIdx) => {
+                const isDisqualification = row.scoringArea && (
+                  row.scoringArea.toLowerCase().includes('disqualification') || 
+                  row.scoringArea === 'Disqualification'
+                );
+                return (
+                  <tr key={rowIdx} className={isDisqualification ? 'disqualification-row' : ''}>
+                    {columns.map((col, colIdx) => {
+                      const cellValue = row[col.key as keyof TableRow];
+                      // Handle object values (like {value, unit}) and convert to string
+                      let displayValue: string;
+                      if (cellValue === null || cellValue === undefined) {
+                        displayValue = '';
+                      } else if (typeof cellValue === 'object') {
+                        // Handle object with value/unit structure
+                        const obj = cellValue as { value?: string | number; unit?: string };
+                        if ('value' in obj && 'unit' in obj) {
+                          displayValue = `${obj.value || ''}${obj.unit || ''}`.trim();
+                        } else {
+                          displayValue = String(cellValue);
+                        }
                       } else {
                         displayValue = String(cellValue);
                       }
-                    } else {
-                      displayValue = String(cellValue);
-                    }
-                    
-                    return (
-                      <td key={colIdx} className={col.className || ''} style={{ color: '#1f2937' }}>
-                        {displayValue}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                      
+                      return (
+                        <td key={colIdx} className={col.className || ''} style={{ color: '#1f2937' }}>
+                          {displayValue}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -867,6 +1054,69 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [agentData, setAgentData] = useState<AgentTenderOverview | null>(null);
   const [tableAgentData, setTableAgentData] = useState<any>(null);
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
+
+  // Cache key for sessionStorage
+  const CACHE_KEY = 'tenderOverviewCache';
+  const CACHE_DURATION = 30000; // 30 seconds in milliseconds
+
+  // Load cached data on mount
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        const now = Date.now();
+        const cacheAge = now - cacheData.timestamp;
+        
+        if (cacheAge < CACHE_DURATION) {
+          // Restore cached data
+          if (cacheData.selectedDepartment) setSelectedDepartment(cacheData.selectedDepartment);
+          if (cacheData.selectedDocument) setSelectedDocument(cacheData.selectedDocument);
+          if (cacheData.isDepartmentSelected) setIsDepartmentSelected(cacheData.isDepartmentSelected);
+          if (cacheData.agentData) setAgentData(cacheData.agentData);
+          if (cacheData.tableAgentData) setTableAgentData(cacheData.tableAgentData);
+          console.log('✅ Restored cached data from sessionStorage');
+        } else {
+          // Cache expired, clear it
+          sessionStorage.removeItem(CACHE_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading cache:', error);
+    }
+  }, []);
+
+  // Save data to cache whenever it changes
+  useEffect(() => {
+    if (isDepartmentSelected && selectedDepartment) {
+      try {
+        const cacheData = {
+          timestamp: Date.now(),
+          selectedDepartment,
+          selectedDocument,
+          isDepartmentSelected,
+          agentData,
+          tableAgentData,
+        };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+      } catch (error) {
+        console.error('Error saving cache:', error);
+      }
+    }
+  }, [selectedDepartment, selectedDocument, isDepartmentSelected, agentData, tableAgentData]);
+
+  // Clear cache after 30 seconds
+  useEffect(() => {
+    if (isDepartmentSelected) {
+      const timeout = setTimeout(() => {
+        sessionStorage.removeItem(CACHE_KEY);
+        console.log('🗑️ Cache cleared after 30 seconds');
+      }, CACHE_DURATION);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isDepartmentSelected]);
 
   // Fetch schema instances on component mount
   useEffect(() => {
@@ -888,6 +1138,28 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     loadSchemaInstances();
   }, []);
 
+  // Aggressively remove Jotform agent on this page
+  useEffect(() => {
+    // Remove immediately
+    removeJotformAgent();
+    
+    // Keep checking and removing periodically
+    const interval = setInterval(() => {
+      removeJotformAgent();
+    }, 100);
+    
+    // Also observe DOM changes to remove any new Jotform elements
+    const observer = new MutationObserver(() => {
+      removeJotformAgent();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    return () => {
+      clearInterval(interval);
+      observer.disconnect();
+    };
+  }, []);
+
   const hasDocuments = schemaInstances.length > 0;
   const isSubmitDisabled = !selectedDepartment || (hasDocuments && !selectedDocument) || isSubmitting;
 
@@ -907,7 +1179,12 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           instance.id.toString() === selectedDocument || instance.id === selectedDocument
         );
         
-        if (selectedInstance?.cdnurl) {
+        // Extract CDN URLs - support both cdnUrls (array) and cdnurl (legacy)
+        if (selectedInstance?.cdnUrls && Array.isArray(selectedInstance.cdnUrls) && selectedInstance.cdnUrls.length > 0) {
+          // New format: cdnUrls is an array
+          fileUrls.push(...selectedInstance.cdnUrls);
+        } else if (selectedInstance?.cdnurl) {
+          // Legacy format: cdnurl is a single string
           fileUrls.push(selectedInstance.cdnurl);
         } else {
           throw new Error('CDN URL not found for selected document');
@@ -922,15 +1199,16 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         throw new Error('No CDN URL found for the selected document');
       }
 
-      // Call first agent API (Tender Overview Agent)
-      console.log('🤖 Calling first agent (Tender Overview)...');
-      const response1 = await interactWithAgent(selectedDepartment, fileUrls);
-      console.log('✅ First agent response received:', response1);
-      
-      // Call second agent API (Additional Agent)
-      console.log('🤖 Calling second agent (Additional Agent)...');
+      // Call both agents in parallel
+      console.log('🤖 Calling both agents in parallel...');
       const secondAgentId = 'f47e4077-61c3-40e3-8c62-0613da775370';
-      const response2 = await interactWithAgent(selectedDepartment, fileUrls, secondAgentId);
+      
+      const [response1, response2] = await Promise.all([
+        interactWithAgent(selectedDepartment, fileUrls),
+        interactWithAgent(selectedDepartment, fileUrls, secondAgentId)
+      ]);
+      
+      console.log('✅ First agent response received:', response1);
       console.log('✅ Second agent response received:', response2);
       
       // Parse and store first agent response data (main tender overview data)
@@ -970,14 +1248,14 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           onNavigate={onNavigate as (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void} 
         />
         
-        <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50 flex items-center justify-center" style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}>
+        <main className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 flex items-center justify-center" style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}>
           <div className="w-full max-w-2xl px-6 py-12">
             {/* Heading */}
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">
                 Tender Overview
               </h1>
-              <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-sky-500 mx-auto rounded-full"></div>
+              <div className="w-24 h-1 bg-gradient-to-r from-sky-400 to-blue-400 mx-auto rounded-full"></div>
             </div>
 
             {/* Department Selection Card */}
@@ -993,7 +1271,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         id="department-select"
                         value={selectedDepartment}
                         onChange={(e) => setSelectedDepartment(e.target.value)}
-                        className="w-full px-4 py-4 text-base border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 appearance-none cursor-pointer hover:border-blue-400 shadow-sm"
+                        className="w-full px-4 py-4 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 appearance-none cursor-pointer hover:border-sky-400 shadow-sm"
                         style={{
                           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
                           backgroundRepeat: 'no-repeat',
@@ -1023,7 +1301,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         value={selectedDocument}
                         onChange={(e) => setSelectedDocument(e.target.value)}
                         disabled={!hasDocuments || isLoadingDocuments}
-                        className={`w-full px-4 py-4 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white appearance-none ${hasDocuments && !isLoadingDocuments ? 'border-gray-300 text-gray-900 cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-blue-400 shadow-sm' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}
+                        className={`w-full px-4 py-4 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white appearance-none ${hasDocuments && !isLoadingDocuments ? 'border-sky-300 text-gray-900 cursor-pointer focus:ring-2 focus:ring-sky-400 focus:border-transparent hover:border-sky-400 shadow-sm' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}
                         style={{
                           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23787989' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
                           backgroundRepeat: 'no-repeat',
@@ -1067,12 +1345,12 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   <div className="mt-3 text-sm text-gray-600 text-center space-y-1">
                     {selectedDepartment && (
                       <p>
-                        Department: <span className="font-semibold text-blue-600">{selectedDepartment}</span>
+                        Department: <span className="font-semibold text-sky-600">{selectedDepartment}</span>
                       </p>
                     )}
                     {selectedDocument && (
                       <p>
-                        Document: <span className="font-semibold text-blue-600">
+                        Document: <span className="font-semibold text-sky-600">
                           {getFileNameWithoutExtension(schemaInstances.find(instance => 
                             instance.id.toString() === selectedDocument || instance.id === selectedDocument
                           )?.filename || 'Selected')}
@@ -1098,7 +1376,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   className={`
                     px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 transform
                     ${!isSubmitDisabled
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-600 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer'
+                      ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }
                   `}
@@ -1128,11 +1406,11 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         onNavigate={onNavigate as (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void} 
       />
       
-      <main className="min-h-screen bg-gray-50 p-4 md:p-8" style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}>
+      <main className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 p-4 md:p-8" style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}>
         <div className="mx-auto max-w-7xl">
           {/* Enhanced Header */}
           <div className="mb-8">
-            <div className="bg-gradient-to-r from-blue-600 to-sky-600 rounded-2xl shadow-xl p-8 mb-6 text-white">
+            <div className="bg-gradient-to-r from-blue-800 to-blue-900 rounded-2xl shadow-xl p-8 mb-6 text-white">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
@@ -1165,12 +1443,14 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                 <button
                   onClick={() => {
                     setIsDepartmentSelected(false);
-                  setSelectedDepartment('');
-                  setSelectedDocument('');
-                  setAgentData(null);
-                  setTableAgentData(null);
+                    setSelectedDepartment('');
+                    setSelectedDocument('');
+                    setAgentData(null);
+                    setTableAgentData(null);
+                    // Clear cache when changing department
+                    sessionStorage.removeItem(CACHE_KEY);
                   }}
-                  className="px-5 py-2.5 text-sm font-medium text-blue-600 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                  className="px-5 py-2.5 text-sm font-medium text-blue-800 bg-white rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                 >
                   Change Department
                 </button>
@@ -1199,7 +1479,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         flex items-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-all duration-200 relative
                         ${
                           activeTab === tab.id
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105'
+                            ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-lg transform scale-105'
                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }
                       `}
@@ -1218,8 +1498,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
             <div className="space-y-8 animate-in fade-in duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Enhanced Evaluation Weighting */}
-                <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+                <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                  <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                         <TrendingUp className="w-5 h-5" />
@@ -1228,7 +1508,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         {agentData?.tenderOverview?.overview?.evaluationWeighting?.title || 'Evaluation Weighting'}
                       </h2>
                     </div>
-                    <p className="text-blue-100 text-sm">
+                    <p className="text-sky-100 text-sm">
                       {agentData?.tenderOverview?.overview?.evaluationWeighting?.description || 'Overall criteria distribution'}
                     </p>
                   </div>
@@ -1266,8 +1546,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                 </div>
 
                 {/* Enhanced Key Requirements */}
-                <div className="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                  <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+                <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                  <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                         <CheckCircle2 className="w-5 h-5" />
@@ -1276,7 +1556,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         {agentData?.tenderOverview?.overview?.keyRequirements?.title || 'Key Requirements'}
                       </h2>
                     </div>
-                    <p className="text-indigo-100 text-sm">
+                    <p className="text-sky-100 text-sm">
                       {agentData?.tenderOverview?.overview?.keyRequirements?.description || 'Mandatory qualifications'}
                     </p>
                   </div>
@@ -1305,7 +1585,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                           className={`flex items-center justify-between p-4 rounded-xl bg-white/80 hover:bg-white transition-all duration-200 hover:shadow-md transform hover:scale-[1.02] ${index < array.length - 1 ? 'border-b border-gray-100' : ''}`}
                         >
                           <span className="text-sm font-semibold text-gray-800">{req.label}</span>
-                          <span className="px-4 py-2 text-base font-bold text-indigo-600 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg shadow-sm">
+                          <span className="px-4 py-2 text-base font-bold text-sky-600 bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-lg shadow-sm">
                             {displayValue}
                           </span>
                         </div>
@@ -1316,8 +1596,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
               </div>
 
               {/* Enhanced Evaluation Scoring Overview */}
-              <div className="bg-gradient-to-br from-white via-gray-50 to-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
+              <div className="bg-gradient-to-br from-white via-sky-50 to-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                       <Award className="w-5 h-5" />
@@ -1326,15 +1606,18 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       {agentData?.tenderOverview?.overview?.evaluationScoringSystem?.title || 'Evaluation Scoring System'}
                     </h2>
                   </div>
-                  <p className="text-purple-100 text-sm">
+                  <p className="text-sky-100 text-sm">
                     {agentData?.tenderOverview?.overview?.evaluationScoringSystem?.description || 'Comprehensive scoring methodology'}
                   </p>
                 </div>
                 <div className="p-8 bg-white/50">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:shadow-lg transition-all duration-200">
+                    <div 
+                      onClick={() => setActiveTab('financial')}
+                      className="space-y-4 p-6 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl border border-sky-100 hover:shadow-lg hover:border-sky-300 cursor-pointer transition-all duration-200 transform hover:scale-[1.02]"
+                    >
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="p-1.5 bg-blue-600 rounded-lg">
+                        <div className="p-1.5 bg-sky-400 rounded-lg">
                           <TrendingUp className="w-4 h-4 text-white" />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">
@@ -1356,16 +1639,19 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                           
                           return (
                             <li key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
-                              <span className="text-blue-600 font-bold mt-0.5 text-lg">•</span>
+                              <span className="text-sky-600 font-bold mt-0.5 text-lg">•</span>
                               <span className="text-gray-700 leading-relaxed">{ruleText}</span>
                             </li>
                           );
                         })}
                       </ul>
                     </div>
-                    <div className="space-y-4 p-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 hover:shadow-lg transition-all duration-200">
+                    <div 
+                      onClick={() => setActiveTab('technical')}
+                      className="space-y-4 p-6 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl border border-sky-100 hover:shadow-lg hover:border-sky-300 cursor-pointer transition-all duration-200 transform hover:scale-[1.02]"
+                    >
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="p-1.5 bg-indigo-600 rounded-lg">
+                        <div className="p-1.5 bg-sky-400 rounded-lg">
                           <Shield className="w-4 h-4 text-white" />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900">
@@ -1387,7 +1673,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                           
                           return (
                             <li key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-white/50 transition-colors">
-                              <span className="text-indigo-600 font-bold mt-0.5 text-lg">•</span>
+                              <span className="text-sky-600 font-bold mt-0.5 text-lg">•</span>
                               <span className="text-gray-700 leading-relaxed">{ruleText}</span>
                             </li>
                           );
@@ -1410,8 +1696,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           {/* Enhanced Financial Tab */}
           {activeTab === 'financial' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                       <Award className="w-5 h-5" />
@@ -1420,8 +1706,11 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       <h2 className="text-2xl font-bold">
                         {agentData?.tenderOverview?.financial?.title || 'Financial Evaluation Criteria'}
                       </h2>
-                      <p className="text-blue-100 text-sm mt-1">
-                        Weight: {agentData?.tenderOverview?.financial?.weight || 50}{agentData?.tenderOverview?.financial?.weightUnit || '%'}
+                      <p className="text-sky-100 text-sm mt-1">
+                        Weight: {agentData?.tenderOverview?.financial?.weight || 50}{(() => {
+                          const unit = agentData?.tenderOverview?.financial?.weightUnit || '%';
+                          return unit.toLowerCase() === 'percentage' || unit.toLowerCase() === 'percent' ? '%' : unit;
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -1429,7 +1718,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                 <div className="p-8 space-y-8 bg-white/50">
                   <div>
                     <h3 className="text-xl font-bold mb-6 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <TrendingUp className="w-4 h-4 text-white" />
                       </div>
                       Evaluation Factors
@@ -1442,9 +1731,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       ]).map((factor, index, array) => (
                         <div 
                           key={factor.order || index} 
-                          className={`flex items-start gap-4 p-5 rounded-xl bg-gradient-to-r from-white to-blue-50/50 border border-blue-100 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01] ${index < array.length - 1 ? 'border-b-2 border-blue-200' : ''}`}
+                          className={`flex items-start gap-4 p-5 rounded-xl bg-gradient-to-r from-white to-sky-50/50 border border-sky-100 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01] ${index < array.length - 1 ? 'border-b-2 border-sky-200' : ''}`}
                         >
-                          <span className="px-3 py-1.5 text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg shadow-md flex-shrink-0">
+                          <span className="px-3 py-1.5 text-sm font-bold bg-gradient-to-r from-sky-400 to-blue-400 text-white rounded-lg shadow-md flex-shrink-0">
                             {factor.order || index + 1}
                           </span>
                           <div className="flex-1">
@@ -1483,8 +1772,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           {/* Enhanced Technical Tab */}
           {activeTab === 'technical' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                       <Shield className="w-5 h-5" />
@@ -1493,61 +1782,29 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       <h2 className="text-2xl font-bold">
                         {agentData?.tenderOverview?.technical?.title || 'Technical Evaluation Criteria'}
                       </h2>
-                      <p className="text-indigo-100 text-sm mt-1">
-                        Weight: {agentData?.tenderOverview?.technical?.weight || 50}{agentData?.tenderOverview?.technical?.weightUnit || '%'} - {agentData?.tenderOverview?.technical?.scoringScale || 'Scored 1-10 per category'}
+                      <p className="text-sky-100 text-sm mt-1">
+                        Weight: {agentData?.tenderOverview?.technical?.weight || 50}{(() => {
+                          const unit = agentData?.tenderOverview?.technical?.weightUnit || '%';
+                          return unit.toLowerCase() === 'percentage' || unit.toLowerCase() === 'percent' ? '%' : unit;
+                        })()} - {agentData?.tenderOverview?.technical?.scoringScale || 'Scored 1-10 per category'}
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="p-8 space-y-8 bg-white/50">
-                  <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
-                    <ResponsiveContainer width="100%" height={420}>
-                      <BarChart data={agentData?.tenderOverview?.technical?.technicalCriteria || defaultTechnicalCriteria}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis 
-                          dataKey="category" 
-                          angle={-45} 
-                          textAnchor="end" 
-                          height={120} 
-                          interval={0}
-                          tick={{ fontSize: 11, fill: '#4b5563' }}
-                        />
-                        <YAxis 
-                          label={{ value: 'Weight (%)', angle: -90, position: 'insideLeft', style: { fill: '#4b5563', fontSize: 12 } }} 
-                          tick={{ fill: '#4b5563' }}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                        <Bar dataKey="weight" fill="url(#colorGradient)" radius={[8, 8, 0, 0]}>
-                          <defs>
-                            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6366f1" stopOpacity={1}/>
-                              <stop offset="100%" stopColor="#8b5cf6" stopOpacity={1}/>
-                            </linearGradient>
-                          </defs>
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
                   <div className="space-y-4">
                     {(agentData?.tenderOverview?.technical?.technicalCriteria || defaultTechnicalCriteria).map((criterion, index) => (
-                      <div key={index} className="flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-white to-indigo-50/50 border border-indigo-100 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01]">
-                        <span className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-md flex-shrink-0">
+                      <div key={index} className="flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-white to-sky-50/50 border border-sky-100 hover:shadow-lg transition-all duration-200 transform hover:scale-[1.01]">
+                        <span className="px-4 py-2 text-sm font-bold bg-gradient-to-r from-sky-400 to-blue-400 text-white rounded-lg shadow-md flex-shrink-0">
                           {criterion.weight}%
                         </span>
                         <p className="font-semibold text-gray-900 text-base">{criterion.category}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                  <div className="p-6 bg-gradient-to-br from-sky-50 to-blue-50 rounded-xl border border-sky-100">
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                       What PSD Looks For
@@ -1561,7 +1818,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         'Structured training approach (Basic → Advanced → TTT → Video-based)'
                       ]).map((req, index) => (
                         <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-white/80 hover:bg-white transition-colors">
-                          <span className="text-blue-600 font-bold mt-0.5 text-lg">✓</span>
+                          <span className="text-sky-600 font-bold mt-0.5 text-lg">✓</span>
                           <span className="text-sm text-gray-700 leading-relaxed">{req}</span>
                         </li>
                       ))}
@@ -1595,8 +1852,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           {/* Enhanced Compliance Tab */}
           {activeTab === 'compliance' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                       <CheckCircle2 className="w-5 h-5" />
@@ -1605,7 +1862,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       <h2 className="text-2xl font-bold">
                         {agentData?.tenderOverview?.compliance?.title || 'Mandatory Compliance Requirements'}
                       </h2>
-                      <p className="text-green-100 text-sm mt-1">
+                      <p className="text-sky-100 text-sm mt-1">
                         {agentData?.tenderOverview?.compliance?.description || 'Pass/Fail - Non-Negotiable'}
                       </p>
                     </div>
@@ -1614,7 +1871,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                 <div className="p-8 space-y-8 bg-white/50">
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-green-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                       General Submission Compliance
@@ -1627,8 +1884,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         'All Appendices 1–9 fully completed',
                         'Proposal validity: 3 months'
                       ]).map((item, index) => (
-                        <div key={index} className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:shadow-md transition-all duration-200">
-                          <span className="text-green-600 font-bold text-lg">✓</span>
+                        <div key={index} className="flex items-center gap-3 p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl border border-sky-200 hover:shadow-md transition-all duration-200">
+                          <span className="text-sky-600 font-bold text-lg">✓</span>
                           <span className="text-sm font-medium text-gray-800">{item}</span>
                         </div>
                       ))}
@@ -1636,7 +1893,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-indigo-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <Shield className="w-4 h-4 text-white" />
                       </div>
                       Technical Compliance Requirements
@@ -1647,21 +1904,15 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         'Deliverables Requirements', 'Other RFP Requirements', 'Sub-Consultants', 
                         'Project Team', 'CVs', 'Project Experience'
                       ]).map((req, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-200">
-                          <span className="px-3 py-1.5 text-xs font-bold border-2 border-indigo-300 rounded-lg bg-indigo-50 text-indigo-700 flex-shrink-0">YES/NO</span>
+                        <div key={idx} className="flex items-center gap-3 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-sky-300 hover:shadow-md transition-all duration-200">
                           <span className="text-sm font-medium text-gray-800">{req}</span>
                         </div>
                       ))}
                     </div>
-                    {agentData?.tenderOverview?.compliance?.technicalComplianceNote && (
-                      <p className="text-sm text-gray-600 mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg italic">
-                        {agentData.tenderOverview.compliance.technicalComplianceNote}
-                      </p>
-                    )}
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <Award className="w-4 h-4 text-white" />
                       </div>
                       Team Compliance Requirements
@@ -1672,7 +1923,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         { title: 'Integration Consultant', description: '8+ years experience + 3 successful implementations' },
                         { title: 'Key Team Member History', description: 'Evidence that key team members previously worked together on Unifier, P6, OBIEE' }
                       ]).map((req, index) => (
-                        <div key={index} className="p-5 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:shadow-lg transition-all duration-200">
+                        <div key={index} className="p-5 border-2 border-sky-200 rounded-xl bg-gradient-to-r from-sky-50 to-blue-50 hover:shadow-lg transition-all duration-200">
                           <p className="font-bold text-base text-gray-900 mb-1">{req.title}</p>
                           <p className="text-sm text-gray-700 leading-relaxed">{req.description}</p>
                         </div>
@@ -1681,12 +1932,12 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-red-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-500 rounded-lg">
                         <AlertCircle className="w-4 h-4 text-white" />
                       </div>
                       Oracle Licensing Compliance
                     </h3>
-                    <div className="p-5 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-300 rounded-xl shadow-md">
+                    <div className="p-5 bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-300 rounded-xl shadow-md">
                       <p className="text-base font-bold text-gray-900">
                         {agentData?.tenderOverview?.compliance?.oracleLicensingCompliance?.note || 'All costs must match PSD-provided Oracle pricing (non-negotiable)'}
                       </p>
@@ -1700,8 +1951,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           {/* Enhanced Support Tab */}
           {activeTab === 'support' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-              <div className="bg-gradient-to-br from-white to-cyan-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-6 text-white">
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                       <Clock className="w-5 h-5" />
@@ -1710,7 +1961,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       <h2 className="text-2xl font-bold">
                         {agentData?.tenderOverview?.support?.title || 'Support & Service Level Agreements'}
                       </h2>
-                      <p className="text-cyan-100 text-sm mt-1">
+                      <p className="text-sky-100 text-sm mt-1">
                         {agentData?.tenderOverview?.support?.description || 'Operational requirements and SLAs'}
                       </p>
                     </div>
@@ -1719,31 +1970,67 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                 <div className="p-8 space-y-8 bg-white/50">
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-cyan-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                       Support Availability
                     </h3>
                     <div className="space-y-4">
-                      <div className="p-6 bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl shadow-md">
+                      <div className="p-6 bg-gradient-to-br from-sky-50 to-blue-50 border-2 border-sky-200 rounded-xl shadow-md">
                         <p className="font-semibold text-sm mb-3 text-gray-700 uppercase tracking-wide">System Availability Requirement</p>
-                        <p className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                        <p className="text-4xl font-bold bg-gradient-to-r from-sky-400 to-blue-400 bg-clip-text text-transparent">
                           {(() => {
                             const availability = agentData?.tenderOverview?.support?.supportAvailability;
                             if (!availability) return '99.5%';
                             
-                            // Handle object with {value, unit} structure
-                            if (typeof availability === 'object' && 'value' in availability) {
-                              const value = (availability as { value?: number | string; unit?: string }).value || 99.5;
-                              const unit = (availability as { value?: number | string; unit?: string }).unit || '%';
-                              return `${value}${unit}`;
+                            // Normalize unit function
+                            const normalizeUnit = (unit: string | undefined) => {
+                              if (!unit) return '%';
+                              if (typeof unit !== 'string') return '%';
+                              const normalized = unit.toLowerCase().trim();
+                              if (normalized === 'percentage' || normalized === 'percent') return '%';
+                              return unit;
+                            };
+                            
+                            // Handle string directly
+                            if (typeof availability === 'string') {
+                              return (availability as string).includes('%') ? availability : `${availability}%`;
                             }
                             
-                            // Handle object with {systemAvailabilityRequirement, unit} structure
-                            if ('systemAvailabilityRequirement' in availability) {
-                              const value = availability.systemAvailabilityRequirement || 99.5;
-                              const unit = availability.unit || '%';
-                              return `${value}${unit}`;
+                            // Handle number directly
+                            if (typeof availability === 'number') {
+                              return `${availability}%`;
+                            }
+                            
+                            // Handle object - check if it's the systemAvailabilityRequirement object itself
+                            if (typeof availability === 'object' && availability !== null) {
+                              // First check if availability itself has a value property (it's the object with {value, unit})
+                              if ('value' in availability) {
+                                const value = (availability as { value?: number | string; unit?: string }).value;
+                                if (value !== null && value !== undefined) {
+                                  const unit = normalizeUnit((availability as { value?: number | string; unit?: string }).unit);
+                                  return `${value}${unit}`;
+                                }
+                              }
+                              
+                              // Check if it has systemAvailabilityRequirement property that contains the object
+                              if ('systemAvailabilityRequirement' in availability) {
+                                const sysAvail = (availability as { systemAvailabilityRequirement?: any; unit?: string }).systemAvailabilityRequirement;
+                                if (sysAvail !== null && sysAvail !== undefined) {
+                                  // If systemAvailabilityRequirement is an object with value property
+                                  if (typeof sysAvail === 'object' && 'value' in sysAvail) {
+                                    const value = (sysAvail as { value?: number | string; unit?: string }).value;
+                                    if (value !== null && value !== undefined) {
+                                      const unit = normalizeUnit((sysAvail as { value?: number | string; unit?: string }).unit || (availability as { unit?: string }).unit);
+                                      return `${value}${unit}`;
+                                    }
+                                  } else if (typeof sysAvail === 'number' || typeof sysAvail === 'string') {
+                                    // If systemAvailabilityRequirement is directly a number or string
+                                    const unit = normalizeUnit((availability as { unit?: string }).unit);
+                                    return `${sysAvail}${unit}`;
+                                  }
+                                }
+                              }
                             }
                             
                             return '99.5%';
@@ -1758,8 +2045,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                             { type: 'Extended', schedule: '2:00 PM – 10:00 PM (Sun–Thu), Saturdays 9:00 AM – 2:00 PM' },
                             { type: 'Maintenance window', schedule: '4:00 PM – 6:00 PM (First Sunday monthly)' }
                           ]).map((hour, index) => (
-                            <div key={index} className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-cyan-300 hover:shadow-md transition-all duration-200">
-                              <span className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg flex-shrink-0">
+                            <div key={index} className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-sky-300 hover:shadow-md transition-all duration-200">
+                              <span className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-sky-400 to-blue-400 text-white rounded-lg flex-shrink-0">
                                 {hour.type}
                               </span>
                               <span className="text-sm font-medium text-gray-800">{hour.schedule}</span>
@@ -1771,7 +2058,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-red-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-500 rounded-lg">
                         <AlertCircle className="w-4 h-4 text-white" />
                       </div>
                       Incident Response Times
@@ -1783,14 +2070,14 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       ]).map((incident, index) => (
                         <div key={index} className={`flex items-center justify-between p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-lg ${
                           incident.priority === 'High' 
-                            ? 'bg-gradient-to-r from-red-50 to-pink-50 border-red-300' 
-                            : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300'
+                            ? 'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-300' 
+                            : 'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200'
                         }`}>
                           <span className="font-bold text-base text-gray-900">{incident.priority} Priority</span>
                           <span className={`px-4 py-2 text-sm font-bold rounded-lg shadow-sm ${
                             incident.priority === 'High' 
-                              ? 'bg-red-600 text-white' 
-                              : 'bg-yellow-500 text-white'
+                              ? 'bg-sky-500 text-white' 
+                              : 'bg-sky-400 text-white'
                           }`}>
                             {incident.responseTime}
                           </span>
@@ -1800,7 +2087,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-indigo-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <Shield className="w-4 h-4 text-white" />
                       </div>
                       Severity Levels
@@ -1812,8 +2099,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         { level: 3, description: 'Minor Service Impact' },
                         { level: 4, description: 'Information / Clarification' }
                       ]).map((severity, index) => (
-                        <div key={index} className="flex items-start gap-4 p-5 bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all duration-200">
-                          <span className="px-4 py-2 text-base font-bold bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg shadow-md flex-shrink-0">
+                        <div key={index} className="flex items-start gap-4 p-5 bg-white rounded-xl border-2 border-gray-200 hover:border-sky-300 hover:shadow-md transition-all duration-200">
+                          <span className="px-4 py-2 text-base font-bold bg-gradient-to-r from-sky-400 to-blue-400 text-white rounded-lg shadow-md flex-shrink-0">
                             {severity.level}
                           </span>
                           <p className="font-semibold text-base text-gray-900 pt-1">{severity.description}</p>
@@ -1823,7 +2110,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold mb-5 text-gray-900 flex items-center gap-2">
-                      <div className="p-1.5 bg-green-600 rounded-lg">
+                      <div className="p-1.5 bg-sky-400 rounded-lg">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                       </div>
                       Backup & Disaster Recovery
@@ -1835,9 +2122,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         { type: 'Monthly backup retention', period: '12 months' },
                         { type: 'Annual backup retention', period: '7 years' }
                       ]).map((backup, index) => (
-                        <div key={index} className="flex items-center justify-between p-5 bg-gradient-to-r from-white to-green-50/50 rounded-xl border-2 border-green-200 hover:shadow-md transition-all duration-200">
+                        <div key={index} className="flex items-center justify-between p-5 bg-gradient-to-r from-white to-sky-50/50 rounded-xl border-2 border-sky-200 hover:shadow-md transition-all duration-200">
                           <span className="font-bold text-base text-gray-900">{backup.type}</span>
-                          <span className="px-4 py-2 text-sm font-semibold bg-green-100 text-green-800 rounded-lg border border-green-300">
+                          <span className="px-4 py-2 text-sm font-semibold bg-sky-100 text-sky-800 rounded-lg border border-sky-300">
                             {backup.period}
                           </span>
                         </div>
@@ -1845,9 +2132,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                     </div>
                   </div>
                   {agentData?.tenderOverview?.support?.reliabilityRequirement && (
-                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl shadow-md">
+                    <div className="p-6 bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-300 rounded-xl shadow-md">
                       <p className="text-base font-bold text-gray-900">
-                        <span className="text-blue-600">Reliability Requirement:</span> {agentData.tenderOverview.support.reliabilityRequirement}
+                        <span className="text-sky-600">Reliability Requirement:</span> {agentData.tenderOverview.support.reliabilityRequirement}
                       </p>
                     </div>
                   )}
@@ -1857,6 +2144,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           )}
         </div>
       </main>
+      
+      {/* Chatbot Component - Only on Tender Overview Page */}
+      <Chatbot department={selectedDepartment} document={selectedDocument} />
     </div>
   );
 }

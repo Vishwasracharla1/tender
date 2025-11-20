@@ -472,11 +472,80 @@ export const interactWithAgent = async (
   }
 };
 
+// Chatbot Agent Interaction API
+export interface ChatbotAgentRequest {
+  agentId: string;
+  query: string;
+  sessionId: string;
+  caller: string; // Required along with sessionId (API requires either referenceId OR both caller and sessionId)
+  fileUrl?: string[]; // Optional file URLs
+}
+
+export const interactWithChatbotAgent = async (
+  query: string,
+  fileUrls: string[] = [],
+  sessionId: string = '',
+  agentId: string = 'ec6def5e-b900-4afa-828a-33c2313ccbce'
+): Promise<AgentInteractionResponse> => {
+  const token = getAgentAuthToken();
+  
+  // Generate caller ID if not provided (can be user ID, email, or any identifier)
+  const caller = 'chatbot-user'; // You can customize this or get from user context
+  
+  // Ensure sessionId is provided (generate if empty)
+  const finalSessionId = sessionId || crypto.randomUUID();
+  
+  const requestData: ChatbotAgentRequest = {
+    agentId: agentId,
+    query: query,
+    sessionId: finalSessionId,
+    caller: caller,
+    ...(fileUrls.length > 0 && { fileUrl: fileUrls }),
+  };
+
+  console.log('💬 Calling Chatbot Agent API:', {
+    url: `${AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    query: query,
+    fileCount: fileUrls.length,
+    sessionId: sessionId,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+        },
+      }
+    );
+
+    console.log('✅ Chatbot Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Chatbot Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Chatbot Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 // Schema Instance API - Ingest uploaded file data
 export interface SchemaInstanceData {
   id?: string | number | null;
   filename: string;
-  cdnurl: string;
+  cdnUrls?: string | string[];
 }
 
 export interface SchemaInstanceRequest {
@@ -493,29 +562,32 @@ export interface SchemaInstanceResponse {
 const SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
 const SCHEMA_ID = '691d9ee2e7db832feb59b79f';
 
+// Ingest single file to schema
 export const ingestFileToSchema = async (
   filename: string,
   cdnUrl: string
 ): Promise<SchemaInstanceResponse> => {
+  return ingestFilesToSchema([{ filename, cdnUrl }]);
+};
+
+// Ingest multiple files to schema
+export const ingestFilesToSchema = async (
+  files: Array<{ filename: string; cdnUrl: string }>
+): Promise<SchemaInstanceResponse> => {
   const token = getAuthToken();
   
-  // Generate random UUID for id
-  const randomId = crypto.randomUUID();
-  
   const requestData: SchemaInstanceRequest = {
-    data: [
-      {
-        id: randomId,
-        filename: filename,
-        cdnurl: cdnUrl,
-      },
-    ],
+    data: files.map((file) => ({
+      id: crypto.randomUUID(),
+      filename: file.filename,
+      cdnUrls: [file.cdnUrl], // Array of CDN URLs (single file = array with one URL)
+    })),
   };
 
-  console.log('📤 Ingesting file to schema:', {
+  console.log('📤 Ingesting files to schema:', {
     url: `${SCHEMA_API_BASE_URL}/schemas/${SCHEMA_ID}/instances`,
-    filename: filename,
-    cdnUrl: cdnUrl,
+    fileCount: files.length,
+    files: files.map(f => ({ filename: f.filename, cdnUrl: f.cdnUrl })),
   });
 
   try {
@@ -550,7 +622,8 @@ export const ingestFileToSchema = async (
 export interface SchemaInstanceListItem {
   id: string | number;
   filename: string;
-  cdnurl: string;
+  cdnurl?: string; // Legacy field (singular)
+  cdnUrls?: string[]; // New field (array)
   [key: string]: any;
 }
 
