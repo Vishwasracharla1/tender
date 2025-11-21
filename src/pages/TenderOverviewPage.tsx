@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
 import { interactWithAgent, fetchSchemaInstances, type SchemaInstanceListItem } from '../services/api';
-import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers } from 'lucide-react';
 import '../styles/TenderEvaluationTable.css';
 
 // Function to aggressively remove Jotform agent elements
@@ -348,6 +348,215 @@ const parseTableAgentResponse = (response: any): any | null => {
     return parsed;
   } catch (error) {
     console.error('Error parsing table agent response:', error);
+    return null;
+  }
+};
+
+const parseRecommendationsAgentResponse = (response: any): any | null => {
+  try {
+    if (!response || !response.text) {
+      return null;
+    }
+
+    let jsonText = response.text;
+    
+    // Remove markdown code block markers if present
+    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const parsed = JSON.parse(jsonText);
+    return parsed;
+  } catch (error) {
+    console.error('Error parsing recommendations agent response:', error);
+    return null;
+  }
+};
+
+// Helper function to parse document classification agent response
+const parseDocumentClassificationAgentResponse = (response: any): any | null => {
+  try {
+    if (!response || !response.text) {
+      return null;
+    }
+
+    let jsonText = response.text;
+    
+    // Remove markdown code block markers if present
+    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    const parsed = JSON.parse(jsonText);
+    
+    // Map the agent response to the expected documentClassificationData structure
+    if (parsed && typeof parsed === 'object') {
+      const mappedData: any = {};
+      
+      // Process each document type (RFP, SOW, BOQ, BOM, BOS)
+      ['RFP', 'SOW', 'BOQ', 'BOM', 'BOS'].forEach((docType) => {
+        const docData = parsed[docType];
+        if (!docData) {
+          mappedData[docType] = {
+            present: 'no',
+            raw_text: 'not_found',
+            structured_fields: {}
+          };
+          return;
+        }
+        
+        const isPresent = docData.present === 'yes';
+        
+        if (!isPresent) {
+          mappedData[docType] = {
+            present: 'no',
+            raw_text: 'not_found',
+            structured_fields: {}
+          };
+          return;
+        }
+        
+        // Map RFP structure
+        if (docType === 'RFP') {
+          const structuredFields: any = {};
+          // Map all possible RFP fields from agent response
+          if (docData.project_introduction) structuredFields.project_introduction = docData.project_introduction;
+          if (docData.introduction) structuredFields.introduction = docData.introduction;
+          if (docData.definitions) structuredFields.definitions = docData.definitions;
+          if (docData.instructions_to_bidders) structuredFields.instructions_to_bidders = docData.instructions_to_bidders;
+          if (docData.administrative_requirements) structuredFields.administrative_requirements = docData.administrative_requirements;
+          if (docData.eligibility_PQC_requirements) structuredFields.eligibility_PQC_requirements = docData.eligibility_PQC_requirements;
+          if (docData.technical_evaluation_criteria) structuredFields.technical_evaluation_criteria = docData.technical_evaluation_criteria;
+          if (docData.financial_evaluation_criteria) structuredFields.financial_evaluation_criteria = docData.financial_evaluation_criteria;
+          if (docData.proposal_submission_instructions) structuredFields.proposal_submission_instructions = docData.proposal_submission_instructions;
+          if (docData.commercial_terms_and_conditions) structuredFields.commercial_terms_and_conditions = docData.commercial_terms_and_conditions;
+          if (docData.general_terms_conditions) structuredFields.general_terms_conditions = docData.general_terms_conditions;
+          if (docData.functional_requirements_matrix) structuredFields.functional_requirements_matrix = docData.functional_requirements_matrix;
+          if (docData.technical_requirements_matrix) structuredFields.technical_requirements_matrix = docData.technical_requirements_matrix;
+          if (docData.fee_schedule_summary) structuredFields.fee_schedule_summary = docData.fee_schedule_summary;
+          if (docData.boq_summary_reference) structuredFields.boq_summary_reference = docData.boq_summary_reference;
+          // Handle appendices_list (new format) or appendices (old format)
+          if (docData.appendices_list && Array.isArray(docData.appendices_list) && docData.appendices_list.length > 0) {
+            structuredFields.appendices = docData.appendices_list;
+          } else if (docData.appendices && Array.isArray(docData.appendices) && docData.appendices.length > 0) {
+            structuredFields.appendices = docData.appendices;
+          }
+          // Legacy fields for backward compatibility
+          if (docData.PQC) structuredFields.PQC = docData.PQC;
+          if (docData.evaluation_criteria) structuredFields.evaluation_criteria = docData.evaluation_criteria;
+          if (docData.submission_requirements) structuredFields.submission_requirements = docData.submission_requirements;
+          if (docData.technical_proposal) structuredFields.technical_proposal = docData.technical_proposal;
+          if (docData.financial_proposal) structuredFields.financial_proposal = docData.financial_proposal;
+          
+          mappedData[docType] = {
+            present: 'yes',
+            raw_text: docData.project_introduction || docData.introduction || '',
+            structured_fields: structuredFields
+          };
+        }
+        
+        // Map SOW structure
+        if (docType === 'SOW') {
+          const structuredFields: any = {};
+          // Map all possible SOW fields from agent response
+          if (docData.high_level_scope) structuredFields.high_level_scope = docData.high_level_scope;
+          if (docData.detailed_scope) structuredFields.detailed_scope = docData.detailed_scope;
+          if (docData.summary) structuredFields.summary = docData.summary; // Legacy support
+          if (docData.modules_or_functional_areas && Array.isArray(docData.modules_or_functional_areas) && docData.modules_or_functional_areas.length > 0) {
+            structuredFields.modules_or_functional_areas = docData.modules_or_functional_areas;
+          }
+          if (docData.modules && Array.isArray(docData.modules) && docData.modules.length > 0) {
+            structuredFields.modules = docData.modules; // Legacy support
+          }
+          if (docData.departments_covered && Array.isArray(docData.departments_covered) && docData.departments_covered.length > 0) {
+            structuredFields.departments_covered = docData.departments_covered;
+          }
+          if (docData.departments && Array.isArray(docData.departments) && docData.departments.length > 0) {
+            structuredFields.departments = docData.departments; // Legacy support
+          }
+          if (docData.in_scope_tasks && Array.isArray(docData.in_scope_tasks) && docData.in_scope_tasks.length > 0) {
+            structuredFields.in_scope_tasks = docData.in_scope_tasks;
+          }
+          if (docData.in_scope && Array.isArray(docData.in_scope) && docData.in_scope.length > 0) {
+            structuredFields.in_scope = docData.in_scope; // Legacy support
+          }
+          if (docData.out_of_scope_tasks && Array.isArray(docData.out_of_scope_tasks) && docData.out_of_scope_tasks.length > 0) {
+            structuredFields.out_of_scope_tasks = docData.out_of_scope_tasks;
+          }
+          if (docData.out_of_scope && Array.isArray(docData.out_of_scope) && docData.out_of_scope.length > 0) {
+            structuredFields.out_of_scope = docData.out_of_scope; // Legacy support
+          }
+          if (docData.deliverables && Array.isArray(docData.deliverables) && docData.deliverables.length > 0) {
+            structuredFields.deliverables = docData.deliverables;
+          }
+          if (docData.training_plan) structuredFields.training_plan = docData.training_plan;
+          if (docData.support_services) structuredFields.support_services = docData.support_services;
+          if (docData.integration_requirements && Array.isArray(docData.integration_requirements) && docData.integration_requirements.length > 0) {
+            structuredFields.integration_requirements = docData.integration_requirements;
+          }
+          if (docData.integrations && Array.isArray(docData.integrations) && docData.integrations.length > 0) {
+            structuredFields.integrations = docData.integrations; // Legacy support
+          }
+          if (docData.implementation_approach) structuredFields.implementation_approach = docData.implementation_approach;
+          if (docData.system_capabilities) structuredFields.system_capabilities = docData.system_capabilities;
+          if (docData.functional_requirements) structuredFields.functional_requirements = docData.functional_requirements;
+          if (docData.technical_requirements) structuredFields.technical_requirements = docData.technical_requirements;
+          if (docData.compliance_tables_reference) structuredFields.compliance_tables_reference = docData.compliance_tables_reference;
+          
+          mappedData[docType] = {
+            present: 'yes',
+            raw_text: docData.high_level_scope || docData.summary || '',
+            structured_fields: structuredFields
+          };
+        }
+        
+        // Map BOQ structure
+        if (docType === 'BOQ') {
+          if (isPresent) {
+            const structuredFields: any = {};
+            if (docData.items && Array.isArray(docData.items) && docData.items.length > 0) {
+              structuredFields.items = docData.items;
+            }
+            if (docData.categories_identified && Array.isArray(docData.categories_identified) && docData.categories_identified.length > 0) {
+              structuredFields.categories_identified = docData.categories_identified;
+            }
+            if (docData.boq_total) structuredFields.boq_total = docData.boq_total;
+            
+            mappedData[docType] = {
+              present: 'yes',
+              raw_text: docData.boq_total || '',
+              structured_fields: structuredFields
+            };
+          } else {
+            mappedData[docType] = {
+              present: 'no',
+              raw_text: 'not_found',
+              structured_fields: {}
+            };
+          }
+        }
+        
+        // Map BOM, BOS (currently not supported in agent response structure)
+        if (['BOM', 'BOS'].includes(docType)) {
+          // If present is yes but no structured data, still mark as present but with empty fields
+          if (isPresent) {
+            mappedData[docType] = {
+              present: 'yes',
+              raw_text: '',
+              structured_fields: {}
+            };
+          } else {
+            mappedData[docType] = {
+              present: 'no',
+              raw_text: 'not_found',
+              structured_fields: {}
+            };
+          }
+        }
+      });
+      
+      return mappedData;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error parsing document classification agent response:', error);
     return null;
   }
 };
@@ -1054,11 +1263,15 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [agentData, setAgentData] = useState<AgentTenderOverview | null>(null);
   const [tableAgentData, setTableAgentData] = useState<any>(null);
+  const [recommendationsData, setRecommendationsData] = useState<any>(null);
+  const [documentClassificationData, setDocumentClassificationData] = useState<any>(null);
   const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
 
   // Cache key for sessionStorage
   const CACHE_KEY = 'tenderOverviewCache';
   const CACHE_DURATION = 30000; // 30 seconds in milliseconds
+
+  // Document classification data will be loaded from agent API only
 
   // Load cached data on mount
   useEffect(() => {
@@ -1076,6 +1289,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           if (cacheData.isDepartmentSelected) setIsDepartmentSelected(cacheData.isDepartmentSelected);
           if (cacheData.agentData) setAgentData(cacheData.agentData);
           if (cacheData.tableAgentData) setTableAgentData(cacheData.tableAgentData);
+          if (cacheData.recommendationsData) setRecommendationsData(cacheData.recommendationsData);
+          if (cacheData.documentClassificationData) setDocumentClassificationData(cacheData.documentClassificationData);
           console.log('✅ Restored cached data from sessionStorage');
         } else {
           // Cache expired, clear it
@@ -1098,13 +1313,15 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
           isDepartmentSelected,
           agentData,
           tableAgentData,
+          recommendationsData,
+          documentClassificationData,
         };
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
       } catch (error) {
         console.error('Error saving cache:', error);
       }
     }
-  }, [selectedDepartment, selectedDocument, isDepartmentSelected, agentData, tableAgentData]);
+  }, [selectedDepartment, selectedDocument, isDepartmentSelected, agentData, tableAgentData, recommendationsData]);
 
   // Clear cache after 30 seconds
   useEffect(() => {
@@ -1199,17 +1416,23 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         throw new Error('No CDN URL found for the selected document');
       }
 
-      // Call both agents in parallel
-      console.log('🤖 Calling both agents in parallel...');
+      // Call all four agents in parallel
+      console.log('🤖 Calling all four agents in parallel...');
       const secondAgentId = 'f47e4077-61c3-40e3-8c62-0613da775370';
+      const recommendationsAgentId = '8f0afca7-8388-4ce3-900c-ad6cbb552217';
+      const documentClassificationAgentId = 'ab028399-ce39-47ac-a003-68a4c2d30407';
       
-      const [response1, response2] = await Promise.all([
+      const [response1, response2, response3, response4] = await Promise.all([
         interactWithAgent(selectedDepartment, fileUrls),
-        interactWithAgent(selectedDepartment, fileUrls, secondAgentId)
+        interactWithAgent(selectedDepartment, fileUrls, secondAgentId),
+        interactWithAgent(selectedDepartment, fileUrls, recommendationsAgentId),
+        interactWithAgent(selectedDepartment, fileUrls, documentClassificationAgentId)
       ]);
       
       console.log('✅ First agent response received:', response1);
       console.log('✅ Second agent response received:', response2);
+      console.log('✅ Third agent (recommendations) response received:', response3);
+      console.log('✅ Fourth agent (document classification) response received:', response4);
       
       // Parse and store first agent response data (main tender overview data)
       const parsedData = parseAgentResponse(response1);
@@ -1227,6 +1450,25 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         console.log('✅ Parsed second agent table data:', parsedTableData);
       } else {
         console.warn('⚠️ Could not parse second agent response for table');
+      }
+      
+      // Parse and store third agent response for recommendations data
+      const parsedRecommendationsData = parseRecommendationsAgentResponse(response3);
+      if (parsedRecommendationsData) {
+        setRecommendationsData(parsedRecommendationsData);
+        console.log('✅ Parsed recommendations agent data:', parsedRecommendationsData);
+      } else {
+        console.warn('⚠️ Could not parse recommendations agent response');
+      }
+      
+      // Parse and store fourth agent response for document classification data
+      const parsedDocumentClassificationData = parseDocumentClassificationAgentResponse(response4);
+      if (parsedDocumentClassificationData) {
+        setDocumentClassificationData(parsedDocumentClassificationData);
+        console.log('✅ Parsed document classification agent data:', parsedDocumentClassificationData);
+      } else {
+        console.warn('⚠️ Could not parse document classification agent response');
+        setDocumentClassificationData(null);
       }
       
       // Show the main content after successful submission
@@ -1468,7 +1710,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   { id: 'financial', label: 'Financial', icon: Award },
                   { id: 'technical', label: 'Technical', icon: Shield },
                   { id: 'compliance', label: 'Compliance', icon: CheckCircle2 },
-                  { id: 'support', label: 'Support', icon: Clock }
+                  { id: 'support', label: 'Support', icon: Clock },
+                  { id: 'analysis', label: 'Recommendations', icon: Lightbulb },
+                  { id: 'document-classification', label: 'Document Classification', icon: FolderTree }
                 ].map((tab) => {
                   const Icon = tab.icon;
                   return (
@@ -2142,11 +2386,607 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
               </div>
             </div>
           )}
+
+          {/* Recommendations Tab */}
+          {activeTab === 'analysis' && (
+            <RecommendationsTab recommendationsData={recommendationsData} />
+          )}
+
+          {/* Document Classification Tab */}
+          {activeTab === 'document-classification' && (
+            <DocumentClassificationTab documentClassificationData={documentClassificationData} />
+          )}
         </div>
       </main>
       
       {/* Chatbot Component - Only on Tender Overview Page */}
       <Chatbot department={selectedDepartment} document={selectedDocument} />
+    </div>
+  );
+}
+
+// Recommendations Tab Component
+interface RecommendationsTabProps {
+  recommendationsData: any | null;
+}
+
+function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'completeness' | 'gaps' | 'risks' | 'recommendations'>('completeness');
+  
+  // Use API data from agent
+  const analysisData = recommendationsData;
+
+  // Show loading/empty state if no data available
+  if (!analysisData) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 text-center">
+          <p className="text-gray-500">No recommendations data available. Please submit the form to load data from the agent.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Sub-tabs Navigation */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-100 p-2">
+        <nav className="flex gap-2 overflow-x-auto">
+          {[
+            { id: 'completeness', label: 'Completeness Assessment', icon: Target },
+            { id: 'gaps', label: 'Gap Categories', icon: FileSearch },
+            { id: 'risks', label: 'Critical Risks', icon: AlertTriangle },
+            { id: 'recommendations', label: 'Recommendations', icon: Lightbulb }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`
+                  flex items-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-all duration-200 relative
+                  ${
+                    activeSubTab === tab.id
+                      ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-lg transform scale-105'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <Icon className={`w-4 h-4 ${activeSubTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Completeness Assessment Sub-tab */}
+      {activeSubTab === 'completeness' && analysisData?.completenessAssessment && (
+        <div className="animate-in fade-in duration-500">
+              {/* Completeness Assessment Section */}
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Completeness Assessment</h2>
+                  </div>
+                </div>
+                <div className="p-6 bg-white/50">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-lg font-semibold text-gray-900">Overall Score</p>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-32 h-32">
+                          <svg className="transform -rotate-90 w-32 h-32">
+                            <circle
+                              cx="64"
+                              cy="64"
+                              r="56"
+                              stroke="currentColor"
+                              strokeWidth="12"
+                              fill="none"
+                              className="text-gray-200"
+                            />
+                            <circle
+                              cx="64"
+                              cy="64"
+                              r="56"
+                              stroke="currentColor"
+                              strokeWidth="12"
+                              fill="none"
+                              strokeDasharray={`${((analysisData.completenessAssessment?.overallScore || 0) / 100) * 351.86} 351.86`}
+                              className="text-sky-500"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-2xl font-bold text-gray-900">{analysisData.completenessAssessment?.overallScore || 0}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-base text-gray-700 leading-relaxed">{analysisData.completenessAssessment?.summary || 'No summary available'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {analysisData.completenessAssessment?.missingSections && analysisData.completenessAssessment.missingSections.length > 0 && (
+                      <div className="p-5 bg-red-50 border-2 border-red-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-red-600" />
+                          Missing Sections
+                        </h3>
+                        <ul className="space-y-2">
+                          {analysisData.completenessAssessment.missingSections.map((item: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-red-800">
+                              <span className="text-red-600 mt-1">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {analysisData.completenessAssessment?.weakSections && analysisData.completenessAssessment.weakSections.length > 0 && (
+                      <div className="p-5 bg-orange-50 border-2 border-orange-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-orange-900 mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-orange-600" />
+                          Weak Sections
+                        </h3>
+                        <ul className="space-y-2">
+                          {analysisData.completenessAssessment.weakSections.map((item: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-orange-800">
+                              <span className="text-orange-600 mt-1">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {analysisData.completenessAssessment?.unclearSections && analysisData.completenessAssessment.unclearSections.length > 0 && (
+                      <div className="p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-yellow-900 mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-yellow-600" />
+                          Unclear Sections
+                        </h3>
+                        <ul className="space-y-2">
+                          {analysisData.completenessAssessment.unclearSections.map((item: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-yellow-800">
+                              <span className="text-yellow-600 mt-1">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {analysisData.completenessAssessment?.outdatedContent && analysisData.completenessAssessment.outdatedContent.length > 0 && (
+                      <div className="p-5 bg-blue-50 border-2 border-blue-200 rounded-xl">
+                        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-blue-600" />
+                          Outdated Content
+                        </h3>
+                        <ul className="space-y-2">
+                          {analysisData.completenessAssessment.outdatedContent.map((item: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-blue-800">
+                              <span className="text-blue-600 mt-1">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+        </div>
+      )}
+
+      {/* Gap Categories Sub-tab */}
+      {activeSubTab === 'gaps' && analysisData?.gapCategories && (
+        <div className="animate-in fade-in duration-500">
+              {/* Gap Categories Section */}
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <FileSearch className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Gap Categories</h2>
+                  </div>
+                </div>
+                <div className="p-6 bg-white/50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(analysisData.gapCategories || {}).map(([category, items]) => {
+                      const itemsArray = items as string[];
+                      return itemsArray.length > 0 && (
+                        <div key={category} className="p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-sky-300 hover:shadow-md transition-all duration-200">
+                          <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <div className="p-1.5 bg-sky-500 rounded-lg">
+                              <FileText className="w-4 h-4 text-white" />
+                            </div>
+                            {category}
+                          </h3>
+                          <ul className="space-y-2">
+                            {itemsArray.map((item: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                                <span className="text-sky-600 mt-1">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+        </div>
+      )}
+
+      {/* Critical Risks Sub-tab */}
+      {activeSubTab === 'risks' && analysisData?.criticalRisks && (
+        <div className="animate-in fade-in duration-500">
+              {/* Critical Risks Section */}
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Critical Risks</h2>
+                  </div>
+                </div>
+                <div className="p-6 bg-white/50">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {analysisData.criticalRisks?.highImpactRisks && analysisData.criticalRisks.highImpactRisks.length > 0 && (
+                      <div className="p-5 bg-red-50 border-2 border-red-300 rounded-xl">
+                        <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
+                          <AlertTriangle className="w-5 h-5 text-red-600" />
+                          High Impact
+                        </h3>
+                        <ul className="space-y-3">
+                          {analysisData.criticalRisks.highImpactRisks.map((risk: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-red-800">
+                              <span className="text-red-600 mt-1">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {analysisData.criticalRisks?.mediumImpactRisks && analysisData.criticalRisks.mediumImpactRisks.length > 0 && (
+                      <div className="p-5 bg-orange-50 border-2 border-orange-300 rounded-xl">
+                        <h3 className="text-lg font-bold text-orange-900 mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-orange-600" />
+                          Medium Impact
+                        </h3>
+                        <ul className="space-y-3">
+                          {analysisData.criticalRisks.mediumImpactRisks.map((risk: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-orange-800">
+                              <span className="text-orange-600 mt-1">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {analysisData.criticalRisks?.lowImpactRisks && analysisData.criticalRisks.lowImpactRisks.length > 0 && (
+                      <div className="p-5 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
+                        <h3 className="text-lg font-bold text-yellow-900 mb-3 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-yellow-600" />
+                          Low Impact
+                        </h3>
+                        <ul className="space-y-3">
+                          {analysisData.criticalRisks.lowImpactRisks.map((risk: string, index: number) => (
+                            <li key={index} className="flex items-start gap-2 text-sm text-yellow-800">
+                              <span className="text-yellow-600 mt-1">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+        </div>
+      )}
+
+      {/* Recommendations Sub-tab */}
+      {activeSubTab === 'recommendations' && analysisData?.recommendations && (
+        <div className="animate-in fade-in duration-500">
+              {/* Recommendations Section */}
+              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                      <Lightbulb className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-2xl font-bold">Recommendations</h2>
+                  </div>
+                </div>
+                <div className="p-6 bg-white/50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {Object.entries(analysisData.recommendations || {}).map(([category, items]) => {
+                      const itemsArray = items as string[];
+                      return itemsArray.length > 0 && (
+                        <div key={category} className="p-5 bg-gradient-to-r from-white to-sky-50/50 border-2 border-sky-200 rounded-xl hover:shadow-md transition-all duration-200">
+                          <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <div className="p-1.5 bg-sky-400 rounded-lg">
+                              <CheckCircle2 className="w-4 h-4 text-white" />
+                            </div>
+                            {(() => {
+                              // Handle common acronyms and special cases
+                              const acronyms: Record<string, string> = {
+                                'KPIs': 'KPIs',
+                                'SLAs': 'SLAs',
+                                'missingSLAs': 'Missing SLAs',
+                                'O&M/DR/cyber/AI/automationModules': 'O&M/DR/Cyber/AI/Automation Modules',
+                                'Support/SLA': 'Support/SLA'
+                              };
+                              
+                              if (acronyms[category]) {
+                                return acronyms[category];
+                              }
+                              
+                              // Handle camelCase - add space before capital letters, but preserve acronyms
+                              return category
+                                .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between lowercase and uppercase
+                                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Add space between acronym and word
+                                .replace(/\b(SL)\s+(As)\b/gi, 'SLAs') // Fix "SL As" to "SLAs"
+                                .replace(/\b(K)\s+(P)\s+(Is?)\b/gi, 'KPIs') // Fix "K P Is" to "KPIs"
+                                .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+                            })()}
+                          </h3>
+                          <ul className="space-y-2">
+                            {itemsArray.map((item: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                                <span className="text-sky-600 mt-1">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Document Classification Tab Component
+interface DocumentClassificationTabProps {
+  documentClassificationData: any | null;
+}
+
+function DocumentClassificationTab({ documentClassificationData }: DocumentClassificationTabProps) {
+  const [activeSubTab, setActiveSubTab] = useState<'RFP' | 'SOW' | 'BOQ' | 'BOM' | 'BOS'>('RFP');
+  
+  // Use API data (from agent) or fallback to JSON data
+  const classificationData = documentClassificationData;
+
+  // Show loading/empty state if no data available
+  if (!classificationData) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 text-center">
+          <p className="text-gray-500">No document classification data available. Please load data to view classification.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const documentTypes = [
+    { id: 'RFP', label: 'RFP', icon: FileText, color: 'from-blue-500 to-cyan-500' },
+    { id: 'SOW', label: 'SOW', icon: BookOpen, color: 'from-purple-500 to-pink-500' },
+    { id: 'BOQ', label: 'BOQ', icon: List, color: 'from-green-500 to-emerald-500' },
+    { id: 'BOM', label: 'BOM', icon: Layers, color: 'from-orange-500 to-amber-500' },
+    { id: 'BOS', label: 'BOS', icon: FileText, color: 'from-indigo-500 to-blue-500' },
+  ];
+
+  const currentDoc = classificationData[activeSubTab];
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Sub-tabs Navigation */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3">
+        <nav className="flex gap-3 overflow-x-auto scrollbar-hide">
+          {documentTypes.map((tab) => {
+            const Icon = tab.icon;
+            const docData = classificationData[tab.id];
+            const hasData = docData && docData.present === 'yes' && docData.structured_fields && Object.keys(docData.structured_fields).length > 0;
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  if (hasData) {
+                    setActiveSubTab(tab.id as any);
+                  }
+                }}
+                disabled={!hasData}
+                title={!hasData ? `${tab.label} document is not present in the uploaded file.` : ''}
+                className={`
+                  flex items-center gap-2.5 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 relative
+                  ${isActive
+                    ? `bg-gradient-to-r ${tab.color} text-white shadow-xl transform scale-105`
+                    : hasData
+                      ? 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 cursor-pointer border border-gray-200'
+                      : 'text-gray-400 opacity-60 cursor-default border border-gray-100'
+                  }
+                `}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : hasData ? 'text-gray-600' : 'text-gray-400'}`} />
+                <span>{tab.label}</span>
+                {!hasData && <span className="ml-1 text-xs font-normal opacity-75">(N/A)</span>}
+                {isActive && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Document Content */}
+      {currentDoc && currentDoc.present === 'yes' && currentDoc.structured_fields && Object.keys(currentDoc.structured_fields).length > 0 ? (
+        <div className="animate-in fade-in duration-500">
+          {/* Structured Fields Section */}
+          {currentDoc.structured_fields ? (
+            <div className="bg-gradient-to-br from-white via-sky-50/20 to-blue-50/20 rounded-2xl border border-gray-200/80 shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden backdrop-blur-sm">
+                  <div className="bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-500 p-7 text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-black/5"></div>
+                    <div className="relative flex items-center gap-4">
+                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-lg">
+                        <FolderTree className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold mb-1">{activeSubTab} - Structured Fields</h2>
+                        <p className="text-sm text-white/90 font-medium">Document Classification & Analysis</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-7 bg-white/60 backdrop-blur-sm space-y-5">
+                    {Object.entries(currentDoc.structured_fields).map(([key, value], idx) => {
+                      // Skip empty arrays and objects
+                      if (Array.isArray(value) && value.length === 0) return null;
+                      if (typeof value === 'object' && value !== null && Object.keys(value).length === 0) return null;
+                      if (value === '' || value === null) return null;
+
+                      const isAppendices = key === 'appendices';
+                      const fieldLabel = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+                      return (
+                        <div key={key} className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/60 p-6 hover:shadow-lg hover:border-sky-300 transition-all duration-300 group">
+                          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-sky-500 to-blue-500 rounded-lg shadow-md group-hover:scale-110 transition-transform">
+                              <FileText className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                              {fieldLabel}
+                            </span>
+                          </h3>
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {Array.isArray(value) ? (
+                              isAppendices ? (
+                                <div className="space-y-3">
+                                  {value.map((item: any, index: number) => {
+                                    const itemText = typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item);
+                                    // Extract "APPENDIX X" or "Appendix X" pattern if it exists
+                                    const appendixMatch = itemText.match(/^(APPENDIX|Appendix)\s+(\d+)[\s\-–—]/i);
+                                    if (appendixMatch) {
+                                      // If already has APPENDIX prefix, use it
+                                      const appendixPrefix = appendixMatch[0].trim();
+                                      const restOfText = itemText.substring(appendixMatch[0].length).trim();
+                                      return (
+                                        <div key={index} className="border-l-4 border-sky-400 pl-4 py-2 bg-gradient-to-r from-sky-50/50 to-transparent rounded-r-lg">
+                                          <div className="text-base">
+                                            <span className="font-bold text-sky-700">{appendixPrefix}</span>
+                                            {restOfText && <span className="text-gray-700 font-normal"> - {restOfText}</span>}
+                                          </div>
+                                        </div>
+                                      );
+                                    } else {
+                                      // If no APPENDIX prefix, add it (APPENDIX 1, APPENDIX 2, etc.)
+                                      const appendixNumber = index + 1;
+                                      const appendixPrefix = `APPENDIX ${appendixNumber}`;
+                                      return (
+                                        <div key={index} className="border-l-4 border-sky-400 pl-4 py-2 bg-gradient-to-r from-sky-50/50 to-transparent rounded-r-lg">
+                                          <div className="text-base">
+                                            <span className="font-bold text-sky-700">{appendixPrefix}</span>
+                                            {itemText && <span className="text-gray-700 font-normal"> - {itemText}</span>}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                  })}
+                                </div>
+                              ) : (
+                                <ul className="space-y-2.5">
+                                  {value.map((item: any, index: number) => (
+                                    <li key={index} className="flex items-start gap-3 group/item">
+                                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-500 flex-shrink-0 group-hover/item:scale-150 transition-transform"></span>
+                                      <span className="text-gray-700 leading-relaxed">{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )
+                            ) : typeof value === 'object' && value !== null ? (
+                              <div className="space-y-4">
+                                {Object.entries(value).map(([subKey, subValue]) => (
+                                  <div key={subKey} className="pl-5 border-l-3 border-gradient-to-b from-sky-300 to-blue-300 bg-gradient-to-r from-sky-50/30 to-transparent rounded-r-lg py-2">
+                                    <div className="font-semibold text-gray-800 mb-2 text-base">
+                                      {subKey.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
+                                    </div>
+                                    <div className="text-gray-600">
+                                      {Array.isArray(subValue) ? (
+                                        <ul className="space-y-2">
+                                          {(subValue as any[]).map((item: any, idx: number) => (
+                                            <li key={idx} className="flex items-start gap-2.5">
+                                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-sky-500 flex-shrink-0"></span>
+                                              <span>{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : typeof subValue === 'object' && subValue !== null ? (
+                                        <pre className="whitespace-pre-wrap text-xs bg-gray-50/80 p-3 rounded-lg border border-gray-200 font-mono">
+                                          {JSON.stringify(subValue, null, 2)}
+                                        </pre>
+                                      ) : (
+                                        <span className="leading-relaxed">{String(subValue)}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap leading-relaxed text-gray-700 pl-1">{String(value)}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 text-center">
+                  <p className="text-gray-500">No {activeSubTab} structured fields available.</p>
+                </div>
+              )}
+        </div>
+      ) : currentDoc && currentDoc.present === 'no' ? (
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 p-12 text-center animate-in fade-in duration-500">
+          <div className="flex flex-col items-center gap-5">
+            <div className="p-5 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-inner">
+              <FileText className="w-10 h-10 text-gray-400" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xl font-bold text-gray-800">{activeSubTab} document is not present in the uploaded file.</p>
+              <p className="text-sm text-gray-500">This document type was not found in the analyzed file.</p>
+            </div>
+          </div>
+        </div>
+      ) : !currentDoc ? (
+        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-200 p-12 text-center animate-in fade-in duration-500">
+          <div className="flex flex-col items-center gap-5">
+            <div className="p-5 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl shadow-inner">
+              <FileText className="w-10 h-10 text-gray-400" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-xl font-bold text-gray-800">{activeSubTab} document is not present in the uploaded file.</p>
+              <p className="text-sm text-gray-500">This document type was not found in the analyzed file.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

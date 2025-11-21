@@ -1,0 +1,130 @@
+{
+  "RFP": {
+    "raw_text": "Tender No xx Year 2020\n\nTechnical Development \nof \nCorporate Performance Management System\n\nIMPLEMENTATION AND SUPPORT SERVICES\n\n2020\n\nCONTENTS\n\nINTRODUCTION\n\nThe Corporate Development department (PSD) of Ras Al Khaimah is responsible to carry out the necessary work in order to determine medium and long term strategy and policies of the administration in the framework of emirate level development strategy and policies, annual program and government programs.  Also, responsible to o develop performance and quality indicators across all the departments and agencies within PSD.\n\nCoordinating the preparation of the strategic plan and performance program of the administration and    consolidating the results. Provides the stakeholders and the department heads with the necessary information on agreed master versus the actuals with overall risks / challenges. Also prepares the KPI rating for each agency and department level with scorecard mechanism and automatic integration with backend systems.\n\nIn line with RAK PSD objectives on improved corporate performance and governance, PSD is now seeking to implement an international best fit Corporate performance and enterprise risk management solution to support the programs of PSD in the most effective and efficient manner.\n\nThe PSD is seeking Proposals (Request for Proposal) from qualified and reputed Professional Consultants for the supply, operation and maintenance services of Oracle's PM tools to accomplish the following:\n\nUtilize a single, easy-to-use and web-based system to access and manage strategy automation, Governance Risk & Compliance, Project Portfolio Management, and Enterprise Risk Management\n\nAutomate and apply common simplified, streamlined core business processes \nProvide real-time visibility across PSD, department / agency level\n\nProvide the core elements for strategy management\n\nDEFINITIONS\n\nThe following definitions of terms are used in this Request for Proposal document.\n\nINSTRUCTIONS TO BIDDERS\n\nTechnical and commercial proposals are solicited from an open bid. The administrative and technical requirements as detailed throughout this RFP will apply. Specific proposal format and content requirements are detailed in this section of the RFP.\n\nThe RFP outlines the minimum information and services being sought. Bidders are required to propose their own methodology and activities to execute what is described in this document.\n\nBidder competency and proven experience in undertaking similar projects shall be the leading factor in the evaluation, and the best offer price should be submitted.\n\nThe PSD requests that the bidders' proposals comply with the requirements set out below.\n\nEXAMINATION OF DOCUMENTS\n\nThe bidders should carefully examine this RFP. Upon submitting their proposals, it will be assumed that bidders have become familiarized with the nature of the scope of services.\n\nThe bidders shall address all items as specified in this RFP. Failure to adhere to this format may lead to being disqualified as a bidder from further consideration as a participant. Such a decision by the PSD shall be final. Submission of a proposal shall further constitute evidence that the bidder is clear with respect to conditions which would affect the proper execution, and completion of the scope of works.",
+    "structured_fields": {
+      "introduction": "The Corporate Development department (PSD) of Ras Al Khaimah is responsible to carry out the necessary work in order to determine medium and long term strategy and policies of the administration in the framework of emirate level development strategy and policies, annual program and government programs.  Also, responsible to o develop performance and quality indicators across all the departments and agencies within PSD.",
+      "definitions": "The following definitions of terms are used in this Request for Proposal document.",
+      "instructions_to_bidders": "Technical and commercial proposals are solicited from an open bid. The administrative and technical requirements as detailed throughout this RFP will apply. Specific proposal format and content requirements are detailed in this section of the RFP.",
+      "eligibility_PQC_requirements": "Bidders shall submit evidence that they have relevant past experience...",
+      "technical_evaluation_criteria": "The Technical Evaluation will comprise...",
+      "financial_evaluation_criteria": "The Financial ranking involves...",
+      "combined_evaluation_method": "The Financial and Technical Evaluation will be compared...",
+      "proposal_submission_requirements": "The bidders are required to submit their completed technical and financial proposals separately...",
+      "technical_proposal_requirements": "The technical proposal shall contain the following information...",
+      "financial_proposal_requirements": "The financial proposal shall contain the following information using the forms provided...",
+      "appendices_summary": [
+        "Appendix 1 - ACKNOWLEDGEMENT OF RECEIPT AND ACCEPTANCE TO RESPOND TO THE PORPOSAL",
+        "Appendix 2 - QUESTIONS SUBMISSION FORMAT",
+        "Appendix 3 - SCOPE OF WORK COMPLIANCE",
+        "Appendix 4 – SUB-CONSULTANTS",
+        "Appendix 5 – PROJECT TEAM",
+        "Appendix 6 – PROJECT EXPERIENCE",
+        "Appendix 7 – CURRICULUM VITAE",
+        "Appendix 8 - BIDDER DECLARATION",
+        "Appendix 9 – FEE SCHEDULE"
+      ],
+      "other_critical_sections": [
+        "The PSD reserves the right to reject any and all proposals..."
+      ]
+    }
+  },
+  "SOW": {
+    "raw_text": "SCOPE OF WORK SUMMARY\n\nThis section provides a detailed description of the work scope for the Corporate Performance & Strategy Management System...",
+    "structured_fields": {
+      "scope_summary": "This section provides a detailed description of the work scope for the Corporate Performance & Strategy Management System...",
+      "system_modules": [
+        "Strategy Performance Management",
+        "Project Portfolio Management",
+        "Enterprise Governance, Risk & Compliance (GRC)",
+        "Enterprise Risk Management",
+        "KPI & Balanced Scorecard Dashboards",
+        "Integrated Ticketing System for Proactive Issue Resolution"
+      ],
+      "departments_covered": [
+        "Waste Management",
+        "Landscape and Irrigation",
+        "Water Management",
+        "Roads and Construction",
+        "Tolls",
+        "Parking Management",
+        "Citizen-Centric Services",
+        "Procurement",
+        "HR",
+        "Administration",
+        "Legal",
+        "Maintenance",
+        "City Violation/Enforcement"
+      ],
+      "in_scope_items": [
+        "Sizing the hardware and connectivity requirements...",
+        "Installing and implementing the CPMS...",
+        "Integration with ESRI, SAP, Infor...",
+        "Providing the required implementation partner team...",
+        "Providing training courses...",
+        "Providing post-implementation on-site coaching.",
+        "Providing technical and functional support services."
+      ],
+      "out_of_scope_items": [
+        "Setting up and/or managing portfolio, program or project management offices.",
+        "Developing policies, processes or procedures...",
+        "Deep integration with other major systems...",
+        "Source code alterations...",
+        "IT infrastructure, security... provided by PSD IT."
+      ],
+      "deliverables": [
+        "Training of the PSD Transformation Team...",
+        "100% of the PSD users should receive basic training.",
+        "30% of the PSD users should receive advanced training.",
+        "System Admin training and handover...",
+        "25% of the Supervising Consultant and Contractor users should receive training."
+      ],
+      "technical_specifications": "The system capabilities shall be able to display all functionalities...",
+      "functional_specifications": "The proposed system must demonstrate robust integration...",
+      "integration_requirements": [
+        "API Integration with ESRI, DMS, CTS, Ticketing System"
+      ],
+      "implementation_approach": "The bidders are requested to declare compliance with Appendix 10.3...",
+      "training_requirements": "The CSD implementation Partner shall provide detailed custom training material...",
+      "support_requirements": "The CSD implementer shall be responsible for different types of support...",
+      "constraints_and_assumptions": []
+    }
+  },
+  "BOQ": {
+    "raw_text": "not_found",
+    "structured_fields": {
+      "items": [],
+      "totals": {
+        "grand_total": "",
+        "category_totals": {
+          "license": "",
+          "workshop": "",
+          "training": "",
+          "implementation": "",
+          "support": "",
+          "other": ""
+        }
+      }
+    }
+  },
+  "BOM": {
+    "raw_text": "not_found",
+    "structured_fields": {
+      "materials": [],
+      "totals": {
+        "total_material_items": "",
+        "summary_cost": ""
+      }
+    }
+  },
+  "BOS": {
+    "raw_text": "not_found",
+    "structured_fields": {
+      "services": [],
+      "totals": {
+        "total_service_items": "",
+        "summary_cost": ""
+      }
+    }
+  }
+}
+

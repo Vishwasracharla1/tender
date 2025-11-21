@@ -118,6 +118,386 @@ export interface CriticalAlertsData {
   avg_resolution_time: number | null;
 }
 
+export interface HeatmapDataItem {
+  departmentId: string | number;
+  departmentName: string;
+  tenderId: string;
+  tenderTitle: string;
+  phase: string;
+  integrityScore: number | null;
+}
+
+export interface EvaluationDurationTrendItem {
+  month: string;
+  actualDuration: number | null;
+  targetDuration: number;
+  fasterVsTarget: number | null;
+}
+
+export interface ComplianceLeaderboardItem {
+  departmentId: string | number;
+  departmentName: string;
+  tendersFormatted: string; // e.g., "27/28"
+  onTimePercent: number;
+  policyPercent: number;
+  riskPercent: number;
+  deptScore: number;
+}
+
+export interface VendorAnalyticsData {
+  activeVendors: number;
+  totalBids: number;
+  tendersParticipated: number;
+  avgBidsPerTender: number;
+  top3Vendors: string; // Comma-separated string
+  categories: {
+    [key: string]: number;
+  };
+}
+
+export interface AvgBidValueData {
+  avgBidValue: number | null;
+  totalBidValue: number | null;
+  highestBidVendor: string | null;
+  highestBidAmount: number | null;
+  lowestBidVendor: string | null;
+  lowestBidAmount: number | null;
+  bidRangeSpreadPercent: number | null;
+  budgetAlignmentPercent: number | null;
+  competitiveTenders: number | null;
+}
+
+export interface TopPerformerData {
+  vendorName: string | null;
+  reliabilityScore: number | null;
+  totalBids: number | null;
+  avgBidValue: number | null;
+  totalBidValue: number | null;
+  avgRank: number | null;
+  bidErrors: number | null;
+}
+
+/**
+ * Get integrity score heatmap data
+ * This is the query for the "Integrity Score Heatmap" component
+ */
+export const getIntegrityHeatmapData = async (): Promise<HeatmapDataItem[]> => {
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `SELECT JSON_ARRAYAGG(JSON_OBJECT('departmentId',d.id,'departmentName',d.name,'tenderId',t.id,'tenderTitle',t.title,'phase',t.status,'integrityScore',(SELECT ROUND(AVG(es.score)) FROM t_691ac74719be331b9bebe037_t es WHERE es.tenderId=t.id))) AS heatmap FROM t_691ac3bc19be331b9bebe02e_t d JOIN t_691ac4c219be331b9bebe030_t t ON t.departmentId=d.id WHERE (NULL IS NULL OR t.departmentId = NULL) AND (NULL IS NULL OR t.categoryId = NULL) AND (NULL IS NULL OR t.status = NULL) AND (NULL IS NULL OR EXISTS (SELECT 1 FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId=v.id WHERE s.tenderId=t.id AND v.vendorRiskLevel = NULL)) ORDER BY d.name,t.id;`,
+  };
+
+  const results = await executeAdhocQuery<{ heatmap: string | HeatmapDataItem[] | null }>(query);
+  
+  if (results.length === 0) {
+    return [];
+  }
+  
+  const result = results[0];
+  
+  // Handle different response formats
+  let heatmapData: HeatmapDataItem[] = [];
+  
+  try {
+    // Case 1: heatmap is a JSON string
+    if (result.heatmap && typeof result.heatmap === 'string') {
+      heatmapData = JSON.parse(result.heatmap);
+    }
+    // Case 2: heatmap is already an array
+    else if (result.heatmap && Array.isArray(result.heatmap)) {
+      heatmapData = result.heatmap;
+    }
+    // Case 3: The entire result is an array (unlikely but possible)
+    else if (Array.isArray(result)) {
+      heatmapData = result as any;
+    }
+    // Case 4: Check if result has the data directly
+    else if (result && typeof result === 'object' && 'data' in result) {
+      const data = (result as any).data;
+      if (Array.isArray(data)) {
+        heatmapData = data;
+      } else if (typeof data === 'string') {
+        heatmapData = JSON.parse(data);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse heatmap JSON:', e, 'Raw result:', result);
+    return [];
+  }
+  
+  // Ensure we have an array
+  if (!Array.isArray(heatmapData)) {
+    console.warn('Heatmap data is not an array:', heatmapData);
+    return [];
+  }
+  
+  return heatmapData;
+};
+
+/**
+ * Get evaluation duration trend data
+ * This is the query for the "Evaluation Duration Trend" component
+ */
+export const getEvaluationDurationTrendData = async (): Promise<EvaluationDurationTrendItem[]> => {
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `SELECT JSON_ARRAYAGG(JSON_OBJECT('month', DATE_FORMAT(evaluationStartDate,'%b'),'actualDuration', DATEDIFF(evaluationEndDate,evaluationStartDate),'targetDuration', 40,'fasterVsTarget', 40 - DATEDIFF(evaluationEndDate,evaluationStartDate))) AS evaluationTrend FROM t_691ac4c219be331b9bebe030_t t WHERE (NULL IS NULL OR t.departmentId = NULL) AND (NULL IS NULL OR t.categoryId = NULL) AND (NULL IS NULL OR t.status = NULL) AND (NULL IS NULL OR EXISTS (SELECT 1 FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId = v.id WHERE s.tenderId = t.id AND v.vendorRiskLevel = NULL)) ORDER BY evaluationStartDate;`,
+  };
+
+  const results = await executeAdhocQuery<{ evaluationTrend: string | EvaluationDurationTrendItem[] | null }>(query);
+  
+  if (results.length === 0) {
+    return [];
+  }
+  
+  const result = results[0];
+  
+  // Handle different response formats
+  let trendData: EvaluationDurationTrendItem[] = [];
+  
+  try {
+    // Case 1: evaluationTrend is a JSON string
+    if (result.evaluationTrend && typeof result.evaluationTrend === 'string') {
+      trendData = JSON.parse(result.evaluationTrend);
+    }
+    // Case 2: evaluationTrend is already an array
+    else if (result.evaluationTrend && Array.isArray(result.evaluationTrend)) {
+      trendData = result.evaluationTrend;
+    }
+    // Case 3: The entire result is an array (unlikely but possible)
+    else if (Array.isArray(result)) {
+      trendData = result as any;
+    }
+    // Case 4: Check if result has the data directly
+    else if (result && typeof result === 'object' && 'data' in result) {
+      const data = (result as any).data;
+      if (Array.isArray(data)) {
+        trendData = data;
+      } else if (typeof data === 'string') {
+        trendData = JSON.parse(data);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse evaluation trend JSON:', e, 'Raw result:', result);
+    return [];
+  }
+  
+  // Ensure we have an array
+  if (!Array.isArray(trendData)) {
+    console.warn('Evaluation trend data is not an array:', trendData);
+    return [];
+  }
+  
+  // Filter out entries with null actualDuration and sort by month
+  trendData = trendData
+    .filter(item => item.actualDuration !== null && item.actualDuration !== undefined)
+    .sort((a, b) => {
+      // Sort by month order (Jan, Feb, Mar, etc.)
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months.indexOf(a.month) - months.indexOf(b.month);
+    });
+  
+  return trendData;
+};
+
+/**
+ * Get compliance leaderboard data
+ * This is the query for the "Department Compliance Leaderboard" component
+ */
+export const getComplianceLeaderboardData = async (): Promise<ComplianceLeaderboardItem[]> => {
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `SELECT JSON_ARRAYAGG(JSON_OBJECT('departmentId',dept.departmentId,'departmentName',dept.departmentName,'tendersFormatted',CONCAT(dept.compliantTenders,'/',dept.totalTenders),'onTimePercent',dept.onTimePercent,'policyPercent',dept.policyPercent,'riskPercent',dept.riskPercent,'deptScore',dept.deptScore)) AS leaderboard FROM ( SELECT d.id AS departmentId,d.name AS departmentName,COUNT(t.id) AS totalTenders, SUM(CASE WHEN t.isCompliant=1 AND t.isDocumentComplete=1 AND t.policyAdherenceScore>=80 AND t.riskMitigationScore>=70 THEN 1 ELSE 0 END) AS compliantTenders, IFNULL(ROUND(SUM(CASE WHEN DATEDIFF(CAST(t.evaluationEndDate AS DATE),CAST(t.evaluationStartDate AS DATE)) <= 40 THEN 1 ELSE 0 END)/NULLIF(COUNT(t.id),0)*100,0),0) AS onTimePercent, IFNULL(ROUND(SUM(CASE WHEN t.policyAdherenceScore>=80 THEN 1 ELSE 0 END)/NULLIF(COUNT(t.id),0)*100,0),0) AS policyPercent, IFNULL((SELECT 100 - ROUND(AVG(v.vendorRiskScore),0) FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId=v.id WHERE s.tenderId IN (SELECT id FROM t_691ac4c219be331b9bebe030_t WHERE departmentId=d.id)),0) AS riskPercent, IFNULL(ROUND(( IFNULL(ROUND(SUM(CASE WHEN DATEDIFF(CAST(t.evaluationEndDate AS DATE),CAST(t.evaluationStartDate AS DATE)) <= 40 THEN 1 ELSE 0 END)/NULLIF(COUNT(t.id),0)*100,0),0) + IFNULL(ROUND(SUM(CASE WHEN t.policyAdherenceScore>=80 THEN 1 ELSE 0 END)/NULLIF(COUNT(t.id),0)*100,0),0) + IFNULL((SELECT 100 - ROUND(AVG(v.vendorRiskScore),0) FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId=v.id WHERE s.tenderId IN (SELECT id FROM t_691ac4c219be331b9bebe030_t WHERE departmentId=d.id)),0) )/3 ,0),0) AS deptScore FROM t_691ac3bc19be331b9bebe02e_t d LEFT JOIN t_691ac4c219be331b9bebe030_t t ON t.departmentId=d.id GROUP BY d.id,d.name ) dept ORDER BY deptScore DESC;`,
+  };
+
+  const results = await executeAdhocQuery<{ leaderboard: string | ComplianceLeaderboardItem[] | null }>(query);
+  
+  if (results.length === 0) {
+    return [];
+  }
+  
+  const result = results[0];
+  
+  // Handle different response formats
+  let leaderboardData: ComplianceLeaderboardItem[] = [];
+  
+  try {
+    // Case 1: leaderboard is a JSON string
+    if (result.leaderboard && typeof result.leaderboard === 'string') {
+      leaderboardData = JSON.parse(result.leaderboard);
+    }
+    // Case 2: leaderboard is already an array
+    else if (result.leaderboard && Array.isArray(result.leaderboard)) {
+      leaderboardData = result.leaderboard;
+    }
+    // Case 3: The entire result is an array (unlikely but possible)
+    else if (Array.isArray(result)) {
+      leaderboardData = result as any;
+    }
+    // Case 4: Check if result has the data directly
+    else if (result && typeof result === 'object' && 'data' in result) {
+      const data = (result as any).data;
+      if (Array.isArray(data)) {
+        leaderboardData = data;
+      } else if (typeof data === 'string') {
+        leaderboardData = JSON.parse(data);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse compliance leaderboard JSON:', e, 'Raw result:', result);
+    return [];
+  }
+  
+  // Ensure we have an array
+  if (!Array.isArray(leaderboardData)) {
+    console.warn('Compliance leaderboard data is not an array:', leaderboardData);
+    return [];
+  }
+  
+  return leaderboardData;
+};
+
+/**
+ * Get vendor analytics data
+ * This is the query for the "Vendor Analytics" cards
+ */
+export const getVendorAnalyticsData = async (): Promise<VendorAnalyticsData | null> => {
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `WITH f AS (SELECT v.id AS vendorId,v.name AS vendorName,v.vendorCategory,s.id AS submissionId,s.tenderId FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId=v.id JOIN t_691ac4c219be331b9bebe030_t t ON t.id=s.tenderId WHERE (NULL IS NULL OR t.departmentId=NULL) AND (NULL IS NULL OR t.categoryId=NULL) AND (NULL IS NULL OR t.status=NULL) AND ('Low' IS NULL OR v.vendorRiskLevel='Low')), cats AS (SELECT vendorCategory,COUNT(DISTINCT vendorId) AS cnt FROM f GROUP BY vendorCategory), vr AS (SELECT vendorId,vendorName,COUNT(submissionId) AS bid_count,ROW_NUMBER() OVER (ORDER BY COUNT(submissionId) DESC) AS rn FROM f GROUP BY vendorId,vendorName), top3 AS (SELECT GROUP_CONCAT(vendorName SEPARATOR ', ') AS topVendors FROM vr WHERE rn<=3) SELECT JSON_OBJECT('activeVendors',(SELECT COUNT(DISTINCT vendorId) FROM f),'totalBids',(SELECT COUNT(submissionId) FROM f),'tendersParticipated',(SELECT COUNT(DISTINCT tenderId) FROM f),'avgBidsPerTender',(SELECT ROUND(COUNT(submissionId)/NULLIF(COUNT(DISTINCT tenderId),0),1) FROM f),'top3Vendors',(SELECT topVendors FROM top3),'categories',(SELECT JSON_OBJECTAGG(vendorCategory,cnt) FROM cats)) AS result;`,
+  };
+
+  const results = await executeAdhocQuery<{ result: string | VendorAnalyticsData }>(query);
+  
+  if (results.length === 0 || !results[0].result) {
+    return null;
+  }
+  
+  const result = results[0].result;
+  
+  // Parse the JSON string if it's a string
+  let vendorData: VendorAnalyticsData;
+  try {
+    if (typeof result === 'string') {
+      vendorData = JSON.parse(result);
+    } else {
+      vendorData = result as VendorAnalyticsData;
+    }
+  } catch (e) {
+    console.warn('Failed to parse vendor analytics JSON:', e, 'Raw result:', result);
+    return null;
+  }
+  
+  return vendorData;
+};
+
+/**
+ * Get average bid value data
+ * This is the query for the "Avg Bid Value" card
+ */
+export const getAvgBidValueData = async (
+  departmentId?: string,
+  categoryId?: string,
+  status?: string,
+  vendorRiskLevel?: string
+): Promise<AvgBidValueData | null> => {
+  // Helper function to escape SQL strings
+  const escapeSqlString = (value: string): string => {
+    return value.replace(/'/g, "''"); // Escape single quotes by doubling them
+  };
+  
+  // Build WHERE clause with optional filters
+  const deptFilter = departmentId ? `t.departmentId='${escapeSqlString(departmentId)}'` : '1=1';
+  const catFilter = categoryId ? `t.categoryId='${escapeSqlString(categoryId)}'` : '1=1';
+  const statusFilter = status ? `t.status='${escapeSqlString(status)}'` : '1=1';
+  const riskFilter = vendorRiskLevel ? `v.vendorRiskLevel='${escapeSqlString(vendorRiskLevel)}'` : '1=1';
+  
+  const whereClause = `WHERE ${deptFilter} AND ${catFilter} AND ${statusFilter} AND ${riskFilter}`;
+
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `WITH filtered AS (SELECT s.id AS submissionId, s.vendorId, v.name AS vendorName, s.totalBidPrice, t.id AS tenderId, t.budgetAmount FROM t_691ac67f19be331b9bebe035_t s JOIN t_691ac62419be331b9bebe034_t v ON v.id = s.vendorId JOIN t_691ac4c219be331b9bebe030_t t ON t.id = s.tenderId ${whereClause}), agg AS (SELECT AVG(totalBidPrice) AS avgBid, SUM(totalBidPrice) AS totalBid, MAX(totalBidPrice) AS maxBid, MIN(totalBidPrice) AS minBid FROM filtered), highBid AS (SELECT vendorName AS highVendor FROM filtered ORDER BY totalBidPrice DESC LIMIT 1), lowBid AS (SELECT vendorName AS lowVendor FROM filtered ORDER BY totalBidPrice ASC LIMIT 1), competitive AS (SELECT COUNT(*) AS tenderCount FROM (SELECT tenderId, COUNT(submissionId) AS bids FROM filtered GROUP BY tenderId HAVING COUNT(submissionId) >= 3) x) SELECT JSON_OBJECT('avgBidValue', (SELECT ROUND(avgBid,2) FROM agg), 'totalBidValue', (SELECT totalBid FROM agg), 'highestBidVendor', (SELECT highVendor FROM highBid), 'highestBidAmount', (SELECT maxBid FROM agg), 'lowestBidVendor', (SELECT lowVendor FROM lowBid), 'lowestBidAmount', (SELECT minBid FROM agg), 'bidRangeSpreadPercent', (SELECT CASE WHEN minBid > 0 THEN ROUND(((maxBid - minBid) / minBid) * 100,1) ELSE NULL END FROM agg), 'budgetAlignmentPercent', (SELECT CASE WHEN AVG(budgetAmount) > 0 THEN ROUND((avgBid / AVG(budgetAmount)) * 100,1) ELSE NULL END FROM filtered, agg), 'competitiveTenders', (SELECT tenderCount FROM competitive)) AS result;`,
+  };
+
+  const results = await executeAdhocQuery<{ result: string | AvgBidValueData }>(query);
+  
+  if (results.length === 0 || !results[0].result) {
+    return null;
+  }
+  
+  const result = results[0].result;
+  
+  // Parse the JSON string if it's a string
+  let bidData: AvgBidValueData;
+  try {
+    if (typeof result === 'string') {
+      bidData = JSON.parse(result);
+    } else {
+      bidData = result as AvgBidValueData;
+    }
+  } catch (e) {
+    console.warn('Failed to parse avg bid value JSON:', e, 'Raw result:', result);
+    return null;
+  }
+  
+  return bidData;
+};
+
+/**
+ * Get top performer data
+ * This is the query for the "Top Performer" card
+ */
+export const getTopPerformerData = async (
+  departmentId?: string,
+  categoryId?: string,
+  status?: string,
+  vendorRiskLevel?: string
+): Promise<TopPerformerData | null> => {
+  // Helper function to escape SQL strings
+  const escapeSqlString = (value: string): string => {
+    return value.replace(/'/g, "''"); // Escape single quotes by doubling them
+  };
+  
+  // Build WHERE clause with optional filters - using the pattern from the original query
+  // Pattern: (NULL IS NULL OR condition) means if value is NULL, always true; otherwise check condition
+  // For department: (NULL IS NULL OR t.departmentId=NULL) - always true, no filter
+  // For others: ('value' IS NULL OR t.column='value') - 'value' IS NULL is false, so checks condition
+  const deptFilter = departmentId ? `('${escapeSqlString(departmentId)}' IS NULL OR t.departmentId='${escapeSqlString(departmentId)}')` : '(NULL IS NULL OR t.departmentId=NULL)';
+  const catFilter = categoryId ? `('${escapeSqlString(categoryId)}' IS NULL OR t.categoryId='${escapeSqlString(categoryId)}')` : '(NULL IS NULL OR t.categoryId=NULL)';
+  const statusFilter = status ? `('${escapeSqlString(status)}' IS NULL OR t.status='${escapeSqlString(status)}')` : '(NULL IS NULL OR t.status=NULL)';
+  const riskFilter = vendorRiskLevel ? `('${escapeSqlString(vendorRiskLevel)}' IS NULL OR v.vendorRiskLevel='${escapeSqlString(vendorRiskLevel)}')` : '(NULL IS NULL OR v.vendorRiskLevel=NULL)';
+  
+  const whereClause = `WHERE ${deptFilter} AND ${catFilter} AND ${statusFilter} AND ${riskFilter}`;
+
+  const query: AdhocQueryRequest = {
+    type: 'TIDB',
+    definition: `WITH f AS (SELECT v.id AS vendorId,v.name AS vendorName,v.historicalReliabilityScore,s.totalBidPrice,s.tenderId FROM t_691ac62419be331b9bebe034_t v JOIN t_691ac67f19be331b9bebe035_t s ON s.vendorId=v.id JOIN t_691ac4c219be331b9bebe030_t t ON t.id=s.tenderId ${whereClause}), ranked AS (SELECT f.*,ROW_NUMBER() OVER (PARTITION BY tenderId ORDER BY totalBidPrice ASC) AS rankPos FROM f), perf AS (SELECT vendorId,vendorName,historicalReliabilityScore AS reliabilityScore,COUNT(*) AS totalBids,ROUND(AVG(rankPos),2) AS avgRank,ROUND(AVG(totalBidPrice),2) AS avgBidValue,SUM(totalBidPrice) AS totalBidValue,(historicalReliabilityScore+(100/NULLIF(AVG(rankPos),0))) AS perfScore FROM ranked GROUP BY vendorId,vendorName,historicalReliabilityScore), best AS (SELECT * FROM perf ORDER BY perfScore DESC LIMIT 1) SELECT JSON_OBJECT('vendorName',vendorName,'reliabilityScore',reliabilityScore,'totalBids',totalBids,'avgBidValue',avgBidValue,'totalBidValue',totalBidValue,'avgRank',avgRank,'bidErrors',0) AS result FROM best;`,
+  };
+
+  const results = await executeAdhocQuery<{ result: string | TopPerformerData }>(query);
+  
+  if (results.length === 0 || !results[0].result) {
+    return null;
+  }
+  
+  const result = results[0].result;
+  
+  // Parse the JSON string if it's a string
+  let performerData: TopPerformerData;
+  try {
+    if (typeof result === 'string') {
+      performerData = JSON.parse(result);
+    } else {
+      performerData = result as TopPerformerData;
+    }
+  } catch (e) {
+    console.warn('Failed to parse top performer JSON:', e, 'Raw result:', result);
+    return null;
+  }
+  
+  return performerData;
+};
+
 /**
  * Execute an adhoc query against the cohorts service
  * Matches the pattern from the reference code for better Network tab visibility
