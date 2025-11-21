@@ -1,0 +1,72 @@
+[
+  {
+    "id": "1",
+    "item": "Structural Steel (Grade A)",
+    "vendor": "BuildTech Ltd",
+    "quotedPrice": 2500,
+    "marketMedian": 1600,
+    "deviation": 56.3,
+    "isOutlier": true,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "2",
+    "item": "Structural Steel (Grade A)",
+    "vendor": "TechCon Industries",
+    "quotedPrice": 900,
+    "marketMedian": 1600,
+    "deviation": -43.8,
+    "isOutlier": true,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "3",
+    "item": "Portland Cement",
+    "vendor": "Global Supplies",
+    "quotedPrice": 1800,
+    "marketMedian": 1100,
+    "deviation": 63.6,
+    "isOutlier": true,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "4",
+    "item": "Skilled Labor (Hourly)",
+    "vendor": "Global Supplies",
+    "quotedPrice": 2000,
+    "marketMedian": 3200,
+    "deviation": -37.5,
+    "isOutlier": true,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "5",
+    "item": "Heavy Equipment Rental",
+    "vendor": "TechCon Industries",
+    "quotedPrice": 13000,
+    "marketMedian": 7500,
+    "deviation": 73.3,
+    "isOutlier": true,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "6",
+    "item": "Structural Steel (Grade A)",
+    "vendor": "Acme Corp",
+    "quotedPrice": 1550,
+    "marketMedian": 1600,
+    "deviation": -3.1,
+    "isOutlier": false,
+    "flagStatus": "pending"
+  },
+  {
+    "id": "7",
+    "item": "Portland Cement",
+    "vendor": "Acme Corp",
+    "quotedPrice": 1050,
+    "marketMedian": 1100,
+    "deviation": -4.5,
+    "isOutlier": false,
+    "flagStatus": "pending"
+  }
+]

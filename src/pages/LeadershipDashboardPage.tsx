@@ -8,7 +8,7 @@ import { ComplianceLeaderboard } from '../components/ComplianceLeaderboard';
 import { LeadershipFooter } from '../components/LeadershipFooter';
 import { Activity, Clock, Target, AlertTriangle, Filter, Users, TrendingUp, Award, ShieldAlert } from 'lucide-react';
 import { MOCK_TENDERS, VendorData } from '../data/mockTenderData';
-import { getActiveTendersData, ActiveTendersData, getAvgEvalDurationData, AvgEvalDurationData, getComplianceRateData, ComplianceRateData, getCriticalAlertsData, CriticalAlertsData } from '../services/api';
+import { getActiveTendersData, ActiveTendersData, getAvgEvalDurationData, AvgEvalDurationData, getComplianceRateData, ComplianceRateData, getCriticalAlertsData, CriticalAlertsData, getIntegrityHeatmapData, HeatmapDataItem, getEvaluationDurationTrendData, EvaluationDurationTrendItem, getComplianceLeaderboardData, ComplianceLeaderboardItem, getVendorAnalyticsData, VendorAnalyticsData, getAvgBidValueData, AvgBidValueData, getTopPerformerData, TopPerformerData } from '../services/api';
 
 interface LeadershipDashboardPageProps {
   onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
@@ -34,12 +34,34 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
   const [criticalAlertsData, setCriticalAlertsData] = useState<CriticalAlertsData | null>(null);
   const [isLoadingAlerts, setIsLoadingAlerts] = useState(true);
   const [alertsError, setAlertsError] = useState<string | null>(null);
+  const [heatmapData, setHeatmapData] = useState<HeatmapDataItem[]>([]);
+  const [isLoadingHeatmap, setIsLoadingHeatmap] = useState(true);
+  const [heatmapError, setHeatmapError] = useState<string | null>(null);
+  const [durationTrendData, setDurationTrendData] = useState<EvaluationDurationTrendItem[]>([]);
+  const [isLoadingDurationTrend, setIsLoadingDurationTrend] = useState(true);
+  const [durationTrendError, setDurationTrendError] = useState<string | null>(null);
+  const [complianceLeaderboardData, setComplianceLeaderboardData] = useState<ComplianceLeaderboardItem[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+  const [vendorAnalyticsData, setVendorAnalyticsData] = useState<VendorAnalyticsData | null>(null);
+  const [isLoadingVendorAnalytics, setIsLoadingVendorAnalytics] = useState(true);
+  const [vendorAnalyticsError, setVendorAnalyticsError] = useState<string | null>(null);
+  const [avgBidValueData, setAvgBidValueData] = useState<AvgBidValueData | null>(null);
+  const [isLoadingAvgBidValue, setIsLoadingAvgBidValue] = useState(true);
+  const [avgBidValueError, setAvgBidValueError] = useState<string | null>(null);
+  const [topPerformerData, setTopPerformerData] = useState<TopPerformerData | null>(null);
+  const [isLoadingTopPerformer, setIsLoadingTopPerformer] = useState(true);
+  const [topPerformerError, setTopPerformerError] = useState<string | null>(null);
   
   // Refs to prevent duplicate calls in React StrictMode
   const hasFetchedTendersRef = useRef(false);
   const hasFetchedDurationRef = useRef(false);
   const hasFetchedComplianceRef = useRef(false);
   const hasFetchedAlertsRef = useRef(false);
+  const hasFetchedHeatmapRef = useRef(false);
+  const hasFetchedDurationTrendRef = useRef(false);
+  const hasFetchedLeaderboardRef = useRef(false);
+  const hasFetchedVendorAnalyticsRef = useRef(false);
 
   const departments = [
     'all',
@@ -62,162 +84,124 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
   const phases = ['all', 'intake', 'evaluation', 'benchmark', 'justification', 'award'];
   const riskLevels = ['all', 'low', 'medium', 'high', 'critical'];
 
-  const integrityData = [
-    { tenderId: 'TND-001', department: 'Procurement', integrityScore: 95, riskLevel: 'low' as const, phase: 'Award' },
-    { tenderId: 'TND-002', department: 'Water Management', integrityScore: 88, riskLevel: 'low' as const, phase: 'Evaluation' },
-    { tenderId: 'TND-003', department: 'Roads & Construction', integrityScore: 72, riskLevel: 'medium' as const, phase: 'Benchmark' },
-    { tenderId: 'TND-004', department: 'Waste Management', integrityScore: 85, riskLevel: 'low' as const, phase: 'Evaluation' },
-    { tenderId: 'TND-005', department: 'Procurement', integrityScore: 78, riskLevel: 'medium' as const, phase: 'Evaluation' },
-    { tenderId: 'TND-006', department: 'Tolls Management', integrityScore: 65, riskLevel: 'high' as const, phase: 'Intake' },
-    { tenderId: 'TND-007', department: 'Roads & Construction', integrityScore: 92, riskLevel: 'low' as const, phase: 'Award' },
-    { tenderId: 'TND-008', department: 'Maintenance', integrityScore: 58, riskLevel: 'high' as const, phase: 'Intake' },
-    { tenderId: 'TND-009', department: 'Procurement', integrityScore: 82, riskLevel: 'low' as const, phase: 'Benchmark' },
-    { tenderId: 'TND-010', department: 'HR', integrityScore: 45, riskLevel: 'critical' as const, phase: 'Intake' },
-    { tenderId: 'TND-011', department: 'Water Management', integrityScore: 88, riskLevel: 'low' as const, phase: 'Evaluation' },
-    { tenderId: 'TND-012', department: 'Landscape & Irrigation', integrityScore: 91, riskLevel: 'low' as const, phase: 'Award' },
-  ];
+  // Transform heatmap API data to IntegrityHeatmap format
+  const integrityData = useMemo(() => {
+    if (!heatmapData || heatmapData.length === 0) {
+      // Return empty array if no data, component will handle it
+      return [];
+    }
 
-  const durationData = [
-    { period: 'Jan', avgDuration: 45, targetDuration: 40, variance: 5 },
-    { period: 'Feb', avgDuration: 42, targetDuration: 40, variance: 2 },
-    { period: 'Mar', avgDuration: 38, targetDuration: 40, variance: -2 },
-    { period: 'Apr', avgDuration: 35, targetDuration: 40, variance: -5 },
-    { period: 'May', avgDuration: 33, targetDuration: 40, variance: -7 },
-    { period: 'Jun', avgDuration: 31, targetDuration: 40, variance: -9 },
-  ];
+    return heatmapData
+      .filter(item => item.integrityScore !== null && item.integrityScore !== undefined)
+      .map(item => {
+        const score = item.integrityScore || 0;
+        let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
+        
+        // Determine risk level based on integrity score
+        if (score >= 80) {
+          riskLevel = 'low';
+        } else if (score >= 60) {
+          riskLevel = 'medium';
+        } else if (score >= 40) {
+          riskLevel = 'high';
+        } else {
+          riskLevel = 'critical';
+        }
 
-  const complianceData = [
-    {
-      departmentName: 'Water Management',
-      complianceScore: 96.2,
-      totalTenders: 28,
-      compliantTenders: 27,
-      onTimeRate: 96.4,
-      policyAdherence: 98.2,
-      riskMitigation: 94.0,
-      rank: 1,
-    },
-    {
-      departmentName: 'Procurement',
-      complianceScore: 94.8,
-      totalTenders: 32,
-      compliantTenders: 30,
-      onTimeRate: 93.8,
-      policyAdherence: 96.5,
-      riskMitigation: 94.1,
-      rank: 2,
-    },
-    {
-      departmentName: 'Roads & Construction',
-      complianceScore: 92.3,
-      totalTenders: 24,
-      compliantTenders: 22,
-      onTimeRate: 91.7,
-      policyAdherence: 94.2,
-      riskMitigation: 91.0,
-      rank: 3,
-    },
-    {
-      departmentName: 'Waste Management',
-      complianceScore: 89.7,
-      totalTenders: 19,
-      compliantTenders: 17,
-      onTimeRate: 89.5,
-      policyAdherence: 91.8,
-      riskMitigation: 87.8,
-      rank: 4,
-    },
-    {
-      departmentName: 'Landscape & Irrigation',
-      complianceScore: 88.1,
-      totalTenders: 16,
-      compliantTenders: 14,
-      onTimeRate: 87.5,
-      policyAdherence: 90.3,
-      riskMitigation: 86.5,
-      rank: 5,
-    },
-    {
-      departmentName: 'Citizen-Centric Services',
-      complianceScore: 86.4,
-      totalTenders: 22,
-      compliantTenders: 19,
-      onTimeRate: 86.4,
-      policyAdherence: 88.9,
-      riskMitigation: 84.0,
-      rank: 6,
-    },
-    {
-      departmentName: 'Tolls Management',
-      complianceScore: 84.9,
-      totalTenders: 11,
-      compliantTenders: 9,
-      onTimeRate: 81.8,
-      policyAdherence: 87.3,
-      riskMitigation: 85.6,
-      rank: 7,
-    },
-    {
-      departmentName: 'Maintenance',
-      complianceScore: 83.2,
-      totalTenders: 25,
-      compliantTenders: 21,
-      onTimeRate: 84.0,
-      policyAdherence: 85.6,
-      riskMitigation: 80.0,
-      rank: 8,
-    },
-    {
-      departmentName: 'Administration',
-      complianceScore: 81.5,
-      totalTenders: 14,
-      compliantTenders: 11,
-      onTimeRate: 78.6,
-      policyAdherence: 84.2,
-      riskMitigation: 81.7,
-      rank: 9,
-    },
-    {
-      departmentName: 'Parking Management',
-      complianceScore: 79.8,
-      totalTenders: 9,
-      compliantTenders: 7,
-      onTimeRate: 77.8,
-      policyAdherence: 82.4,
-      riskMitigation: 79.2,
-      rank: 10,
-    },
-    {
-      departmentName: 'Legal',
-      complianceScore: 78.3,
-      totalTenders: 8,
-      compliantTenders: 6,
-      onTimeRate: 75.0,
-      policyAdherence: 81.5,
-      riskMitigation: 78.5,
-      rank: 11,
-    },
-    {
-      departmentName: 'HR',
-      complianceScore: 76.1,
-      totalTenders: 12,
-      compliantTenders: 9,
-      onTimeRate: 75.0,
-      policyAdherence: 79.8,
-      riskMitigation: 73.5,
-      rank: 12,
-    },
-    {
-      departmentName: 'City Violation / Enforcement',
-      complianceScore: 74.6,
-      totalTenders: 7,
-      compliantTenders: 5,
-      onTimeRate: 71.4,
-      policyAdherence: 77.9,
-      riskMitigation: 74.5,
-      rank: 13,
-    },
-  ];
+        return {
+          tenderId: item.tenderId || '',
+          department: item.departmentName || '',
+          integrityScore: Math.round(score),
+          riskLevel,
+          phase: item.phase || '',
+        };
+      });
+  }, [heatmapData]);
+
+  // Transform duration trend API data to DurationTrendline format
+  // Aggregate by month if there are multiple records per month
+  const durationData = useMemo(() => {
+    if (!durationTrendData || durationTrendData.length === 0) {
+      // Return empty array if no data, component will handle it
+      return [];
+    }
+
+    // Group by month and calculate averages
+    const monthMap = new Map<string, { actualDurations: number[]; targetDuration: number; fasterVsTargets: number[] }>();
+    
+    durationTrendData.forEach(item => {
+      if (item.actualDuration === null || item.actualDuration === undefined) {
+        return; // Skip null values
+      }
+      
+      const month = item.month || '';
+      if (!month) return;
+      
+      if (!monthMap.has(month)) {
+        monthMap.set(month, {
+          actualDurations: [],
+          targetDuration: item.targetDuration || 40,
+          fasterVsTargets: [],
+        });
+      }
+      
+      const monthData = monthMap.get(month)!;
+      monthData.actualDurations.push(item.actualDuration);
+      if (item.fasterVsTarget !== null && item.fasterVsTarget !== undefined) {
+        monthData.fasterVsTargets.push(item.fasterVsTarget);
+      }
+    });
+    
+    // Convert map to array and calculate averages
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const aggregated = Array.from(monthMap.entries())
+      .map(([month, data]) => {
+        const avgActualDuration = data.actualDurations.length > 0
+          ? data.actualDurations.reduce((sum, val) => sum + val, 0) / data.actualDurations.length
+          : 0;
+        const avgFasterVsTarget = data.fasterVsTargets.length > 0
+          ? data.fasterVsTargets.reduce((sum, val) => sum + val, 0) / data.fasterVsTargets.length
+          : 0;
+        
+        return {
+          period: month,
+          avgDuration: Math.round(avgActualDuration * 10) / 10, // Round to 1 decimal
+          targetDuration: data.targetDuration,
+          variance: Math.round(avgFasterVsTarget * 10) / 10, // Round to 1 decimal
+        };
+      })
+      .sort((a, b) => {
+        // Sort by month order
+        return months.indexOf(a.period) - months.indexOf(b.period);
+      });
+    
+    return aggregated;
+  }, [durationTrendData]);
+
+  // Transform compliance leaderboard API data to ComplianceLeaderboard format
+  const complianceData = useMemo(() => {
+    if (!complianceLeaderboardData || complianceLeaderboardData.length === 0) {
+      return [];
+    }
+
+    return complianceLeaderboardData.map((item, index) => {
+      // Parse tendersFormatted (e.g., "27/28") to get compliantTenders and totalTenders
+      const [compliantTenders, totalTenders] = item.tendersFormatted
+        ? item.tendersFormatted.split('/').map(Number)
+        : [0, 0];
+
+      return {
+        departmentName: item.departmentName || '',
+        complianceScore: item.deptScore || 0,
+        totalTenders: totalTenders || 0,
+        compliantTenders: compliantTenders || 0,
+        onTimeRate: item.onTimePercent || 0,
+        policyAdherence: item.policyPercent || 0,
+        riskMitigation: item.riskPercent || 0,
+        rank: index + 1, // Rank is based on order (already sorted by deptScore DESC)
+      };
+    });
+  }, [complianceLeaderboardData]);
 
   const handleExportInsights = () => {
     alert('Exporting executive insights report...');
@@ -372,6 +356,216 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
     fetchCriticalAlerts();
   }, []);
 
+  // Fetch integrity heatmap data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedHeatmapRef.current) {
+      return;
+    }
+    hasFetchedHeatmapRef.current = true;
+
+    const fetchHeatmapData = async () => {
+      try {
+        console.log('Starting to fetch integrity heatmap data...');
+        setIsLoadingHeatmap(true);
+        setHeatmapError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getIntegrityHeatmapData();
+        console.log('Integrity heatmap data received:', data);
+        setHeatmapData(data);
+      } catch (error) {
+        console.error('Error fetching integrity heatmap:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch integrity heatmap data';
+        setHeatmapError(errorMessage);
+      } finally {
+        setIsLoadingHeatmap(false);
+      }
+    };
+
+    fetchHeatmapData();
+  }, []);
+
+  // Fetch evaluation duration trend data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedDurationTrendRef.current) {
+      return;
+    }
+    hasFetchedDurationTrendRef.current = true;
+
+    const fetchDurationTrendData = async () => {
+      try {
+        console.log('Starting to fetch evaluation duration trend data...');
+        setIsLoadingDurationTrend(true);
+        setDurationTrendError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getEvaluationDurationTrendData();
+        console.log('Evaluation duration trend data received:', data);
+        setDurationTrendData(data);
+      } catch (error) {
+        console.error('Error fetching evaluation duration trend:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch evaluation duration trend data';
+        setDurationTrendError(errorMessage);
+      } finally {
+        setIsLoadingDurationTrend(false);
+      }
+    };
+
+    fetchDurationTrendData();
+  }, []);
+
+  // Fetch compliance leaderboard data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedLeaderboardRef.current) {
+      return;
+    }
+    hasFetchedLeaderboardRef.current = true;
+
+    const fetchLeaderboardData = async () => {
+      try {
+        console.log('Starting to fetch compliance leaderboard data...');
+        setIsLoadingLeaderboard(true);
+        setLeaderboardError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getComplianceLeaderboardData();
+        console.log('Compliance leaderboard data received:', data);
+        setComplianceLeaderboardData(data);
+      } catch (error) {
+        console.error('Error fetching compliance leaderboard:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch compliance leaderboard data';
+        setLeaderboardError(errorMessage);
+      } finally {
+        setIsLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboardData();
+  }, []);
+
+  // Fetch vendor analytics data from API
+  useEffect(() => {
+    // Prevent duplicate calls in React StrictMode
+    if (hasFetchedVendorAnalyticsRef.current) {
+      return;
+    }
+    hasFetchedVendorAnalyticsRef.current = true;
+
+    const fetchVendorAnalytics = async () => {
+      try {
+        console.log('Starting to fetch vendor analytics data...');
+        setIsLoadingVendorAnalytics(true);
+        setVendorAnalyticsError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        const data = await getVendorAnalyticsData();
+        console.log('Vendor analytics data received:', data);
+        setVendorAnalyticsData(data);
+      } catch (error) {
+        console.error('Error fetching vendor analytics:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch vendor analytics data';
+        setVendorAnalyticsError(errorMessage);
+      } finally {
+        setIsLoadingVendorAnalytics(false);
+      }
+    };
+
+    fetchVendorAnalytics();
+  }, []);
+
+  // Fetch average bid value data from API
+  useEffect(() => {
+    const fetchAvgBidValue = async () => {
+      try {
+        console.log('Starting to fetch avg bid value data...');
+        setIsLoadingAvgBidValue(true);
+        setAvgBidValueError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        // Map filter values to API parameters
+        const deptId = selectedDepartment !== 'all' ? selectedDepartment : undefined;
+        const catId = selectedCategory !== 'all' ? selectedCategory : undefined;
+        const status = selectedPhase !== 'all' ? selectedPhase : undefined;
+        const riskLevel = selectedRiskLevel !== 'all' ? selectedRiskLevel.charAt(0).toUpperCase() + selectedRiskLevel.slice(1) : undefined;
+        
+        const data = await getAvgBidValueData(deptId, catId, status, riskLevel);
+        console.log('Avg bid value data received:', data);
+        setAvgBidValueData(data);
+      } catch (error) {
+        console.error('Error fetching avg bid value:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch avg bid value data';
+        setAvgBidValueError(errorMessage);
+      } finally {
+        setIsLoadingAvgBidValue(false);
+      }
+    };
+
+    fetchAvgBidValue();
+  }, [selectedDepartment, selectedCategory, selectedPhase, selectedRiskLevel]);
+
+  // Fetch top performer data from API
+  useEffect(() => {
+    const fetchTopPerformer = async () => {
+      try {
+        console.log('Starting to fetch top performer data...');
+        setIsLoadingTopPerformer(true);
+        setTopPerformerError(null);
+        
+        // Check if token is available
+        const token = import.meta.env.VITE_API_AUTHORIZATION_TOKEN;
+        if (!token) {
+          throw new Error('VITE_API_AUTHORIZATION_TOKEN is not set. Please create a .env file with your token.');
+        }
+        
+        // Map filter values to API parameters
+        const deptId = selectedDepartment !== 'all' ? selectedDepartment : undefined;
+        const catId = selectedCategory !== 'all' ? selectedCategory : undefined;
+        const status = selectedPhase !== 'all' ? selectedPhase : undefined;
+        const riskLevel = selectedRiskLevel !== 'all' ? selectedRiskLevel.charAt(0).toUpperCase() + selectedRiskLevel.slice(1) : undefined;
+        
+        const data = await getTopPerformerData(deptId, catId, status, riskLevel);
+        console.log('Top performer data received:', data);
+        setTopPerformerData(data);
+      } catch (error) {
+        console.error('Error fetching top performer:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch top performer data';
+        setTopPerformerError(errorMessage);
+      } finally {
+        setIsLoadingTopPerformer(false);
+      }
+    };
+
+    fetchTopPerformer();
+  }, [selectedDepartment, selectedCategory, selectedPhase, selectedRiskLevel]);
+
   // Format total estimated value
   const formatTotalValue = (value: number | null | undefined): string => {
     if (!value) return 'AED 0';
@@ -417,7 +611,39 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
     });
   }, [selectedDepartment, selectedCategory, selectedPhase]);
 
+  // Use API data for vendor analytics, fallback to calculated values for missing fields
   const vendorAnalytics = useMemo(() => {
+    // Use API data if available
+    if (vendorAnalyticsData) {
+      // Parse top3Vendors (comma-separated string) to get the first one
+      const topVendorName = vendorAnalyticsData.top3Vendors 
+        ? vendorAnalyticsData.top3Vendors.split(',')[0].trim()
+        : 'N/A';
+
+      return {
+        totalVendors: vendorAnalyticsData.activeVendors || 0,
+        avgBidValue: 0, // Not available in API, keeping 0 or could calculate from mock data
+        topVendor: {
+          name: topVendorName,
+          avgReliability: 0, // Not available in API
+          bids: 0,
+          avgTechnical: 0,
+          avgFinancial: 0,
+          totalValue: 0,
+          bidErrors: 0,
+          tenders: [] as string[],
+        },
+        riskVendors: 0, // Not available in API
+        tendersParticipated: vendorAnalyticsData.tendersParticipated || 0,
+        totalBids: vendorAnalyticsData.totalBids || 0,
+        avgBidsPerTender: vendorAnalyticsData.avgBidsPerTender || 0,
+        categories: vendorAnalyticsData.categories || {},
+        allVendors: [] as any[], // Empty array for API data
+        allVendorStats: [] as any[], // Empty array for API data
+      };
+    }
+
+    // Fallback to calculated values from mock data
     const allVendors: Array<VendorData & { tenderId: string; tenderTitle: string; department: string; category: string }> = [];
 
     filteredTenders.forEach(tender => {
@@ -480,8 +706,12 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
       riskVendors,
       allVendorStats: vendorStats,
       allVendors,
+      tendersParticipated: filteredTenders.length,
+      totalBids: allVendors.length,
+      avgBidsPerTender: filteredTenders.length > 0 ? allVendors.length / filteredTenders.length : 0,
+      categories: {},
     };
-  }, [filteredTenders]);
+  }, [filteredTenders, vendorAnalyticsData]);
 
   return (
     <>
@@ -647,26 +877,26 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
           <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
             <h2 className="text-sm font-semibold text-gray-900 mb-6">Vendor Analytics</h2>
             <div className="grid grid-cols-4 gap-6">
-              <KPIWidget
-                title="Active Vendors"
-                value={vendorAnalytics.totalVendors.toString()}
-                subtitle={`Across ${filteredTenders.length} tender${filteredTenders.length !== 1 ? 's' : ''}`}
-                icon={Users}
-                onClick={() => setActiveModal('vendors')}
-              />
+            <KPIWidget
+              title="Active Vendors"
+              value={isLoadingVendorAnalytics ? '...' : vendorAnalytics.totalVendors.toString()}
+              subtitle={vendorAnalyticsError ? 'Error loading data' : (vendorAnalyticsData ? `Across ${vendorAnalytics.tendersParticipated || filteredTenders.length} tender${(vendorAnalytics.tendersParticipated || filteredTenders.length) !== 1 ? 's' : ''}` : `Across ${filteredTenders.length} tender${filteredTenders.length !== 1 ? 's' : ''}`)}
+              icon={Users}
+              onClick={() => setActiveModal('vendors')}
+            />
 
               <KPIWidget
                 title="Avg Bid Value"
-                value={`AED ${(vendorAnalytics.avgBidValue / 1000000).toFixed(2)}M`}
-                subtitle="Mean proposal amount"
+                value={isLoadingAvgBidValue ? '...' : (avgBidValueData?.avgBidValue ? formatTotalValue(avgBidValueData.avgBidValue) : 'AED 0.00M')}
+                subtitle={avgBidValueError ? 'Error loading data' : (avgBidValueData ? 'Mean proposal amount' : 'Loading...')}
                 icon={TrendingUp}
                 onClick={() => setActiveModal('avgBid')}
               />
 
               <KPIWidget
                 title="Top Performer"
-                value={vendorAnalytics.topVendor?.name || 'N/A'}
-                subtitle={vendorAnalytics.topVendor ? `${vendorAnalytics.topVendor.avgReliability.toFixed(1)}% reliability` : 'No data'}
+                value={isLoadingTopPerformer ? '...' : (topPerformerData?.vendorName || 'N/A')}
+                subtitle={topPerformerError ? 'Error loading data' : (topPerformerData ? `${topPerformerData.reliabilityScore?.toFixed(1) || '0.0'}% reliability` : 'Loading...')}
                 icon={Award}
                 onClick={() => setActiveModal('topVendor')}
               />
@@ -684,18 +914,56 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Integrity Score Heatmap</h2>
-              <IntegrityHeatmap data={filteredIntegrityData} />
+              {isLoadingHeatmap ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-gray-500">Loading heatmap data...</div>
+                </div>
+              ) : heatmapError ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-red-500">Error: {heatmapError}</div>
+                </div>
+              ) : (
+                <IntegrityHeatmap data={filteredIntegrityData} />
+              )}
             </div>
 
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">Evaluation Duration Trend</h2>
-              <DurationTrendline data={durationData} />
+              {isLoadingDurationTrend ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-gray-500">Loading trend data...</div>
+                </div>
+              ) : durationTrendError ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-red-500">Error: {durationTrendError}</div>
+                </div>
+              ) : durationData.length === 0 ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-gray-500">No trend data available</div>
+                </div>
+              ) : (
+                <DurationTrendline data={durationData} />
+              )}
             </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Department Compliance Leaderboard</h2>
-            <ComplianceLeaderboard data={filteredComplianceData} />
+            {isLoadingLeaderboard ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-gray-500">Loading leaderboard data...</div>
+              </div>
+            ) : leaderboardError ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-red-500">Error: {leaderboardError}</div>
+              </div>
+            ) : complianceData.length === 0 ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-gray-500">No leaderboard data available</div>
+              </div>
+            ) : (
+              <ComplianceLeaderboard data={filteredComplianceData} />
+            )}
           </div>
         </main>
 
@@ -877,12 +1145,12 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         icon={Users}
         mainValue={vendorAnalytics.totalVendors.toString()}
         details={[
-          { label: 'Total Bids Submitted', value: vendorAnalytics.allVendors.length.toString(), description: `Across ${filteredTenders.length} tender${filteredTenders.length !== 1 ? 's' : ''}` },
-          { label: 'Avg Bids per Tender', value: filteredTenders.length > 0 ? (vendorAnalytics.allVendors.length / filteredTenders.length).toFixed(1) : '0', description: 'Competition level indicator' },
-          { label: 'Top 3 Active Vendors', value: vendorAnalytics.allVendorStats.slice(0, 3).map((v: any) => v.name).join(', ') || 'N/A', description: 'Most frequent bidders' },
-          { label: 'Works Category', value: filteredTenders.filter(t => t.category === 'WORKS').length.toString(), description: `${filteredTenders.filter(t => t.category === 'WORKS').reduce((sum, t) => sum + t.vendors.length, 0)} vendors` },
-          { label: 'Services Category', value: filteredTenders.filter(t => t.category === 'SERVICES').length.toString(), description: `${filteredTenders.filter(t => t.category === 'SERVICES').reduce((sum, t) => sum + t.vendors.length, 0)} vendors` },
-          { label: 'Supplies Category', value: filteredTenders.filter(t => t.category === 'SUPPLIES').length.toString(), description: `${filteredTenders.filter(t => t.category === 'SUPPLIES').reduce((sum, t) => sum + t.vendors.length, 0)} vendors` },
+          { label: 'Total Bids Submitted', value: (vendorAnalytics.totalBids || vendorAnalytics.allVendors?.length || 0).toString(), description: `Across ${vendorAnalytics.tendersParticipated || filteredTenders.length} tender${(vendorAnalytics.tendersParticipated || filteredTenders.length) !== 1 ? 's' : ''}` },
+          { label: 'Avg Bids per Tender', value: vendorAnalytics.avgBidsPerTender ? vendorAnalytics.avgBidsPerTender.toFixed(1) : (filteredTenders.length > 0 && vendorAnalytics.allVendors ? (vendorAnalytics.allVendors.length / filteredTenders.length).toFixed(1) : '0'), description: 'Competition level indicator' },
+          { label: 'Top 3 Active Vendors', value: vendorAnalyticsData?.top3Vendors || (vendorAnalytics.allVendorStats && vendorAnalytics.allVendorStats.length > 0 ? vendorAnalytics.allVendorStats.slice(0, 3).map((v: any) => v.name).join(', ') : 'N/A'), description: 'Most frequent bidders' },
+          { label: 'Works Category', value: (vendorAnalytics.categories && 'WORKS' in vendorAnalytics.categories ? vendorAnalytics.categories['WORKS']?.toString() : null) || filteredTenders.filter(t => t.category === 'WORKS').length.toString(), description: `${(vendorAnalytics.categories && 'WORKS' in vendorAnalytics.categories ? vendorAnalytics.categories['WORKS'] : null) || filteredTenders.filter(t => t.category === 'WORKS').reduce((sum, t) => sum + (t.vendors?.length || 0), 0)} vendors` },
+          { label: 'Services Category', value: (vendorAnalytics.categories && 'SERVICES' in vendorAnalytics.categories ? vendorAnalytics.categories['SERVICES']?.toString() : null) || filteredTenders.filter(t => t.category === 'SERVICES').length.toString(), description: `${(vendorAnalytics.categories && 'SERVICES' in vendorAnalytics.categories ? vendorAnalytics.categories['SERVICES'] : null) || filteredTenders.filter(t => t.category === 'SERVICES').reduce((sum, t) => sum + (t.vendors?.length || 0), 0)} vendors` },
+          { label: 'Supplies Category', value: (vendorAnalytics.categories && 'SUPPLIES' in vendorAnalytics.categories ? vendorAnalytics.categories['SUPPLIES']?.toString() : null) || filteredTenders.filter(t => t.category === 'SUPPLIES').length.toString(), description: `${(vendorAnalytics.categories && 'SUPPLIES' in vendorAnalytics.categories ? vendorAnalytics.categories['SUPPLIES'] : null) || filteredTenders.filter(t => t.category === 'SUPPLIES').reduce((sum, t) => sum + (t.vendors?.length || 0), 0)} vendors` },
         ]}
       />
 
@@ -891,14 +1159,40 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Average Bid Value"
         icon={TrendingUp}
-        mainValue={`AED ${(vendorAnalytics.avgBidValue / 1000000).toFixed(2)}M`}
-        details={[
-          { label: 'Total Bid Value', value: `AED ${(vendorAnalytics.allVendors.reduce((sum, v) => sum + v.totalCost, 0) / 1000000).toFixed(2)}M`, description: 'Sum of all proposals' },
-          { label: 'Highest Bid', value: vendorAnalytics.allVendors.length > 0 ? `AED ${(Math.max(...vendorAnalytics.allVendors.map(v => v.totalCost)) / 1000000).toFixed(2)}M` : 'N/A', description: vendorAnalytics.allVendors.length > 0 ? vendorAnalytics.allVendors.sort((a, b) => b.totalCost - a.totalCost)[0].name : '' },
-          { label: 'Lowest Bid', value: vendorAnalytics.allVendors.length > 0 ? `AED ${(Math.min(...vendorAnalytics.allVendors.map(v => v.totalCost)) / 1000000).toFixed(2)}M` : 'N/A', description: vendorAnalytics.allVendors.length > 0 ? vendorAnalytics.allVendors.sort((a, b) => a.totalCost - b.totalCost)[0].name : '' },
-          { label: 'Bid Range Spread', value: vendorAnalytics.allVendors.length > 0 ? `${(((Math.max(...vendorAnalytics.allVendors.map(v => v.totalCost)) - Math.min(...vendorAnalytics.allVendors.map(v => v.totalCost))) / Math.min(...vendorAnalytics.allVendors.map(v => v.totalCost)) * 100)).toFixed(1)}%` : 'N/A', description: 'Price variance across vendors' },
-          { label: 'Budget Alignment', value: filteredTenders.length > 0 ? `${((vendorAnalytics.avgBidValue / (filteredTenders.reduce((sum, t) => sum + t.estimatedValue, 0) / filteredTenders.length)) * 100).toFixed(1)}%` : 'N/A', description: 'Avg bid vs estimated value' },
-          { label: 'Competitive Tenders', value: filteredTenders.filter(t => t.vendors.length >= 3).length.toString(), description: `${((filteredTenders.filter(t => t.vendors.length >= 3).length / Math.max(filteredTenders.length, 1)) * 100).toFixed(0)}% have 3+ bidders` },
+        mainValue={avgBidValueData?.avgBidValue ? formatTotalValue(avgBidValueData.avgBidValue) : 'AED 0.00M'}
+        details={avgBidValueData ? [
+          { 
+            label: 'Total Bid Value', 
+            value: avgBidValueData.totalBidValue ? formatTotalValue(avgBidValueData.totalBidValue) : 'N/A', 
+            description: 'Sum of all proposals' 
+          },
+          { 
+            label: 'Highest Bid', 
+            value: avgBidValueData.highestBidAmount ? formatTotalValue(avgBidValueData.highestBidAmount) : 'N/A', 
+            description: avgBidValueData.highestBidVendor || 'N/A' 
+          },
+          { 
+            label: 'Lowest Bid', 
+            value: avgBidValueData.lowestBidAmount ? formatTotalValue(avgBidValueData.lowestBidAmount) : 'N/A', 
+            description: avgBidValueData.lowestBidVendor || 'N/A' 
+          },
+          { 
+            label: 'Bid Range Spread', 
+            value: avgBidValueData.bidRangeSpreadPercent !== null ? `${avgBidValueData.bidRangeSpreadPercent.toFixed(1)}%` : 'N/A', 
+            description: 'Price variance across vendors' 
+          },
+          { 
+            label: 'Budget Alignment', 
+            value: avgBidValueData.budgetAlignmentPercent !== null ? `${avgBidValueData.budgetAlignmentPercent.toFixed(1)}%` : 'N/A', 
+            description: 'Avg bid vs estimated value' 
+          },
+          { 
+            label: 'Competitive Tenders', 
+            value: avgBidValueData.competitiveTenders !== null ? avgBidValueData.competitiveTenders.toString() : '0', 
+            description: avgBidValueData.competitiveTenders !== null ? `Tenders with 3+ bidders` : 'No data available' 
+          },
+        ] : [
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
@@ -907,16 +1201,40 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         onClose={() => setActiveModal(null)}
         title="Top Performing Vendor"
         icon={Award}
-        mainValue={vendorAnalytics.topVendor?.name || 'N/A'}
-        details={vendorAnalytics.topVendor ? [
-          { label: 'Reliability Score', value: `${vendorAnalytics.topVendor.avgReliability.toFixed(1)}%`, description: 'Past performance indicator' },
-          { label: 'Total Bids', value: vendorAnalytics.topVendor.bids.toString(), description: `Active in ${vendorAnalytics.topVendor.tenders.length} tender${vendorAnalytics.topVendor.tenders.length !== 1 ? 's' : ''}` },
-          { label: 'Avg Technical Score', value: `${vendorAnalytics.topVendor.avgTechnical.toFixed(1)}/100`, description: 'Quality of technical proposals' },
-          { label: 'Avg Financial Score', value: `${vendorAnalytics.topVendor.avgFinancial.toFixed(1)}/100`, description: 'Pricing competitiveness' },
-          { label: 'Total Bid Value', value: `AED ${(vendorAnalytics.topVendor.totalValue / 1000000).toFixed(2)}M`, description: 'Combined proposal value' },
-          { label: 'Bid Errors', value: vendorAnalytics.topVendor.bidErrors.toString(), description: vendorAnalytics.topVendor.bidErrors === 0 ? 'Clean submission record' : 'Minor discrepancies found' },
+        mainValue={topPerformerData?.vendorName || 'N/A'}
+        details={topPerformerData ? [
+          { 
+            label: 'Reliability Score', 
+            value: topPerformerData.reliabilityScore !== null ? `${topPerformerData.reliabilityScore.toFixed(1)}%` : 'N/A', 
+            description: 'Past performance indicator' 
+          },
+          { 
+            label: 'Total Bids', 
+            value: topPerformerData.totalBids !== null ? topPerformerData.totalBids.toString() : '0', 
+            description: 'Number of bids submitted' 
+          },
+          { 
+            label: 'Average Rank', 
+            value: topPerformerData.avgRank !== null ? topPerformerData.avgRank.toFixed(2) : 'N/A', 
+            description: 'Average ranking position across tenders (lower is better)' 
+          },
+          { 
+            label: 'Average Bid Value', 
+            value: topPerformerData.avgBidValue !== null ? formatTotalValue(topPerformerData.avgBidValue) : 'N/A', 
+            description: 'Mean proposal amount' 
+          },
+          { 
+            label: 'Total Bid Value', 
+            value: topPerformerData.totalBidValue !== null ? formatTotalValue(topPerformerData.totalBidValue) : 'N/A', 
+            description: 'Combined proposal value' 
+          },
+          { 
+            label: 'Bid Errors', 
+            value: (topPerformerData.bidErrors || 0).toString(), 
+            description: (topPerformerData.bidErrors || 0) === 0 ? 'Clean submission record' : 'Minor discrepancies found' 
+          },
         ] : [
-          { label: 'No Data', value: 'N/A', description: 'No vendors in filtered selection' },
+          { label: 'Loading...', value: '-', description: 'Fetching data from API' }
         ]}
       />
 
@@ -927,12 +1245,12 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
         icon={ShieldAlert}
         mainValue={vendorAnalytics.riskVendors.toString()}
         details={[
-          { label: 'High Risk Level', value: vendorAnalytics.allVendors.filter(v => v.riskLevel === 'high').length.toString(), description: 'Vendors flagged with high risk assessment' },
-          { label: 'Multiple Bid Errors', value: vendorAnalytics.allVendorStats.filter((v: any) => v.bidErrors > 2).length.toString(), description: 'More than 2 submission errors' },
-          { label: 'Low Reliability (<80%)', value: vendorAnalytics.allVendorStats.filter((v: any) => v.avgReliability < 80).length.toString(), description: 'Below acceptable performance threshold' },
-          { label: 'Total Risk Incidents', value: vendorAnalytics.allVendors.reduce((sum, v) => sum + v.bidErrors, 0).toString(), description: 'Cumulative errors across all bids' },
+          { label: 'High Risk Level', value: vendorAnalytics.allVendors && vendorAnalytics.allVendors.length > 0 ? vendorAnalytics.allVendors.filter(v => v.riskLevel === 'high').length.toString() : '0', description: 'Vendors flagged with high risk assessment' },
+          { label: 'Multiple Bid Errors', value: vendorAnalytics.allVendorStats && vendorAnalytics.allVendorStats.length > 0 ? vendorAnalytics.allVendorStats.filter((v: any) => (v.bidErrors || 0) > 2).length.toString() : '0', description: 'More than 2 submission errors' },
+          { label: 'Low Reliability (<80%)', value: vendorAnalytics.allVendorStats && vendorAnalytics.allVendorStats.length > 0 ? vendorAnalytics.allVendorStats.filter((v: any) => (v.avgReliability || 0) < 80).length.toString() : '0', description: 'Below acceptable performance threshold' },
+          { label: 'Total Risk Incidents', value: vendorAnalytics.allVendors && vendorAnalytics.allVendors.length > 0 ? vendorAnalytics.allVendors.reduce((sum, v) => sum + (v.bidErrors || 0), 0).toString() : '0', description: 'Cumulative errors across all bids' },
           { label: 'Risk Mitigation', value: `${((1 - (vendorAnalytics.riskVendors / Math.max(vendorAnalytics.totalVendors, 1))) * 100).toFixed(1)}%`, description: 'Vendors with clean records' },
-          { label: 'Watchlist Vendors', value: vendorAnalytics.allVendorStats.filter((v: any) => v.riskCount > 0 && v.bidErrors > 0).map((v: any) => v.name).slice(0, 3).join(', ') || 'None', description: 'Require additional monitoring' },
+          { label: 'Watchlist Vendors', value: vendorAnalytics.allVendorStats && vendorAnalytics.allVendorStats.length > 0 ? vendorAnalytics.allVendorStats.filter((v: any) => (v.riskCount || 0) > 0 && (v.bidErrors || 0) > 0).map((v: any) => v.name).slice(0, 3).join(', ') || 'None' : 'None', description: 'Require additional monitoring' },
         ]}
       />
     </>

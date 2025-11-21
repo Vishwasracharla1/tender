@@ -196,39 +196,100 @@ export function DurationTrendline({ data }: DurationTrendlineProps) {
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'rgba(0,0,0,0.7)',
+      backgroundColor: 'rgba(0,0,0,0.85)',
+      borderColor: 'rgba(255,255,255,0.1)',
+      borderWidth: 1,
       textStyle: {
         color: '#fff',
+        fontSize: 12,
       },
       axisPointer: {
         type: 'line',
         lineStyle: {
-          color: '#ccc',
+          color: '#f97316',
+          width: 2,
+          type: 'solid',
         },
+        shadowStyle: {
+          color: 'rgba(249, 115, 22, 0.1)',
+        },
+      },
+      formatter: function(params: any) {
+        let result = `<div style="padding: 8px 0;"><strong>${params[0].axisValue}</strong></div>`;
+        params.forEach((param: any) => {
+          const color = param.seriesName === 'Actual Duration' ? '#f97316' : '#3b82f6';
+          result += `<div style="margin: 4px 0; display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${color};"></span>
+            <span>${param.seriesName}: <strong>${param.value} days</strong></span>
+          </div>`;
+        });
+        return result;
       },
     },
     legend: {
       data: ['Actual Duration', 'Target Duration'],
+      top: 10,
+      right: 20,
       textStyle: {
-        color: '#000',
+        color: '#374151',
+        fontSize: 12,
+        fontWeight: 500,
       },
+      itemGap: 20,
+      itemWidth: 14,
+      itemHeight: 14,
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      top: '15%',
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
       data: data.map(point => point.period),
+      axisLine: {
+        lineStyle: {
+          color: '#e5e7eb',
+          width: 1,
+        },
+      },
+      axisTick: {
+        show: false,
+      },
       axisLabel: {
         textStyle: {
-          color: '#888',
+          color: '#6b7280',
+          fontSize: 11,
+          fontWeight: 500,
         },
+        margin: 12,
       },
     },
     yAxis: {
       type: 'value',
-      axisLabel: {
-        formatter: '{value} days',
-        textStyle: {
-          color: '#888',
+      axisLine: {
+        show: false,
+      },
+      axisTick: {
+        show: false,
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f3f4f6',
+          type: 'dashed',
+          width: 1,
         },
+      },
+      axisLabel: {
+        formatter: '{value}',
+        textStyle: {
+          color: '#6b7280',
+          fontSize: 11,
+          fontWeight: 500,
+        },
+        margin: 8,
       },
     },
     series: [
@@ -238,16 +299,54 @@ export function DurationTrendline({ data }: DurationTrendlineProps) {
         data: data.map(point => point.avgDuration),
         smooth: true,
         lineStyle: {
-          color: '#2563EB',
-          width: 3,
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 1,
+            y2: 0,
+            colorStops: [
+              { offset: 0, color: '#f97316' },
+              { offset: 1, color: '#fb923c' },
+            ],
+          },
+          width: 4,
+          shadowBlur: 8,
+          shadowColor: 'rgba(249, 115, 22, 0.3)',
         },
         areaStyle: {
-          color: 'rgba(37, 99, 235, 0.2)',
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(249, 115, 22, 0.3)' },
+              { offset: 1, color: 'rgba(249, 115, 22, 0.05)' },
+            ],
+          },
         },
         symbol: 'circle',
-        symbolSize: 6,
+        symbolSize: 10,
         itemStyle: {
-          color: '#2563EB',
+          color: '#f97316',
+          borderColor: '#fff',
+          borderWidth: 3,
+          shadowBlur: 6,
+          shadowColor: 'rgba(249, 115, 22, 0.4)',
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#f97316',
+            borderColor: '#fff',
+            borderWidth: 4,
+            shadowBlur: 10,
+            shadowColor: 'rgba(249, 115, 22, 0.6)',
+          },
+          lineStyle: {
+            width: 5,
+          },
         },
       },
       {
@@ -256,14 +355,43 @@ export function DurationTrendline({ data }: DurationTrendlineProps) {
         data: data.map(point => point.targetDuration),
         smooth: true,
         lineStyle: {
-          color: '#9CA3AF',
-          width: 2,
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 1,
+            y2: 0,
+            colorStops: [
+              { offset: 0, color: '#3b82f6' },
+              { offset: 1, color: '#60a5fa' },
+            ],
+          },
+          width: 3,
           type: 'dashed',
+          dashOffset: 5,
+          shadowBlur: 4,
+          shadowColor: 'rgba(59, 130, 246, 0.2)',
         },
         symbol: 'circle',
-        symbolSize: 6,
+        symbolSize: 8,
         itemStyle: {
-          color: '#9CA3AF',
+          color: '#3b82f6',
+          borderColor: '#fff',
+          borderWidth: 2,
+          shadowBlur: 4,
+          shadowColor: 'rgba(59, 130, 246, 0.3)',
+        },
+        emphasis: {
+          itemStyle: {
+            color: '#3b82f6',
+            borderColor: '#fff',
+            borderWidth: 3,
+            shadowBlur: 8,
+            shadowColor: 'rgba(59, 130, 246, 0.5)',
+          },
+          lineStyle: {
+            width: 4,
+          },
         },
       },
     ],

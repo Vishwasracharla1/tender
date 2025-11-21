@@ -1,0 +1,92 @@
+[
+  {
+    "id": "1",
+    "type": "anomaly",
+    "severity": "critical",
+    "title": "Extreme Price Variance Detected",
+    "description": "TechCon Industries quoted 73% above market median for Heavy Equipment Rental. Historical data shows this vendor typically prices within 10% of market rates.",
+    "timestamp": "2025-11-21T14:50:00Z",
+    "isRead": false
+  },
+  {
+    "id": "2",
+    "type": "anomaly",
+    "severity": "warning",
+    "title": "Unusually Low Labor Cost",
+    "description": "Global Supplies labor rate is 37.5% below market median. Verify vendor capacity and quality standards.",
+    "timestamp": "2025-11-21T14:45:00Z",
+    "isRead": false
+  },
+  {
+    "id": "3",
+    "type": "trend",
+    "severity": "info",
+    "title": "Steel Prices Trending Upward",
+    "description": "Market data shows a 12% increase in structural steel prices over the past 30 days. Current quotes are aligned with this trend.",
+    "timestamp": "2025-11-21T14:40:00Z",
+    "isRead": false
+  },
+  {
+    "id": "4",
+    "type": "recommendation",
+    "severity": "info",
+    "title": "Benchmark Data Refreshed",
+    "description": "Market benchmarks updated with 847 new data points from 23 recent tenders. Accuracy score improved to 94.2%.",
+    "timestamp": "2025-11-21T14:30:00Z",
+    "isRead": true
+  },
+  {
+    "id": "5",
+    "type": "anomaly",
+    "severity": "critical",
+    "title": "Multiple Outliers in Single Category",
+    "description": "Portland Cement category shows 3 vendors with prices deviating more than 50% from market median. Recommend detailed review before approval.",
+    "timestamp": "2025-11-21T14:25:00Z",
+    "isRead": false
+  },
+  {
+    "id": "6",
+    "type": "trend",
+    "severity": "warning",
+    "title": "Equipment Rental Costs Rising",
+    "description": "Heavy equipment rental prices have increased 8% month-over-month. Consider locking in rates early for upcoming projects.",
+    "timestamp": "2025-11-21T14:20:00Z",
+    "isRead": false
+  },
+  {
+    "id": "7",
+    "type": "recommendation",
+    "severity": "info",
+    "title": "Vendor Performance Pattern Detected",
+    "description": "Acme Corp consistently quotes within 5% of market median across all categories. Consider prioritizing for future tenders.",
+    "timestamp": "2025-11-21T14:15:00Z",
+    "isRead": true
+  },
+  {
+    "id": "8",
+    "type": "anomaly",
+    "severity": "warning",
+    "title": "Price Below Cost Threshold",
+    "description": "TechCon Industries quoted $900 for Structural Steel, which is 43.8% below market median. Risk of quality compromise or calculation error.",
+    "timestamp": "2025-11-21T14:10:00Z",
+    "isRead": false
+  },
+  {
+    "id": "9",
+    "type": "trend",
+    "severity": "info",
+    "title": "Market Volatility Decreasing",
+    "description": "Price variance across all categories has decreased by 15% compared to last quarter, indicating market stabilization.",
+    "timestamp": "2025-11-21T14:05:00Z",
+    "isRead": true
+  },
+  {
+    "id": "10",
+    "type": "recommendation",
+    "severity": "info",
+    "title": "Optimal Vendor Mix Identified",
+    "description": "Combining Acme Corp (Steel, Cement) with Global Supplies (Labor) and BuildTech (Equipment) would result in 12% cost savings while maintaining quality standards.",
+    "timestamp": "2025-11-21T14:00:00Z",
+    "isRead": false
+  }
+]
