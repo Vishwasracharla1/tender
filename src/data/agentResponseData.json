@@ -1,0 +1,1208 @@
+[
+    {
+        "tenderId": "tender_01",
+        "companyName": "EDRAKY",
+        "evaluationCategories": [
+            {
+                "category": "Module Coverage",
+                "subCategories": [
+                    {
+                        "name": "Module Covered",
+                        "weight": 0.35,
+                        "rating": 10
+                    },
+                    {
+                        "name": "FICO",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PS/PPM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "MM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "IM/WM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Embedded Analytics",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "SOLMAN (Brief the components considered)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "BASIS",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FIORI",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Group Consolidation (S4 Hana)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Integration Services",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "SAP HCM – Payroll",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Inspection Fees",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fleet Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Toll Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Call Center Integration",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fuel Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "mRAK / RAKPay / e-Dirham",
+                        "weight": null,
+                        "rating": "Yes"
+                    }
+                ]
+            },
+            {
+                "category": "Implementation & Delivery Approach",
+                "subCategories": [
+                    {
+                        "name": "Onshore & Offshore Model",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Implementation Timeline",
+                        "weight": null,
+                        "rating": "8 Months"
+                    },
+                    {
+                        "name": "12 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "6 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Number of Man-Months Considered",
+                        "weight": null,
+                        "rating": 125
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": null,
+                        "rating": 9
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Onshore)",
+                        "weight": null,
+                        "rating": 9
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Offshore)",
+                        "weight": null,
+                        "rating": 3
+                    }
+                ]
+            },
+            {
+                "category": "Partner Experience & Capability",
+                "subCategories": [
+                    {
+                        "name": "SAP Partner Type & Age – MENA",
+                        "weight": 0.15,
+                        "rating": "Gold Partner"
+                    },
+                    {
+                        "name": "Public Service Domain Experience (Yes/No)",
+                        "weight": 0.15,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Relevant Experience as PSD / RAK",
+                        "weight": 0.20,
+                        "rating": "No"
+                    },
+                    {
+                        "name": "Number of SAP Implementations in Government / Public Service Domain (>1M USD)",
+                        "weight": 0.20,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "S/4 HANA Experience (Number of Implementations)",
+                        "weight": 0.10,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "GCC Experience",
+                        "weight": 0.05,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": 0.10,
+                        "rating": 300
+                    },
+                    {
+                        "name": "Total Number of Arabic-Speaking Consultants",
+                        "weight": 0.05,
+                        "rating": 200
+                    },
+                    {
+                        "name": "Total Number of S/4 HANA Certified Consultants",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Number of Offshore Locations (Location Details)",
+                        "weight": null,
+                        "rating": "8 - India, Egypt, Lebanon"
+                    }
+                ]
+            },
+            {
+                "category": "Additional Technical & Project Inputs",
+                "subCategories": [
+                    {
+                        "name": "Solution Manager Coverage",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Integration Landscape Notes",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Analytics Enablement Items",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Additional SAP Components Listed in Sheet",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Miscellaneous Technical Inputs From Excel",
+                        "weight": null,
+                        "rating": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "tenderId": "tender_01",
+        "companyName": "COGNIZANT",
+        "evaluationCategories": [
+            {
+                "category": "Module Coverage",
+                "subCategories": [
+                    {
+                        "name": "Module Covered",
+                        "weight": 0.35,
+                        "rating": 10
+                    },
+                    {
+                        "name": "FICO",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PS/PPM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "MM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "IM/WM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Embedded Analytics",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "SOLMAN (Brief the components considered)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "BASIS",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FIORI",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Group Consolidation (S4 Hana)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Integration Services",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "SAP HCM – Payroll",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Inspection Fees",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fleet Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Toll Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Call Center Integration",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fuel Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "mRAK / RAKPay / e-Dirham",
+                        "weight": null,
+                        "rating": "Yes"
+                    }
+                ]
+            },
+            {
+                "category": "Implementation & Delivery Approach",
+                "subCategories": [
+                    {
+                        "name": "Onshore & Offshore Model",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Implementation Timeline",
+                        "weight": null,
+                        "rating": "7 Months"
+                    },
+                    {
+                        "name": "12 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "6 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Number of Man-Months Considered",
+                        "weight": null,
+                        "rating": 111
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": null,
+                        "rating": 9
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Onshore)",
+                        "weight": null,
+                        "rating": 10
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Offshore)",
+                        "weight": null,
+                        "rating": 6
+                    }
+                ]
+            },
+            {
+                "category": "Partner Experience & Capability",
+                "subCategories": [
+                    {
+                        "name": "SAP Partner Type & Age – MENA",
+                        "weight": 0.15,
+                        "rating": "Gold Partner"
+                    },
+                    {
+                        "name": "Public Service Domain Experience (Yes/No)",
+                        "weight": 0.15,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Relevant Experience as PSD / RAK",
+                        "weight": 0.20,
+                        "rating": "No"
+                    },
+                    {
+                        "name": "Number of SAP Implementations in Government / Public Service Domain (>1M USD)",
+                        "weight": 0.20,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "S/4 HANA Experience (Number of Implementations)",
+                        "weight": 0.10,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "GCC Experience",
+                        "weight": 0.05,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": 0.10,
+                        "rating": 2700
+                    },
+                    {
+                        "name": "Total Number of Arabic-Speaking Consultants",
+                        "weight": 0.05,
+                        "rating": 23
+                    },
+                    {
+                        "name": "Total Number of S/4 HANA Certified Consultants",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Number of Offshore Locations (Location Details)",
+                        "weight": null,
+                        "rating": "14 offshore Locations"
+                    }
+                ]
+            },
+            {
+                "category": "Additional Technical & Project Inputs",
+                "subCategories": [
+                    {
+                        "name": "Solution Manager Coverage",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Integration Landscape Notes",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Analytics Enablement Items",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Additional SAP Components Listed in Sheet",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Miscellaneous Technical Inputs From Excel",
+                        "weight": null,
+                        "rating": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "tenderId": "tender_01",
+        "companyName": "KAAR",
+        "evaluationCategories": [
+            {
+                "category": "Module Coverage",
+                "subCategories": [
+                    {
+                        "name": "Module Covered",
+                        "weight": 0.35,
+                        "rating": 10
+                    },
+                    {
+                        "name": "FICO",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PS/PPM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "MM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "IM/WM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Embedded Analytics",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "SOLMAN (Brief the components considered)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "BASIS",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FIORI",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Group Consolidation (S4 Hana)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Integration Services",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "SAP HCM – Payroll",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Inspection Fees",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fleet Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Toll Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Call Center Integration",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fuel Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "mRAK / RAKPay / e-Dirham",
+                        "weight": null,
+                        "rating": "Yes"
+                    }
+                ]
+            },
+            {
+                "category": "Implementation & Delivery Approach",
+                "subCategories": [
+                    {
+                        "name": "Onshore & Offshore Model",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Implementation Timeline",
+                        "weight": null,
+                        "rating": "9 Months"
+                    },
+                    {
+                        "name": "12 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "6 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Number of Man-Months Considered",
+                        "weight": null,
+                        "rating": 190
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": null,
+                        "rating": 12
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Onshore)",
+                        "weight": null,
+                        "rating": 6
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Offshore)",
+                        "weight": null,
+                        "rating": 19
+                    }
+                ]
+            },
+            {
+                "category": "Partner Experience & Capability",
+                "subCategories": [
+                    {
+                        "name": "SAP Partner Type & Age – MENA",
+                        "weight": 0.15,
+                        "rating": "Platinum"
+                    },
+                    {
+                        "name": "Public Service Domain Experience (Yes/No)",
+                        "weight": 0.15,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Relevant Experience as PSD / RAK",
+                        "weight": 0.20,
+                        "rating": "No"
+                    },
+                    {
+                        "name": "Number of SAP Implementations in Government / Public Service Domain (>1M USD)",
+                        "weight": 0.20,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "S/4 HANA Experience (Number of Implementations)",
+                        "weight": 0.10,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "GCC Experience",
+                        "weight": 0.05,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": 0.10,
+                        "rating": 150
+                    },
+                    {
+                        "name": "Total Number of Arabic-Speaking Consultants",
+                        "weight": 0.05,
+                        "rating": 100
+                    },
+                    {
+                        "name": "Total Number of S/4 HANA Certified Consultants",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Number of Offshore Locations (Location Details)",
+                        "weight": null,
+                        "rating": "14"
+                    }
+                ]
+            },
+            {
+                "category": "Additional Technical & Project Inputs",
+                "subCategories": [
+                    {
+                        "name": "Solution Manager Coverage",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Integration Landscape Notes",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Analytics Enablement Items",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Additional SAP Components Listed in Sheet",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Miscellaneous Technical Inputs From Excel",
+                        "weight": null,
+                        "rating": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "tenderId": "tender_01",
+        "companyName": "SOLTIUS",
+        "evaluationCategories": [
+            {
+                "category": "Module Coverage",
+                "subCategories": [
+                    {
+                        "name": "Module Covered",
+                        "weight": 0.35,
+                        "rating": 10
+                    },
+                    {
+                        "name": "FICO",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PS/PPM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "MM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "IM/WM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Embedded Analytics",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "SOLMAN (Brief the components considered)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "BASIS",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FIORI",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Group Consolidation (S4 Hana)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Integration Services",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "SAP HCM – Payroll",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Inspection Fees",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fleet Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Toll Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Call Center Integration",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fuel Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "mRAK / RAKPay / e-Dirham",
+                        "weight": null,
+                        "rating": "Yes"
+                    }
+                ]
+            },
+            {
+                "category": "Implementation & Delivery Approach",
+                "subCategories": [
+                    {
+                        "name": "Onshore & Offshore Model",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Implementation Timeline",
+                        "weight": null,
+                        "rating": "10 Months"
+                    },
+                    {
+                        "name": "12 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "6 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Number of Man-Months Considered",
+                        "weight": null,
+                        "rating": 222
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": null,
+                        "rating": 11
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Onshore)",
+                        "weight": null,
+                        "rating": 6
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Offshore)",
+                        "weight": null,
+                        "rating": 19
+                    }
+                ]
+            },
+            {
+                "category": "Partner Experience & Capability",
+                "subCategories": [
+                    {
+                        "name": "SAP Partner Type & Age – MENA",
+                        "weight": 0.15,
+                        "rating": "Platinum"
+                    },
+                    {
+                        "name": "Public Service Domain Experience (Yes/No)",
+                        "weight": 0.15,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Relevant Experience as PSD / RAK",
+                        "weight": 0.20,
+                        "rating": "No"
+                    },
+                    {
+                        "name": "Number of SAP Implementations in Government / Public Service Domain (>1M USD)",
+                        "weight": 0.20,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "S/4 HANA Experience (Number of Implementations)",
+                        "weight": 0.10,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "GCC Experience",
+                        "weight": 0.05,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": 0.10,
+                        "rating": 750
+                    },
+                    {
+                        "name": "Total Number of Arabic-Speaking Consultants",
+                        "weight": 0.05,
+                        "rating": 100
+                    },
+                    {
+                        "name": "Total Number of S/4 HANA Certified Consultants",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Number of Offshore Locations (Location Details)",
+                        "weight": null,
+                        "rating": "14"
+                    }
+                ]
+            },
+            {
+                "category": "Additional Technical & Project Inputs",
+                "subCategories": [
+                    {
+                        "name": "Solution Manager Coverage",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Integration Landscape Notes",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Analytics Enablement Items",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Additional SAP Components Listed in Sheet",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Miscellaneous Technical Inputs From Excel",
+                        "weight": null,
+                        "rating": null
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "tenderId": "tender_01",
+        "companyName": "TYCONZ",
+        "evaluationCategories": [
+            {
+                "category": "Module Coverage",
+                "subCategories": [
+                    {
+                        "name": "Module Covered",
+                        "weight": 0.35,
+                        "rating": 5
+                    },
+                    {
+                        "name": "FICO",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PS/PPM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "PM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "MM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "IM/WM",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Embedded Analytics",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "SOLMAN (Brief the components considered)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "BASIS",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "FIORI",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Group Consolidation (S4 Hana)",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Integration Services",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "SAP HCM – Payroll",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Inspection Fees",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fleet Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Toll Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Call Center Integration",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Fuel Management",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "mRAK / RAKPay / e-Dirham",
+                        "weight": null,
+                        "rating": "Yes"
+                    }
+                ]
+            },
+            {
+                "category": "Implementation & Delivery Approach",
+                "subCategories": [
+                    {
+                        "name": "Onshore & Offshore Model",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Implementation Timeline",
+                        "weight": null,
+                        "rating": "12 Months"
+                    },
+                    {
+                        "name": "12 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "6 Months",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Number of Man-Months Considered",
+                        "weight": null,
+                        "rating": 700
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": null,
+                        "rating": 10
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Onshore)",
+                        "weight": null,
+                        "rating": 10
+                    },
+                    {
+                        "name": "Number of Arabic Consultants (Offshore)",
+                        "weight": null,
+                        "rating": 10
+                    }
+                ]
+            },
+            {
+                "category": "Partner Experience & Capability",
+                "subCategories": [
+                    {
+                        "name": "SAP Partner Type & Age – MENA",
+                        "weight": 0.15,
+                        "rating": "Platinum"
+                    },
+                    {
+                        "name": "Public Service Domain Experience (Yes/No)",
+                        "weight": 0.15,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Relevant Experience as PSD / RAK",
+                        "weight": 0.20,
+                        "rating": "No"
+                    },
+                    {
+                        "name": "Number of SAP Implementations in Government / Public Service Domain (>1M USD)",
+                        "weight": 0.20,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "S/4 HANA Experience (Number of Implementations)",
+                        "weight": 0.10,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "GCC Experience",
+                        "weight": 0.05,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Total Number of Consultants",
+                        "weight": 0.10,
+                        "rating": 10
+                    },
+                    {
+                        "name": "Total Number of Arabic-Speaking Consultants",
+                        "weight": 0.05,
+                        "rating": 175
+                    },
+                    {
+                        "name": "Total Number of S/4 HANA Certified Consultants",
+                        "weight": null,
+                        "rating": "Yes"
+                    },
+                    {
+                        "name": "Number of Offshore Locations (Location Details)",
+                        "weight": null,
+                        "rating": "1"
+                    }
+                ]
+            },
+            {
+                "category": "Additional Technical & Project Inputs",
+                "subCategories": [
+                    {
+                        "name": "Solution Manager Coverage",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Integration Landscape Notes",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Analytics Enablement Items",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Additional SAP Components Listed in Sheet",
+                        "weight": null,
+                        "rating": null
+                    },
+                    {
+                        "name": "Miscellaneous Technical Inputs From Excel",
+                        "weight": null,
+                        "rating": null
+                    }
+                ]
+            }
+        ]
+    }
+]
+

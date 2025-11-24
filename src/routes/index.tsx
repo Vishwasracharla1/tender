@@ -10,6 +10,7 @@ import { AgentMonitoringPage } from '../pages/AgentMonitoringPage';
 import { IntegrationManagementPage } from '../pages/IntegrationManagementPage';
 import { TenderArticlePage } from '../pages/TenderArticlePage';
 import { TenderOverviewPage } from '../pages/TenderOverviewPage';
+import { EvaluationBreakdownPage } from '../pages/EvaluationBreakdownPage';
 
 // Helper function to create navigation handler
 const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
@@ -20,6 +21,7 @@ const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
       'tender-overview': '/tender-overview',
       'tender-article': '/tender-article',
       'evaluation': '/evaluation',
+      'evaluation-breakdown': '/evaluation-breakdown',
       'benchmark': '/benchmark',
       'integrity': '/integrity',
       'justification': '/justification',
@@ -99,6 +101,12 @@ const IntegrationManagementWrapper = () => {
   return <IntegrationManagementPage onNavigate={handleNavigate} />;
 };
 
+const EvaluationBreakdownWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <EvaluationBreakdownPage onNavigate={handleNavigate} />;
+};
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -119,6 +127,10 @@ export const router = createBrowserRouter([
   {
     path: '/evaluation',
     element: <EvaluationMatrixWrapper />,
+  },
+  {
+    path: '/evaluation-breakdown',
+    element: <EvaluationBreakdownWrapper />,
   },
   {
     path: '/benchmark',
