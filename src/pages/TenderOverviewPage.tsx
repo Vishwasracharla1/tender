@@ -2511,16 +2511,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {analysisData.completenessAssessment?.missingSections && analysisData.completenessAssessment.missingSections.length > 0 && (
-                      <div className="p-5 bg-red-50 border-2 border-red-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
-                          <AlertTriangle className="w-5 h-5 text-red-600" />
-                          Missing Sections
+                      <div className="bg-gradient-to-br from-red-50 via-white to-red-50/50 rounded-xl border-2 border-red-200 p-5 hover:shadow-lg transition-shadow duration-200 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-red-500 to-rose-500 rounded-lg shadow-lg ring-2 ring-white/50">
+                            <AlertTriangle className="w-5 h-5 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-red-900 via-red-800 to-red-700 bg-clip-text text-transparent">Missing Sections</span>
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.completenessAssessment.missingSections.map((item: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-red-800">
-                              <span className="text-red-600 mt-1">•</span>
-                              <span>{item}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-colors duration-200">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex-shrink-0"></span>
+                              <span className="text-sm text-red-800 leading-relaxed flex-1">{item}</span>
                             </li>
                           ))}
                         </ul>
@@ -2528,16 +2531,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                     )}
 
                     {analysisData.completenessAssessment?.weakSections && analysisData.completenessAssessment.weakSections.length > 0 && (
-                      <div className="p-5 bg-orange-50 border-2 border-orange-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-orange-900 mb-3 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-orange-600" />
-                          Weak Sections
+                      <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50/50 rounded-xl border-2 border-orange-200 p-5 hover:shadow-lg transition-shadow duration-200 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-lg font-bold text-orange-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg ring-2 ring-white/50">
+                            <AlertCircle className="w-5 h-5 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-orange-900 via-orange-800 to-orange-700 bg-clip-text text-transparent">Weak Sections</span>
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.completenessAssessment.weakSections.map((item: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-orange-800">
-                              <span className="text-orange-600 mt-1">•</span>
-                              <span>{item}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-colors duration-200">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex-shrink-0"></span>
+                              <span className="text-sm text-orange-800 leading-relaxed flex-1">{item}</span>
                             </li>
                           ))}
                         </ul>
@@ -2545,16 +2551,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                     )}
 
                     {analysisData.completenessAssessment?.unclearSections && analysisData.completenessAssessment.unclearSections.length > 0 && (
-                      <div className="p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-yellow-900 mb-3 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-yellow-600" />
-                          Unclear Sections
+                      <div className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 rounded-xl border-2 border-yellow-200 p-5 hover:shadow-lg transition-shadow duration-200 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-lg font-bold text-yellow-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-lg shadow-lg ring-2 ring-white/50">
+                            <AlertCircle className="w-5 h-5 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-yellow-900 via-yellow-800 to-yellow-700 bg-clip-text text-transparent">Unclear Sections</span>
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.completenessAssessment.unclearSections.map((item: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-yellow-800">
-                              <span className="text-yellow-600 mt-1">•</span>
-                              <span>{item}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-colors duration-200">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex-shrink-0"></span>
+                              <span className="text-sm text-yellow-800 leading-relaxed flex-1">{item}</span>
                             </li>
                           ))}
                         </ul>
@@ -2562,16 +2571,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                     )}
 
                     {analysisData.completenessAssessment?.outdatedContent && analysisData.completenessAssessment.outdatedContent.length > 0 && (
-                      <div className="p-5 bg-blue-50 border-2 border-blue-200 rounded-xl">
-                        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
-                          <Clock className="w-5 h-5 text-blue-600" />
-                          Outdated Content
+                      <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50/50 rounded-xl border-2 border-blue-200 p-5 hover:shadow-lg transition-shadow duration-200 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-lg ring-2 ring-white/50">
+                            <Clock className="w-5 h-5 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 bg-clip-text text-transparent">Outdated Content</span>
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.completenessAssessment.outdatedContent.map((item: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-blue-800">
-                              <span className="text-blue-600 mt-1">•</span>
-                              <span>{item}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-colors duration-200">
+                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex-shrink-0"></span>
+                              <span className="text-sm text-blue-800 leading-relaxed flex-1">{item}</span>
                             </li>
                           ))}
                         </ul>
@@ -2598,21 +2610,39 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                 </div>
                 <div className="p-6 bg-white/50">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(analysisData.gapCategories || {}).map(([category, items]) => {
+                    {Object.entries(analysisData.gapCategories || {}).map(([category, items], idx) => {
                       const itemsArray = items as string[];
+                      
+                      // Color variations for different categories
+                      const colorVariants = [
+                        { bg: 'from-emerald-500 to-teal-500', iconBg: 'from-emerald-400 to-teal-400', border: 'border-emerald-200', hoverBorder: 'hover:border-emerald-400', bullet: 'text-emerald-600' },
+                        { bg: 'from-violet-500 to-purple-500', iconBg: 'from-violet-400 to-purple-400', border: 'border-violet-200', hoverBorder: 'hover:border-violet-400', bullet: 'text-violet-600' },
+                        { bg: 'from-amber-500 to-orange-500', iconBg: 'from-amber-400 to-orange-400', border: 'border-amber-200', hoverBorder: 'hover:border-amber-400', bullet: 'text-amber-600' },
+                        { bg: 'from-rose-500 to-pink-500', iconBg: 'from-rose-400 to-pink-400', border: 'border-rose-200', hoverBorder: 'hover:border-rose-400', bullet: 'text-rose-600' },
+                        { bg: 'from-indigo-500 to-blue-500', iconBg: 'from-indigo-400 to-blue-400', border: 'border-indigo-200', hoverBorder: 'hover:border-indigo-400', bullet: 'text-indigo-600' },
+                        { bg: 'from-cyan-500 to-sky-500', iconBg: 'from-cyan-400 to-sky-400', border: 'border-cyan-200', hoverBorder: 'hover:border-cyan-400', bullet: 'text-cyan-600' },
+                        { bg: 'from-lime-500 to-green-500', iconBg: 'from-lime-400 to-green-400', border: 'border-lime-200', hoverBorder: 'hover:border-lime-400', bullet: 'text-lime-600' },
+                        { bg: 'from-fuchsia-500 to-pink-500', iconBg: 'from-fuchsia-400 to-pink-400', border: 'border-fuchsia-200', hoverBorder: 'hover:border-fuchsia-400', bullet: 'text-fuchsia-600' },
+                        { bg: 'from-blue-500 to-indigo-500', iconBg: 'from-blue-400 to-indigo-400', border: 'border-blue-200', hoverBorder: 'hover:border-blue-400', bullet: 'text-blue-600' },
+                      ];
+                      const colorScheme = colorVariants[idx % colorVariants.length];
+                      
                       return itemsArray.length > 0 && (
-                        <div key={category} className="p-5 bg-white border-2 border-gray-200 rounded-xl hover:border-sky-300 hover:shadow-md transition-all duration-200">
-                          <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                            <div className="p-1.5 bg-sky-500 rounded-lg">
-                              <FileText className="w-4 h-4 text-white" />
+                        <div key={category} className={`p-5 bg-gradient-to-br from-white via-white to-slate-50/50 border-2 ${colorScheme.border} ${colorScheme.hoverBorder} rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden`}>
+                          {/* Subtle gradient overlay */}
+                          <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${colorScheme.bg} opacity-5 rounded-full blur-2xl`}></div>
+                          
+                          <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2 relative z-10">
+                            <div className={`p-1.5 bg-gradient-to-br ${colorScheme.bg} rounded-lg shadow-lg ring-2 ring-white/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                              <FileText className="w-4 h-4 text-white drop-shadow-sm" />
                             </div>
-                            {category}
+                            <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent">{category}</span>
                           </h3>
-                          <ul className="space-y-2">
+                          <ul className="space-y-2 relative z-10">
                             {itemsArray.map((item: string, index: number) => (
-                              <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                                <span className="text-sky-600 mt-1">•</span>
-                                <span>{item}</span>
+                              <li key={index} className="flex items-start gap-3 hover:bg-white/50 p-2 rounded-lg -ml-2 transition-all duration-200 group/item">
+                                <span className={`mt-1.5 w-2 h-2 rounded-full bg-gradient-to-r ${colorScheme.bg} flex-shrink-0 group-hover/item:scale-150 group-hover/item:shadow-lg transition-all duration-300`}></span>
+                                <span className="text-sm text-gray-700 leading-relaxed flex-1">{item}</span>
                               </li>
                             ))}
                           </ul>
@@ -2629,28 +2659,40 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
       {activeSubTab === 'risks' && analysisData?.criticalRisks && (
         <div className="animate-in fade-in duration-500">
               {/* Critical Risks Section */}
-              <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                      <AlertTriangle className="w-5 h-5" />
+              <div className="bg-gradient-to-br from-white via-slate-50/30 to-rose-50/30 rounded-2xl border-2 border-gray-200/60 shadow-2xl hover:shadow-3xl transition-all duration-500 overflow-hidden backdrop-blur-sm relative group">
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-rose-200/10 via-red-200/5 to-transparent rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-orange-200/10 via-amber-200/5 to-transparent rounded-full blur-3xl"></div>
+                
+                <div className="bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 p-5 text-white relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10"></div>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]"></div>
+                  <div className="relative flex items-center gap-3">
+                    <div className="p-2.5 bg-white/25 rounded-xl backdrop-blur-md shadow-xl ring-2 ring-white/20 group-hover:scale-110 transition-transform duration-300">
+                      <AlertTriangle className="w-5 h-5 drop-shadow-md" />
                     </div>
-                    <h2 className="text-2xl font-bold">Critical Risks</h2>
+                    <div>
+                      <h2 className="text-xl font-bold mb-0.5 drop-shadow-sm">Critical Risks</h2>
+                      <p className="text-xs text-white/95 font-medium">Risk Impact Assessment</p>
+                    </div>
                   </div>
                 </div>
-                <div className="p-6 bg-white/50">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-5 bg-gradient-to-br from-white/80 via-white/60 to-white/80 backdrop-blur-sm relative">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
                     {analysisData.criticalRisks?.highImpactRisks && analysisData.criticalRisks.highImpactRisks.length > 0 && (
-                      <div className="p-5 bg-red-50 border-2 border-red-300 rounded-xl">
-                        <h3 className="text-lg font-bold text-red-900 mb-3 flex items-center gap-2">
-                          <AlertTriangle className="w-5 h-5 text-red-600" />
-                          High Impact
+                      <div className="bg-gradient-to-br from-red-50 via-white to-red-50/50 backdrop-blur-sm rounded-xl border-2 border-red-300 p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-base font-bold text-red-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-red-500 to-rose-500 rounded-lg shadow-lg ring-2 ring-white/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                            <AlertTriangle className="w-4 h-4 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-red-900 via-red-800 to-red-700 bg-clip-text text-transparent">High Impact</span>
                         </h3>
-                        <ul className="space-y-3">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.criticalRisks.highImpactRisks.map((risk: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-red-800">
-                              <span className="text-red-600 mt-1">•</span>
-                              <span>{risk}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-all duration-200 group/item">
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex-shrink-0 group-hover/item:scale-150 group-hover/item:shadow-lg transition-all duration-300"></span>
+                              <span className="text-xs text-red-800 leading-relaxed flex-1">{risk}</span>
                             </li>
                           ))}
                         </ul>
@@ -2658,16 +2700,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                     )}
 
                     {analysisData.criticalRisks?.mediumImpactRisks && analysisData.criticalRisks.mediumImpactRisks.length > 0 && (
-                      <div className="p-5 bg-orange-50 border-2 border-orange-300 rounded-xl">
-                        <h3 className="text-lg font-bold text-orange-900 mb-3 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-orange-600" />
-                          Medium Impact
+                      <div className="bg-gradient-to-br from-orange-50 via-white to-orange-50/50 backdrop-blur-sm rounded-xl border-2 border-orange-300 p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-base font-bold text-orange-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-lg ring-2 ring-white/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                            <AlertCircle className="w-4 h-4 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-orange-900 via-orange-800 to-orange-700 bg-clip-text text-transparent">Medium Impact</span>
                         </h3>
-                        <ul className="space-y-3">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.criticalRisks.mediumImpactRisks.map((risk: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-orange-800">
-                              <span className="text-orange-600 mt-1">•</span>
-                              <span>{risk}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-all duration-200 group/item">
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 flex-shrink-0 group-hover/item:scale-150 group-hover/item:shadow-lg transition-all duration-300"></span>
+                              <span className="text-xs text-orange-800 leading-relaxed flex-1">{risk}</span>
                             </li>
                           ))}
                         </ul>
@@ -2675,16 +2720,19 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                     )}
 
                     {analysisData.criticalRisks?.lowImpactRisks && analysisData.criticalRisks.lowImpactRisks.length > 0 && (
-                      <div className="p-5 bg-yellow-50 border-2 border-yellow-300 rounded-xl">
-                        <h3 className="text-lg font-bold text-yellow-900 mb-3 flex items-center gap-2">
-                          <AlertCircle className="w-5 h-5 text-yellow-600" />
-                          Low Impact
+                      <div className="bg-gradient-to-br from-yellow-50 via-white to-yellow-50/50 backdrop-blur-sm rounded-xl border-2 border-yellow-300 p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-200/20 to-transparent rounded-full blur-2xl"></div>
+                        <h3 className="text-base font-bold text-yellow-900 mb-3 flex items-center gap-2 relative z-10">
+                          <div className="p-2 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-lg shadow-lg ring-2 ring-white/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                            <AlertCircle className="w-4 h-4 text-white drop-shadow-sm" />
+                          </div>
+                          <span className="bg-gradient-to-r from-yellow-900 via-yellow-800 to-yellow-700 bg-clip-text text-transparent">Low Impact</span>
                         </h3>
-                        <ul className="space-y-3">
+                        <ul className="space-y-2 relative z-10">
                           {analysisData.criticalRisks.lowImpactRisks.map((risk: string, index: number) => (
-                            <li key={index} className="flex items-start gap-2 text-sm text-yellow-800">
-                              <span className="text-yellow-600 mt-1">•</span>
-                              <span>{risk}</span>
+                            <li key={index} className="flex items-start gap-2 hover:bg-white/50 p-1.5 rounded-lg -ml-1.5 transition-all duration-200 group/item">
+                              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex-shrink-0 group-hover/item:scale-150 group-hover/item:shadow-lg transition-all duration-300"></span>
+                              <span className="text-xs text-yellow-800 leading-relaxed flex-1">{risk}</span>
                             </li>
                           ))}
                         </ul>
@@ -2697,8 +2745,8 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
       )}
 
       {/* Recommendations Sub-tab */}
-      {activeSubTab === 'recommendations' && analysisData?.recommendations && (
-        <div className="animate-in fade-in duration-500">
+      {activeSubTab === 'recommendations' && (
+        <div>
               {/* Recommendations Section */}
               <div className="bg-gradient-to-br from-white to-sky-50/30 rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden">
                 <div className="bg-gradient-to-r from-sky-400 to-blue-400 p-6 text-white">
@@ -2710,50 +2758,76 @@ function RecommendationsTab({ recommendationsData }: RecommendationsTabProps) {
                   </div>
                 </div>
                 <div className="p-6 bg-white/50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {Object.entries(analysisData.recommendations || {}).map(([category, items]) => {
-                      const itemsArray = items as string[];
-                      return itemsArray.length > 0 && (
-                        <div key={category} className="p-5 bg-gradient-to-r from-white to-sky-50/50 border-2 border-sky-200 rounded-xl hover:shadow-md transition-all duration-200">
-                          <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
-                            <div className="p-1.5 bg-sky-400 rounded-lg">
-                              <CheckCircle2 className="w-4 h-4 text-white" />
-                            </div>
-                            {(() => {
-                              // Handle common acronyms and special cases
-                              const acronyms: Record<string, string> = {
-                                'KPIs': 'KPIs',
-                                'SLAs': 'SLAs',
-                                'missingSLAs': 'Missing SLAs',
-                                'O&M/DR/cyber/AI/automationModules': 'O&M/DR/Cyber/AI/Automation Modules',
-                                'Support/SLA': 'Support/SLA'
-                              };
-                              
-                              if (acronyms[category]) {
-                                return acronyms[category];
-                              }
-                              
-                              // Handle camelCase - add space before capital letters, but preserve acronyms
-                              return category
-                                .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between lowercase and uppercase
-                                .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Add space between acronym and word
-                                .replace(/\b(SL)\s+(As)\b/gi, 'SLAs') // Fix "SL As" to "SLAs"
-                                .replace(/\b(K)\s+(P)\s+(Is?)\b/gi, 'KPIs') // Fix "K P Is" to "KPIs"
-                                .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
-                            })()}
-                          </h3>
-                          <ul className="space-y-2">
-                            {itemsArray.map((item: string, index: number) => (
-                              <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                                <span className="text-sky-600 mt-1">•</span>
-                                <span>{item}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {analysisData?.recommendations && Object.keys(analysisData.recommendations).length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Object.entries(analysisData.recommendations || {}).map(([category, items], idx) => {
+                        const itemsArray = items as string[];
+                        
+                        // Color variations for different recommendations
+                        const colorVariants = [
+                          { bg: 'from-emerald-500 to-teal-500', iconBg: 'from-emerald-400 to-teal-400', border: 'border-emerald-200', hoverBorder: 'hover:border-emerald-400', bullet: 'text-emerald-600' },
+                          { bg: 'from-violet-500 to-purple-500', iconBg: 'from-violet-400 to-purple-400', border: 'border-violet-200', hoverBorder: 'hover:border-violet-400', bullet: 'text-violet-600' },
+                          { bg: 'from-amber-500 to-orange-500', iconBg: 'from-amber-400 to-orange-400', border: 'border-amber-200', hoverBorder: 'hover:border-amber-400', bullet: 'text-amber-600' },
+                          { bg: 'from-rose-500 to-pink-500', iconBg: 'from-rose-400 to-pink-400', border: 'border-rose-200', hoverBorder: 'hover:border-rose-400', bullet: 'text-rose-600' },
+                          { bg: 'from-indigo-500 to-blue-500', iconBg: 'from-indigo-400 to-blue-400', border: 'border-indigo-200', hoverBorder: 'hover:border-indigo-400', bullet: 'text-indigo-600' },
+                          { bg: 'from-cyan-500 to-sky-500', iconBg: 'from-cyan-400 to-sky-400', border: 'border-cyan-200', hoverBorder: 'hover:border-cyan-400', bullet: 'text-cyan-600' },
+                          { bg: 'from-lime-500 to-green-500', iconBg: 'from-lime-400 to-green-400', border: 'border-lime-200', hoverBorder: 'hover:border-lime-400', bullet: 'text-lime-600' },
+                          { bg: 'from-fuchsia-500 to-pink-500', iconBg: 'from-fuchsia-400 to-pink-400', border: 'border-fuchsia-200', hoverBorder: 'hover:border-fuchsia-400', bullet: 'text-fuchsia-600' },
+                          { bg: 'from-blue-500 to-indigo-500', iconBg: 'from-blue-400 to-indigo-400', border: 'border-blue-200', hoverBorder: 'hover:border-blue-400', bullet: 'text-blue-600' },
+                        ];
+                        const colorScheme = colorVariants[idx % colorVariants.length];
+                        
+                        return itemsArray.length > 0 && (
+                          <div key={category} className={`p-5 bg-gradient-to-br from-white via-white to-slate-50/50 border-2 ${colorScheme.border} ${colorScheme.hoverBorder} rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden`}>
+                            {/* Subtle gradient overlay */}
+                            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${colorScheme.bg} opacity-5 rounded-full blur-2xl`}></div>
+                            
+                            <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2 relative z-10">
+                              <div className={`p-1.5 bg-gradient-to-br ${colorScheme.bg} rounded-lg shadow-lg ring-2 ring-white/50 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                                <CheckCircle2 className="w-4 h-4 text-white drop-shadow-sm" />
+                              </div>
+                              <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent">
+                                {(() => {
+                                  // Handle common acronyms and special cases
+                                  const acronyms: Record<string, string> = {
+                                    'KPIs': 'KPIs',
+                                    'SLAs': 'SLAs',
+                                    'missingSLAs': 'Missing SLAs',
+                                    'O&M/DR/cyber/AI/automationModules': 'O&M/DR/Cyber/AI/Automation Modules',
+                                    'Support/SLA': 'Support/SLA'
+                                  };
+                                  
+                                  if (acronyms[category]) {
+                                    return acronyms[category];
+                                  }
+                                  
+                                  // Handle camelCase - add space before capital letters, but preserve acronyms
+                                  return category
+                                    .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between lowercase and uppercase
+                                    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Add space between acronym and word
+                                    .replace(/\b(SL)\s+(As)\b/gi, 'SLAs') // Fix "SL As" to "SLAs"
+                                    .replace(/\b(K)\s+(P)\s+(Is?)\b/gi, 'KPIs') // Fix "K P Is" to "KPIs"
+                                    .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+                                })()}
+                              </span>
+                            </h3>
+                            <ul className="space-y-2 relative z-10">
+                              {itemsArray.map((item: string, index: number) => (
+                                <li key={index} className="flex items-start gap-3 hover:bg-white/50 p-2 rounded-lg -ml-2 transition-all duration-200 group/item">
+                                  <span className={`mt-1.5 w-2 h-2 rounded-full bg-gradient-to-r ${colorScheme.bg} flex-shrink-0 group-hover/item:scale-150 group-hover/item:shadow-lg transition-all duration-300`}></span>
+                                  <span className="text-sm text-gray-700 leading-relaxed flex-1">{item}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-xl shadow-md border border-gray-100 p-8 text-center">
+                      <p className="text-gray-500">No recommendations data available. Please submit the form to load data from the agent.</p>
+                    </div>
+                  )}
                 </div>
               </div>
         </div>
@@ -2795,9 +2869,9 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
   const currentDoc = classificationData[activeSubTab];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
       {/* Sub-tabs Navigation */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3">
+      <div className="bg-gradient-to-br from-white via-slate-50/50 to-white rounded-2xl shadow-xl border border-gray-200/80 p-4">
         <nav className="flex gap-3 overflow-x-auto scrollbar-hide">
           {documentTypes.map((tab) => {
             const Icon = tab.icon;
@@ -2815,21 +2889,18 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                 disabled={!hasData}
                 title={!hasData ? `${tab.label} document is not present in the uploaded file.` : ''}
                 className={`
-                  flex items-center gap-2.5 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 relative
+                  flex items-center gap-2.5 px-6 py-3.5 text-sm font-semibold rounded-xl transition-colors duration-200 relative
                   ${isActive
-                    ? `bg-gradient-to-r ${tab.color} text-white shadow-xl transform scale-105`
+                    ? `bg-gradient-to-r ${tab.color} text-white shadow-xl ring-2 ring-white/30`
                     : hasData
-                      ? 'text-gray-700 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 cursor-pointer border border-gray-200'
-                      : 'text-gray-400 opacity-60 cursor-default border border-gray-100'
+                      ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-50 cursor-pointer border-2 border-gray-200 hover:border-gray-300'
+                      : 'text-gray-400 opacity-60 cursor-default border-2 border-gray-100'
                   }
                 `}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : hasData ? 'text-gray-600' : 'text-gray-400'}`} />
                 <span>{tab.label}</span>
                 {!hasData && <span className="ml-1 text-xs font-normal opacity-75">(N/A)</span>}
-                {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
-                )}
               </button>
             );
           })}
@@ -2838,23 +2909,22 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
 
       {/* Document Content */}
       {currentDoc && currentDoc.present === 'yes' && currentDoc.structured_fields && Object.keys(currentDoc.structured_fields).length > 0 ? (
-        <div className="animate-in fade-in duration-500">
+        <div>
           {/* Structured Fields Section */}
           {currentDoc.structured_fields ? (
-            <div className="bg-gradient-to-br from-white via-sky-50/20 to-blue-50/20 rounded-2xl border border-gray-200/80 shadow-2xl hover:shadow-3xl transition-all duration-300 overflow-hidden backdrop-blur-sm">
-                  <div className="bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-500 p-7 text-white relative overflow-hidden">
-                    <div className="absolute inset-0 bg-black/5"></div>
-                    <div className="relative flex items-center gap-4">
-                      <div className="p-3 bg-white/20 rounded-xl backdrop-blur-md shadow-lg">
-                        <FolderTree className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold mb-1">{activeSubTab} - Structured Fields</h2>
-                        <p className="text-sm text-white/90 font-medium">Document Classification & Analysis</p>
-                      </div>
-                    </div>
+            <div className="bg-gradient-to-br from-white via-slate-50/30 to-blue-50/30 rounded-2xl border-2 border-gray-200/60 shadow-xl overflow-hidden relative">
+              <div className="bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-600 p-6 text-white relative">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white/25 rounded-xl shadow-lg">
+                    <FolderTree className="w-6 h-6" />
                   </div>
-                  <div className="p-7 bg-white/60 backdrop-blur-sm space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-1">{activeSubTab} - Structured Fields</h2>
+                    <p className="text-sm text-white/90 font-medium">Document Classification & Analysis</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-white space-y-5">
                     {Object.entries(currentDoc.structured_fields).map(([key, value], idx) => {
                       // Skip empty arrays and objects
                       if (Array.isArray(value) && value.length === 0) return null;
@@ -2864,15 +2934,24 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                       const isAppendices = key === 'appendices';
                       const fieldLabel = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 
+                      // Color variations for different fields
+                      const colorVariants = [
+                        { bg: 'from-emerald-500 to-teal-500', iconBg: 'from-emerald-400 to-teal-400', border: 'border-emerald-200', hoverBorder: 'hover:border-emerald-400' },
+                        { bg: 'from-violet-500 to-purple-500', iconBg: 'from-violet-400 to-purple-400', border: 'border-violet-200', hoverBorder: 'hover:border-violet-400' },
+                        { bg: 'from-amber-500 to-orange-500', iconBg: 'from-amber-400 to-orange-400', border: 'border-amber-200', hoverBorder: 'hover:border-amber-400' },
+                        { bg: 'from-rose-500 to-pink-500', iconBg: 'from-rose-400 to-pink-400', border: 'border-rose-200', hoverBorder: 'hover:border-rose-400' },
+                        { bg: 'from-indigo-500 to-blue-500', iconBg: 'from-indigo-400 to-blue-400', border: 'border-indigo-200', hoverBorder: 'hover:border-indigo-400' },
+                        { bg: 'from-cyan-500 to-sky-500', iconBg: 'from-cyan-400 to-sky-400', border: 'border-cyan-200', hoverBorder: 'hover:border-cyan-400' },
+                      ];
+                      const colorScheme = colorVariants[idx % colorVariants.length];
+
                       return (
-                        <div key={key} className="bg-white/90 backdrop-blur-sm rounded-xl border border-gray-200/60 p-6 hover:shadow-lg hover:border-sky-300 transition-all duration-300 group">
-                          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-sky-500 to-blue-500 rounded-lg shadow-md group-hover:scale-110 transition-transform">
+                        <div key={key} className={`bg-white rounded-xl border-2 ${colorScheme.border} p-5 hover:shadow-lg transition-shadow duration-200`}>
+                          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <div className={`p-2 bg-gradient-to-br ${colorScheme.bg} rounded-lg shadow-md`}>
                               <FileText className="w-4 h-4 text-white" />
                             </div>
-                            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                              {fieldLabel}
-                            </span>
+                            <span>{fieldLabel}</span>
                           </h3>
                           <div className="text-sm text-gray-700 leading-relaxed">
                             {Array.isArray(value) ? (
@@ -2887,10 +2966,10 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                                       const appendixPrefix = appendixMatch[0].trim();
                                       const restOfText = itemText.substring(appendixMatch[0].length).trim();
                                       return (
-                                        <div key={index} className="border-l-4 border-sky-400 pl-4 py-2 bg-gradient-to-r from-sky-50/50 to-transparent rounded-r-lg">
+                                        <div key={index} className={`border-l-4 ${colorScheme.border} pl-4 py-2 bg-slate-50 rounded-r-lg`}>
                                           <div className="text-base">
-                                            <span className="font-bold text-sky-700">{appendixPrefix}</span>
-                                            {restOfText && <span className="text-gray-700 font-normal"> - {restOfText}</span>}
+                                            <span className={`font-bold text-gray-900`}>{appendixPrefix}</span>
+                                            {restOfText && <span className="text-gray-700 font-normal ml-2"> - {restOfText}</span>}
                                           </div>
                                         </div>
                                       );
@@ -2899,10 +2978,10 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                                       const appendixNumber = index + 1;
                                       const appendixPrefix = `APPENDIX ${appendixNumber}`;
                                       return (
-                                        <div key={index} className="border-l-4 border-sky-400 pl-4 py-2 bg-gradient-to-r from-sky-50/50 to-transparent rounded-r-lg">
+                                        <div key={index} className={`border-l-4 ${colorScheme.border} pl-4 py-2 bg-slate-50 rounded-r-lg`}>
                                           <div className="text-base">
-                                            <span className="font-bold text-sky-700">{appendixPrefix}</span>
-                                            {itemText && <span className="text-gray-700 font-normal"> - {itemText}</span>}
+                                            <span className={`font-bold text-gray-900`}>{appendixPrefix}</span>
+                                            {itemText && <span className="text-gray-700 font-normal ml-2"> - {itemText}</span>}
                                           </div>
                                         </div>
                                       );
@@ -2910,34 +2989,34 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                                   })}
                                 </div>
                               ) : (
-                                <ul className="space-y-2.5">
+                                <ul className="space-y-2">
                                   {value.map((item: any, index: number) => (
-                                    <li key={index} className="flex items-start gap-3 group/item">
-                                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r from-sky-500 to-blue-500 flex-shrink-0 group-hover/item:scale-150 transition-transform"></span>
-                                      <span className="text-gray-700 leading-relaxed">{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
+                                    <li key={index} className="flex items-start gap-2">
+                                      <span className={`mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r ${colorScheme.bg} flex-shrink-0`}></span>
+                                      <span className="text-gray-700 leading-relaxed flex-1">{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
                                     </li>
                                   ))}
                                 </ul>
                               )
                             ) : typeof value === 'object' && value !== null ? (
-                              <div className="space-y-4">
+                              <div className="space-y-3">
                                 {Object.entries(value).map(([subKey, subValue]) => (
-                                  <div key={subKey} className="pl-5 border-l-3 border-gradient-to-b from-sky-300 to-blue-300 bg-gradient-to-r from-sky-50/30 to-transparent rounded-r-lg py-2">
-                                    <div className="font-semibold text-gray-800 mb-2 text-base">
+                                  <div key={subKey} className={`pl-4 border-l-4 ${colorScheme.border} bg-slate-50 rounded-r-lg py-2`}>
+                                    <div className="font-semibold text-gray-800 mb-1 text-base">
                                       {subKey.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}:
                                     </div>
                                     <div className="text-gray-600">
                                       {Array.isArray(subValue) ? (
-                                        <ul className="space-y-2">
+                                        <ul className="space-y-1.5">
                                           {(subValue as any[]).map((item: any, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-2.5">
-                                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-sky-500 flex-shrink-0"></span>
-                                              <span>{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
+                                            <li key={idx} className="flex items-start gap-2">
+                                              <span className={`mt-1.5 w-1.5 h-1.5 rounded-full bg-gradient-to-r ${colorScheme.bg} flex-shrink-0`}></span>
+                                              <span className="flex-1">{typeof item === 'object' ? JSON.stringify(item, null, 2) : item}</span>
                                             </li>
                                           ))}
                                         </ul>
                                       ) : typeof subValue === 'object' && subValue !== null ? (
-                                        <pre className="whitespace-pre-wrap text-xs bg-gray-50/80 p-3 rounded-lg border border-gray-200 font-mono">
+                                        <pre className={`whitespace-pre-wrap text-xs bg-slate-50 p-3 rounded-lg border ${colorScheme.border} font-mono`}>
                                           {JSON.stringify(subValue, null, 2)}
                                         </pre>
                                       ) : (
@@ -2948,7 +3027,7 @@ function DocumentClassificationTab({ documentClassificationData }: DocumentClass
                                 ))}
                               </div>
                             ) : (
-                              <p className="whitespace-pre-wrap leading-relaxed text-gray-700 pl-1">{String(value)}</p>
+                              <p className="whitespace-pre-wrap leading-relaxed text-gray-700 bg-slate-50 p-3 rounded-lg border border-gray-100">{String(value)}</p>
                             )}
                           </div>
                         </div>

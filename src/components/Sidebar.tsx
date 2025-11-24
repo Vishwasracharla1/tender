@@ -3,12 +3,13 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
+  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown';
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown') => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['evaluation']);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,6 +20,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/tender-overview': 'tender-overview',
     '/tender-article': 'tender-article',
     '/evaluation': 'evaluation',
+    '/evaluation-breakdown': 'evaluation-breakdown',
     '/benchmark': 'benchmark',
     '/integrity': 'integrity',
     '/justification': 'justification',
@@ -80,6 +82,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       icon: BarChart3,
       description: 'Score & Compare',
       path: '/evaluation',
+      subMenu: [
+        {
+          id: 'evaluation-breakdown' as const,
+          label: 'Evaluation Breakdown',
+          path: '/evaluation-breakdown',
+        },
+      ],
     },
     {
       id: 'benchmark' as const,
@@ -162,42 +171,95 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <nav className="sidebar-scroll flex-1 p-4 space-y-3 overflow-y-auto pr-2">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = activePageId === item.id;
+              const isActive = activePageId === item.id || (item.subMenu && item.subMenu.some(sub => activePageId === sub.id));
+              const isExpanded = expandedItems.includes(item.id);
+              const hasSubMenu = item.subMenu && item.subMenu.length > 0;
 
               return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavigation(item.id, item.path)}
-                  className={`
-                    group flex w-full items-start gap-3 p-3 rounded-xl border text-left
+                <div key={item.id}>
+                  <div className={`
+                    group flex w-full items-start gap-3 p-3 rounded-xl border
                     transition-all duration-300 transform
                     ${
-                      isActive
+                      isActive && activePageId === item.id
                         ? 'bg-white text-slate-900 border-sky-100 shadow-lg'
-                        : 'bg-white/60 text-slate-500 border-white/80 hover:bg-white hover:border-sky-100 hover:text-slate-800 hover:-translate-y-0.5 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-100'
+                        : 'bg-white/60 text-slate-500 border-white/80 hover:bg-white hover:border-sky-100 hover:text-slate-800'
                     }
                   `}
                   style={{ animationDelay: `${index * 60}ms` }}
-                  data-active={isActive}
-                >
-                  <Icon
-                    className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                      isActive ? 'text-sky-500' : 'text-slate-400 group-hover:text-sky-500 transition-colors'
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`text-sm font-medium ${
-                        isActive ? 'text-slate-900' : 'text-slate-700'
-                      }`}
+                  >
+                    <button
+                      onClick={() => handleNavigation(item.id, item.path)}
+                      className="flex-1 flex items-start gap-3 text-left"
                     >
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {item.description}
-                    </p>
+                      <Icon
+                        className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                          isActive && activePageId === item.id ? 'text-sky-500' : 'text-slate-400 group-hover:text-sky-500 transition-colors'
+                        }`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-sm font-medium ${
+                            isActive && activePageId === item.id ? 'text-slate-900' : 'text-slate-700'
+                          }`}
+                        >
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {item.description}
+                        </p>
+                      </div>
+                    </button>
+                    {hasSubMenu && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedItems(prev => 
+                            prev.includes(item.id) 
+                              ? prev.filter(id => id !== item.id)
+                              : [...prev, item.id]
+                          );
+                        }}
+                        className="p-1 hover:bg-white/50 rounded transition-colors"
+                      >
+                        <svg
+                          className={`w-4 h-4 transition-transform ${
+                            isExpanded ? 'rotate-90' : ''
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
-                </button>
+                  
+                  {hasSubMenu && isExpanded && (
+                    <div className="ml-4 mt-2 space-y-1">
+                      {item.subMenu.map((subItem) => {
+                        const isSubActive = activePageId === subItem.id;
+                        return (
+                          <button
+                            key={subItem.id}
+                            onClick={() => handleNavigation(subItem.id, subItem.path)}
+                            className={`
+                              w-full text-left px-4 py-2 rounded-lg text-sm transition-all duration-200
+                              ${
+                                isSubActive
+                                  ? 'bg-sky-50 text-sky-700 font-medium border-l-2 border-sky-500'
+                                  : 'text-slate-600 hover:bg-white hover:text-slate-800'
+                              }
+                            `}
+                          >
+                            {subItem.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>

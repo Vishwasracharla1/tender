@@ -9,6 +9,7 @@ import { Sidebar } from '../components/Sidebar';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { Target, TrendingDown, Clock, Filter } from 'lucide-react';
 import { RAK_DEPARTMENTS } from '../data/departments';
+import agentResponseData from '../data/agentResponseData.json';
 
 type Category = 'technical' | 'financial' | 'esg' | 'innovation';
 
@@ -52,6 +53,39 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   const [selectedTender, setSelectedTender] = useState('TND-2025-001');
   const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2025-12-31' });
   const [openKPIModal, setOpenKPIModal] = useState<'weight' | 'variance' | 'time' | null>(null);
+  const [agentResponse, setAgentResponse] = useState<any>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
+  const [companiesFromAgent, setCompaniesFromAgent] = useState<Vendor[]>([]);
+  const [categoriesFromAgent, setCategoriesFromAgent] = useState<Array<{id: string, name: string}>>([]);
+
+  // Function to extract data from static JSON file
+  const useStaticData = () => {
+    if (Array.isArray(agentResponseData) && agentResponseData.length > 0) {
+      // Extract unique company names
+      const companyNames = [...new Set(agentResponseData.map((item: any) => item.companyName).filter(Boolean))];
+      const extractedVendors = companyNames.map((name: string, index: number) => ({
+        id: `v${index + 1}`,
+        name: name
+      }));
+      setCompaniesFromAgent(extractedVendors);
+      
+      // Extract unique category names from the first company
+      if (agentResponseData[0]?.evaluationCategories) {
+        const categories = agentResponseData[0].evaluationCategories.map((cat: any) => cat.category);
+        const extractedCategories = categories.map((catName: string, index: number) => ({
+          id: `cat${index + 1}`,
+          name: catName
+        }));
+        setCategoriesFromAgent(extractedCategories);
+      }
+    }
+  };
+
+  // Load static data on component mount
+  useEffect(() => {
+    useStaticData();
+  }, []);
 
   const tenders: Tender[] = [
     { id: 'TND-2025-001', title: 'Municipal Building Renovation', department: 'Roads & Construction', category: 'WORKS', dateCreated: '2025-01-15', status: 'evaluation' },
@@ -62,6 +96,93 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
     { id: 'TND-2025-006', title: 'Waste Collection Services', department: 'Waste Management', category: 'SERVICES', dateCreated: '2025-03-05', status: 'locked' },
     { id: 'TND-2025-007', title: 'Parking System Upgrade', department: 'Parking Management', category: 'WORKS', dateCreated: '2025-03-10', status: 'evaluation' },
   ];
+
+  // Call agent API when component mounts
+  useEffect(() => {
+    const callAgentAPI = async () => {
+      try {
+        setAgentLoading(true);
+        setAgentError(null);
+
+        const response = await fetch(
+          'https://ig.gov-cloud.ai/agent-orchestration-framework-fastapi/agent/interact',
+          {
+            method: 'POST',
+            headers: {
+              'sec-ch-ua-platform': '"Windows"',
+              'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJKZTNYVjhSWHI0SzFWZmRWTjJ2ejFVMTZPWGRZaUFENWdEaDREc1RuNlRnIn0.eyJleHAiOjE3MjI0NTk5MDMsImlhdCI6MTcyMjQyMzkwMywianRpIjoiODJiZGE3ZDktNDJhYi00NGIxLTliNmMtMTkxMzk4ZmRmNzRlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9tYXN0ZXIiLCJhdWQiOlsidGVzdEN1c3RvbTEiLCJ0ZXN0Q3VzdG9tMiIsImFjY291bnQiXSwic3ViIjoiODliZWRhNzQtODU5Mi00NWZlLThmZGQtMWZkOWEzNWRjYTgzIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiSE9MQUNSQUNZIiwic2Vzc2lvbl9zdGF0ZSI6IjBkNzdmN2IzLTgxZDMtNDQzMi05NmZmLWE3YTg4NWRmZWExNCIsIm5hbWUiOiJkamRrIHRlc3QxIiwiZ2l2ZW5fbmFtZSI6ImRqZGsiLCJmYW1pbHlfbmFtZSI6InRlc3QxIiwicHJlZmVycmVkX3VzZXJuYW1lIjoicGFzc3dvcmRfdGVuYW50X2NmY2ZAZ2F0ZXN0YXV0b21hdGlvbi5jb20iLCJlbWFpbCI6InBhc3N3b3JkX3RlbmFudF9jZmNmQGdhdGVzdGF1dG9tYXRpb24uY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiLyoiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtbWFzdGVyIiwib2ZmbGluZV9hY2Nlc3MiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7InRlc3RDdXN0b20xIjp7InJvbGVzIjpbInRlc3QyIiwidGVzdDMiLCJ0ZXN0MSJdfSwidGVzdEN1c3RvbTIiOnsicm9sZXMiOlsidGVzdDIiLCJ0ZXN0MyIsInRlc3QxIl19LCJIT0xBQ1JBQ1kiOnsicm9sZXMiOlsiSE9MQUNSQUNZX1VTRVIiXX0sImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInNjb3BlIjoicHJvZmlsZSBlbWFpbCIsInNpZCI6IjBkNzdmN2IzLTgxZDMtNDQzMi05NmZmLWE3YTg4NWRmZWExNCIsInRlbmFudElkIjoiODliZWRhNzQtODU5Mi00NWZlLThmZGQtMWZkOWEzNWRjYTgzIiwicmVxdWVzdGVyVHlwZSI6IlRFTkFOVCJ9.g3gS5jWPo1iqn1Ytkk3ETiuN1D5RgqByBOd8u55EzxhmvuhoVIrJdUWZOBOaplB-5hzAk4dPQNRkDkgYFVaLCMRUihK9Y-tGgdBbPVZwaXkidaEHaoM81djNfVhY3J5KlOBNn2lH4Deh3lHVYvF7aO-KmL0ECBuaaltO9gqDc5xSzwy7U58sT-ONxL_yP-AUkB5CN2g6HMhxt2-cPFodbjSnNyeO00Ri7GastHfr8ZK-3zW25oDwshk87osAvWsfI6qcR3RwFRdXX_cwBEU0x9CRVVOsngGr4VbM3uFXpROM12tYHqrPIptEgKB4VVlGd-GUF-vSC7Sw5v1lEcOwdg',
+              'Referer': 'http://localhost:5173/',
+              'sec-ch-ua': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+              'sec-ch-ua-mobile': '?0',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              agentId: '019ab540-50cc-7e45-a383-487c653e49eb',
+              query: 'tender_01',
+              referenceId: '',
+              sessionId: '',
+              fileUrl: [
+                'https://cdn.gov-cloud.ai//_ENC(nIw4FQRwLOQd0b8T2HcImBUJ5a9zjZEImv/UhJi8/+yUl7Ez+m0qAiCCaOJbNgi5)/CMS/94b90898-cb67-411c-896d-bb61fd06752e_$$_V1_PSD%20-%20SAP%20Implementation%20Program%20-%20Technical%20Evaluation%20Form%201.0_17-03-2020.pdf'
+              ],
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setAgentResponse(data);
+        console.log('Agent API Response:', data);
+        
+        // Parse company names and categories from agent response
+        try {
+          // Extract JSON from text field (might be wrapped in markdown code blocks)
+          let jsonText = data.text || '';
+          
+          // Remove markdown code block markers if present
+          jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          
+          // Parse the JSON array
+          const parsedData = JSON.parse(jsonText);
+          
+          if (Array.isArray(parsedData) && parsedData.length > 0) {
+            // Extract unique company names
+            const companyNames = [...new Set(parsedData.map((item: any) => item.companyName).filter(Boolean))];
+            const extractedVendors = companyNames.map((name: string, index: number) => ({
+              id: `v${index + 1}`,
+              name: name
+            }));
+            setCompaniesFromAgent(extractedVendors);
+            
+            // Extract unique category names from the first company (assuming all companies have same categories)
+            if (parsedData[0]?.evaluationCategories) {
+              const categories = parsedData[0].evaluationCategories.map((cat: any) => cat.category);
+              const extractedCategories = categories.map((catName: string, index: number) => ({
+                id: `cat${index + 1}`,
+                name: catName
+              }));
+              setCategoriesFromAgent(extractedCategories);
+            }
+          }
+        } catch (parseError) {
+          console.error('Error parsing agent response:', parseError);
+          // If API parsing fails, use the static JSON file
+          useStaticData();
+        }
+      } catch (error) {
+        console.error('Error calling agent API:', error);
+        setAgentError(error instanceof Error ? error.message : 'Failed to call agent API');
+      } finally {
+        setAgentLoading(false);
+      }
+    };
+
+    callAgentAPI();
+  }, []);
 
   const filteredTenders = useMemo(() => {
     return tenders.filter(tender => {
@@ -153,8 +274,36 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   };
 
   const currentTenderData = allTenderData[selectedTender as keyof typeof allTenderData] || allTenderData['TND-2025-001'];
-  const allCriteria = currentTenderData.criteria;
-  const vendors = currentTenderData.vendors;
+  
+  // Use company names from agent response if available, otherwise use default
+  const vendors = companiesFromAgent.length > 0 ? companiesFromAgent : currentTenderData.vendors;
+  
+  // Use category names from agent response if available, otherwise use default criteria
+  const allCriteria = useMemo(() => {
+    if (categoriesFromAgent.length > 0) {
+      // Map agent categories to criteria, preserving weights from current tender data or using defaults
+      return categoriesFromAgent.map((cat, index) => {
+        const existingCriterion = currentTenderData.criteria[index] || currentTenderData.criteria[0];
+        // Map category to appropriate tab category - default to technical for now
+        let category: Category = 'technical';
+        if (cat.name.toLowerCase().includes('financial') || cat.name.toLowerCase().includes('pricing')) {
+          category = 'financial';
+        } else if (cat.name.toLowerCase().includes('esg') || cat.name.toLowerCase().includes('environmental') || cat.name.toLowerCase().includes('sustainability')) {
+          category = 'esg';
+        } else if (cat.name.toLowerCase().includes('innovation') || cat.name.toLowerCase().includes('technology')) {
+          category = 'innovation';
+        }
+        
+        return {
+          ...existingCriterion,
+          id: cat.id,
+          name: cat.name,
+          category: category
+        };
+      });
+    }
+    return currentTenderData.criteria;
+  }, [categoriesFromAgent, currentTenderData.criteria]);
 
   const [scores, setScores] = useState<Score[]>(() => {
     return allCriteria.flatMap((criterion) =>
