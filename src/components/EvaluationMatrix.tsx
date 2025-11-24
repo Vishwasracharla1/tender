@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import evaluationCategories from '../data/evaluationCategories';
 import { Sparkles, Edit2, BarChart3 } from 'lucide-react';
 
 interface Criterion {
@@ -38,6 +40,7 @@ export function EvaluationMatrix({
   onScoreChange,
 }: EvaluationMatrixProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const getScore = (criterionId: string, vendorId: string): Score | undefined => {
     return scores.find(
@@ -107,12 +110,28 @@ export function EvaluationMatrix({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {criteria.map((criterion, idx) => (
+            {criteria.map((criterion) => (
               <tr key={criterion.id} className="hover:bg-slate-50 transition-all duration-200">
                 <td className="px-6 py-4">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {criterion.name}
-                  </span>
+                  <button
+                    onClick={() => {
+                      // try to find a matching category by exact match or by membership in subCategories
+                      const exact = evaluationCategories.find((c) => c.category.toLowerCase() === criterion.name.toLowerCase());
+                      const containing = evaluationCategories.find((c) => c.subCategories.some((s) => s.toLowerCase() === criterion.name.toLowerCase()));
+                      const match = exact || containing || null;
+                      if (match) {
+                        navigate(`/categories/${encodeURIComponent(match.category)}`, { state: { subData: match.subCategories } });
+                      } else {
+                        // fallback: open categories page without data
+                        navigate('/categories');
+                      }
+                    }}
+                    className="text-left w-full"
+                  >
+                    <span className="text-sm font-semibold text-gray-900 underline hover:text-indigo-600">
+                      {criterion.name}
+                    </span>
+                  </button>
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-col items-center gap-2">

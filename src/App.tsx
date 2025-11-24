@@ -3,82 +3,86 @@ import { router } from './routes';
 import { JotformAgent } from './components/JotformAgent';
 import { useEffect, useState } from 'react';
 
-// Component to conditionally show Jotform agent on all pages except tender-overview
+/**
+ * Component to conditionally render the Jotform Agent.
+ * This component runs outside of the RouterProvider's context, so it must rely 
+ * on lower-level browser APIs (window.location, popstate, and polling) 
+ * to detect route changes and manually manage the Jotform DOM elements.
+ */
 function ConditionalJotformAgent() {
-  const [showAgent, setShowAgent] = useState(() => {
-    return window.location.pathname !== '/tender-overview';
-  });
+  const shouldShowAgent = () => {
+    const pathname = window.location.pathname;
+    // Hide agent on /tender-overview or any path starting with /categories
+    return !(
+      pathname === '/tender-overview' ||
+      pathname.startsWith('/categories')
+    );
+  };
+
+  const [showAgent, setShowAgent] = useState(shouldShowAgent);
 
   useEffect(() => {
+    // Function to aggressively remove external Jotform DOM elements
     const hideJotformElements = () => {
-      // Remove Jotform agent container
-      const jotformContainer = document.getElementById('JotformAgent-019aa102d4617a04838c7ef39132e1adea2b');
-      if (jotformContainer) {
-        jotformContainer.remove();
-      }
-      // Remove any Jotform-related elements
-      document.querySelectorAll('[id*="Jotform"], [id*="jotform"], [class*="jotform"], [class*="agent-widget"]').forEach((el) => {
-        el.remove();
+      // Find the main container by its specific ID (replace with actual ID if different)
+      const jotformContainer = document.getElementById(
+        'JotformAgent-019aa102d4617a04838c7ef39132e1adea2b'
+      );
+      if (jotformContainer) jotformContainer.remove();
+
+      // Aggressively target and remove other common Jotform elements 
+      // injected outside the React root
+      document.querySelectorAll(
+        '[id*="Jotform"], [id*="jotform"], [class*="jotform"], [class*="agent-widget"]'
+      ).forEach((el) => {
+        // Use safer removal check
+        if (el.parentNode) {
+          el.parentNode.removeChild(el);
+        }
       });
     };
 
     const checkPath = () => {
-      const pathname = window.location.pathname;
-      const isTenderOverview = pathname === '/tender-overview';
+      const show = shouldShowAgent();
       
-      if (isTenderOverview) {
-        // On tender-overview: hide agent and remove elements
-        setShowAgent(false);
-        hideJotformElements();
-      } else {
-        // On other pages: show agent
-        setShowAgent(true);
+      // Update state only if the condition has actually changed
+      if (show !== showAgent) {
+          setShowAgent(show);
       }
+
+      // If we are hiding, immediately clean up the DOM
+      if (!show) hideJotformElements();
     };
 
-    // Check immediately
+    // Initial check (Important for first load)
     checkPath();
 
-    // Listen for browser navigation (back/forward)
+    // 1. Listen for browser navigation (Back/Forward buttons)
     window.addEventListener('popstate', checkPath);
 
-    // Listen for React Router navigation by observing DOM changes
-    const observer = new MutationObserver(() => {
-      checkPath();
-      // Also check for Jotform elements periodically on tender-overview
-      if (window.location.pathname === '/tender-overview') {
-        hideJotformElements();
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // 2. Polling fallback to detect internal React Router navigations (like Link clicks)
+    const interval = setInterval(checkPath, 500); // Check every 500ms
 
-    // Check periodically to ensure Jotform stays hidden on tender-overview
-    const interval = setInterval(() => {
-      checkPath();
-      if (window.location.pathname === '/tender-overview') {
-        hideJotformElements();
-      }
-    }, 200);
-
+    // Cleanup function
     return () => {
       window.removeEventListener('popstate', checkPath);
-      observer.disconnect();
       clearInterval(interval);
     };
-  }, []);
+  }, [showAgent]); // Dependency on showAgent keeps the checkPath closure up-to-date with state
 
-  // Never render on tender-overview
-  if (!showAgent || window.location.pathname === '/tender-overview') {
-    return null;
-  }
+  if (!showAgent) return null;
 
   return <JotformAgent />;
 }
 
+/**
+ * Main application component.
+ */
 function App() {
   return (
     <>
       <RouterProvider router={router} />
+      {/* Renders the conditional agent outside the RouterProvider tree */}
       <ConditionalJotformAgent />
     </>
   );

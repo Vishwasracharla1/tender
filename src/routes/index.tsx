@@ -1,151 +1,77 @@
-import { createBrowserRouter, Navigate, useNavigate } from 'react-router-dom';
-import { TenderIntakePage } from '../pages/TenderIntakePage';
-import { EvaluationMatrixPage } from '../pages/EvaluationMatrixPage';
-import { BenchmarkDashboardPage } from '../pages/BenchmarkDashboardPage';
-import { IntegrityAnalyticsPage } from '../pages/IntegrityAnalyticsPage';
-import { JustificationComposerPage } from '../pages/JustificationComposerPage';
-import { AwardSimulationPage } from '../pages/AwardSimulationPage';
-import { LeadershipDashboardPage } from '../pages/LeadershipDashboardPage';
-import { AgentMonitoringPage } from '../pages/AgentMonitoringPage';
-import { IntegrationManagementPage } from '../pages/IntegrationManagementPage';
-import { TenderArticlePage } from '../pages/TenderArticlePage';
-import { TenderOverviewPage } from '../pages/TenderOverviewPage';
+import { createBrowserRouter, Navigate, useNavigate } from "react-router-dom";
+import { TenderIntakePage } from "../pages/TenderIntakePage";
+import { EvaluationMatrixPage } from "../pages/EvaluationMatrixPage";
+import { BenchmarkDashboardPage } from "../pages/BenchmarkDashboardPage";
+import { IntegrityAnalyticsPage } from "../pages/IntegrityAnalyticsPage";
+import { JustificationComposerPage } from "../pages/JustificationComposerPage";
+import { AwardSimulationPage } from "../pages/AwardSimulationPage";
+import { LeadershipDashboardPage } from "../pages/LeadershipDashboardPage";
+import { AgentMonitoringPage } from "../pages/AgentMonitoringPage";
+import { IntegrationManagementPage } from "../pages/IntegrationManagementPage";
+import { TenderArticlePage } from "../pages/TenderArticlePage";
+import { TenderOverviewPage } from "../pages/TenderOverviewPage";
+import CategoryList from "../pages/CategoryList";
+import CategoryDetails from "../pages/CategoryDetail";
 
-// Helper function to create navigation handler
+// Helper function
 const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
   return (page: string) => {
     const pathMap: Record<string, string> = {
-      'leadership': '/',
-      'intake': '/intake',
-      'tender-overview': '/tender-overview',
-      'tender-article': '/tender-article',
-      'evaluation': '/evaluation',
-      'benchmark': '/benchmark',
-      'integrity': '/integrity',
-      'justification': '/justification',
-      'award': '/award',
-      'monitoring': '/monitoring',
-      'integration': '/integration',
+      leadership: "/",
+      intake: "/intake",
+      "tender-overview": "/tender-overview",
+      "tender-article": "/tender-article",
+      evaluation: "/evaluation",
+      benchmark: "/benchmark",
+      integrity: "/integrity",
+      justification: "/justification",
+      award: "/award",
+      monitoring: "/monitoring",
+      integration: "/integration",
     };
-    const path = pathMap[page] || '/';
-    navigate(path);
+    navigate(pathMap[page] || "/");
   };
 };
 
-// Wrapper components to handle navigation
-const LeadershipDashboardWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <LeadershipDashboardPage onNavigate={handleNavigate} />;
+// Wrapper HOC
+const withNavigation = (Component: any) => {
+  return () => {
+    const navigate = useNavigate();
+    const handleNavigate = createNavigateHandler(navigate);
+    return <Component onNavigate={handleNavigate} />;
+  };
 };
 
-const TenderIntakeWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <TenderIntakePage onNavigate={handleNavigate} />;
-};
+// Wrapper versions of pages
+const LeadershipDashboardWrapper = withNavigation(LeadershipDashboardPage);
+const TenderIntakeWrapper = withNavigation(TenderIntakePage);
+const TenderOverviewWrapper = withNavigation(TenderOverviewPage);
+const TenderArticleWrapper = withNavigation(TenderArticlePage);
+const EvaluationMatrixWrapper = withNavigation(EvaluationMatrixPage);
+const BenchmarkDashboardWrapper = withNavigation(BenchmarkDashboardPage);
+const IntegrityAnalyticsWrapper = withNavigation(IntegrityAnalyticsPage);
+const JustificationComposerWrapper = withNavigation(JustificationComposerPage);
+const AwardSimulationWrapper = withNavigation(AwardSimulationPage);
+const AgentMonitoringWrapper = withNavigation(AgentMonitoringPage);
+const IntegrationManagementWrapper = withNavigation(IntegrationManagementPage);
 
-const TenderOverviewWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <TenderOverviewPage onNavigate={handleNavigate} />;
-};
-
-const TenderArticleWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <TenderArticlePage onNavigate={handleNavigate} />;
-};
-
-const EvaluationMatrixWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <EvaluationMatrixPage onNavigate={handleNavigate} />;
-};
-
-const BenchmarkDashboardWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <BenchmarkDashboardPage onNavigate={handleNavigate} />;
-};
-
-const IntegrityAnalyticsWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <IntegrityAnalyticsPage onNavigate={handleNavigate} />;
-};
-
-const JustificationComposerWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <JustificationComposerPage onNavigate={handleNavigate} />;
-};
-
-const AwardSimulationWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <AwardSimulationPage onNavigate={handleNavigate} />;
-};
-
-const AgentMonitoringWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <AgentMonitoringPage onNavigate={handleNavigate} />;
-};
-
-const IntegrationManagementWrapper = () => {
-  const navigate = useNavigate();
-  const handleNavigate = createNavigateHandler(navigate);
-  return <IntegrationManagementPage onNavigate={handleNavigate} />;
-};
-
+// ROUTES
 export const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <LeadershipDashboardWrapper />,
-  },
-  {
-    path: '/intake',
-    element: <TenderIntakeWrapper />,
-  },
-  {
-    path: '/tender-overview',
-    element: <TenderOverviewWrapper />,
-  },
-  {
-    path: '/tender-article',
-    element: <TenderArticleWrapper />,
-  },
-  {
-    path: '/evaluation',
-    element: <EvaluationMatrixWrapper />,
-  },
-  {
-    path: '/benchmark',
-    element: <BenchmarkDashboardWrapper />,
-  },
-  {
-    path: '/integrity',
-    element: <IntegrityAnalyticsWrapper />,
-  },
-  {
-    path: '/justification',
-    element: <JustificationComposerWrapper />,
-  },
-  {
-    path: '/award',
-    element: <AwardSimulationWrapper />,
-  },
-  {
-    path: '/monitoring',
-    element: <AgentMonitoringWrapper />,
-  },
-  {
-    path: '/integration',
-    element: <IntegrationManagementWrapper />,
-  },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
+  { path: "/", element: <LeadershipDashboardWrapper /> },
+  { path: "/intake", element: <TenderIntakeWrapper /> },
+  { path: "/tender-overview", element: <TenderOverviewWrapper /> },
+  { path: "/tender-article", element: <TenderArticleWrapper /> },
+  { path: "/evaluation", element: <EvaluationMatrixWrapper /> },
+  { path: "/benchmark", element: <BenchmarkDashboardWrapper /> },
+  { path: "/integrity", element: <IntegrityAnalyticsWrapper /> },
+  { path: "/justification", element: <JustificationComposerWrapper /> },
+  { path: "/award", element: <AwardSimulationWrapper /> },
+  { path: "/monitoring", element: <AgentMonitoringWrapper /> },
+  { path: "/integration", element: <IntegrationManagementWrapper /> },
+
+  // Category routes
+  { path: "/categories", element: <CategoryList /> },
+  { path: "/categories/:categoryName", element: <CategoryDetails /> },
+
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);
