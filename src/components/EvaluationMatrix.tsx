@@ -27,6 +27,7 @@ interface EvaluationMatrixProps {
   isLocked: boolean;
   onWeightChange: (criterionId: string, weight: number) => void;
   onScoreChange: (criterionId: string, vendorId: string, score: number) => void;
+  onCriterionClick?: (criterionId: string, criterionName: string) => void;
 }
 
 export function EvaluationMatrix({
@@ -36,6 +37,7 @@ export function EvaluationMatrix({
   isLocked,
   onWeightChange,
   onScoreChange,
+  onCriterionClick,
 }: EvaluationMatrixProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
@@ -110,9 +112,18 @@ export function EvaluationMatrix({
             {criteria.map((criterion, idx) => (
               <tr key={criterion.id} className="hover:bg-slate-50 transition-all duration-200">
                 <td className="px-6 py-4">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {criterion.name}
-                  </span>
+                  {onCriterionClick ? (
+                    <button
+                      onClick={() => onCriterionClick(criterion.id, criterion.name)}
+                      className="text-sm font-semibold text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors duration-200 text-left"
+                    >
+                      {criterion.name}
+                    </button>
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-900">
+                      {criterion.name}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-col items-center gap-2">
