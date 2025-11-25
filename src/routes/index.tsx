@@ -11,6 +11,7 @@ import { IntegrationManagementPage } from '../pages/IntegrationManagementPage';
 import { TenderArticlePage } from '../pages/TenderArticlePage';
 import { TenderOverviewPage } from '../pages/TenderOverviewPage';
 import { EvaluationBreakdownPage } from '../pages/EvaluationBreakdownPage';
+import { CompanyDetailPage } from '../pages/CompanyDetailPage';
 
 // Helper function to create navigation handler
 const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
@@ -107,6 +108,12 @@ const EvaluationBreakdownWrapper = () => {
   return <EvaluationBreakdownPage onNavigate={handleNavigate} />;
 };
 
+const CompanyDetailWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <CompanyDetailPage onNavigate={handleNavigate} />;
+};
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -131,6 +138,10 @@ export const router = createBrowserRouter([
   {
     path: '/evaluation-breakdown',
     element: <EvaluationBreakdownWrapper />,
+  },
+  {
+    path: '/company/:companyName',
+    element: <CompanyDetailWrapper />,
   },
   {
     path: '/benchmark',

@@ -43,7 +43,7 @@ interface Tender {
 }
 
 interface EvaluationMatrixPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'evaluation-breakdown' | 'tender-article' | 'tender-overview') => void;
 }
 
 export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) {
@@ -62,18 +62,21 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   // Function to extract data from static JSON file
   const useStaticData = () => {
     if (Array.isArray(agentResponseData) && agentResponseData.length > 0) {
-      // Extract unique company names
-      const companyNames = [...new Set(agentResponseData.map((item: any) => item.companyName).filter(Boolean))];
+      // Extract unique company names from new structure
+      const companyNames = [...new Set(agentResponseData.map((item: any) => item['Company Name']).filter(Boolean))];
       const extractedVendors = companyNames.map((name: string, index: number) => ({
         id: `v${index + 1}`,
         name: name
       }));
       setCompaniesFromAgent(extractedVendors);
       
-      // Extract unique category names from the first company
-      if (agentResponseData[0]?.evaluationCategories) {
-        const categories = agentResponseData[0].evaluationCategories.map((cat: any) => cat.category);
-        const extractedCategories = categories.map((catName: string, index: number) => ({
+      // Extract subcategory names from Subcategory Weightages as criteria
+      if (agentResponseData[0]?.['Subcategory Weightages']) {
+        const weightages = agentResponseData[0]['Subcategory Weightages'] as Record<string, any>;
+        const subcategoryNames = Object.keys(weightages).filter(
+          key => weightages[key] !== null
+        );
+        const extractedCategories = subcategoryNames.map((catName: string, index: number) => ({
           id: `cat${index + 1}`,
           name: catName
         }));
@@ -280,24 +283,34 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   
   // Use category names from agent response if available, otherwise use default criteria
   const allCriteria = useMemo(() => {
-    if (categoriesFromAgent.length > 0) {
-      // Map agent categories to criteria, preserving weights from current tender data or using defaults
-      return categoriesFromAgent.map((cat, index) => {
-        const existingCriterion = currentTenderData.criteria[index] || currentTenderData.criteria[0];
-        // Map category to appropriate tab category - default to technical for now
+    if (categoriesFromAgent.length > 0 && agentResponseData.length > 0) {
+      // Get weights from first company's Subcategory Weightages
+      const firstCompany = agentResponseData[0];
+      const subcategoryWeightages = (firstCompany['Subcategory Weightages'] || {}) as Record<string, any>;
+      
+      // Map agent categories to criteria with weights from data
+      return categoriesFromAgent.map((cat) => {
+        // Get weight from Subcategory Weightages (convert to percentage)
+        const weight = subcategoryWeightages[cat.name] ? (subcategoryWeightages[cat.name] * 100) : 10;
+        
+        // Map category to appropriate tab category
         let category: Category = 'technical';
-        if (cat.name.toLowerCase().includes('financial') || cat.name.toLowerCase().includes('pricing')) {
+        const nameLower = cat.name.toLowerCase();
+        if (nameLower.includes('financial') || nameLower.includes('pricing') || nameLower.includes('cost') || nameLower.includes('payment')) {
           category = 'financial';
-        } else if (cat.name.toLowerCase().includes('esg') || cat.name.toLowerCase().includes('environmental') || cat.name.toLowerCase().includes('sustainability')) {
+        } else if (nameLower.includes('esg') || nameLower.includes('environmental') || nameLower.includes('sustainability') || nameLower.includes('reference')) {
           category = 'esg';
-        } else if (cat.name.toLowerCase().includes('innovation') || cat.name.toLowerCase().includes('technology')) {
+        } else if (nameLower.includes('innovation') || nameLower.includes('custom') || nameLower.includes('ricef')) {
           category = 'innovation';
+        } else {
+          // Default to technical for module, implementation, partner experience, etc.
+          category = 'technical';
         }
         
         return {
-          ...existingCriterion,
           id: cat.id,
           name: cat.name,
+          weight: weight,
           category: category
         };
       });
@@ -546,6 +559,7 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
               isLocked={isLocked}
               onWeightChange={handleWeightChange}
               onScoreChange={handleScoreChange}
+              onCriterionClick={() => onNavigate('evaluation-breakdown')}
             />
           </div>
 

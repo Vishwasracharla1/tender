@@ -1,515 +1,357 @@
-import { useState, useEffect, useRef } from 'react';
-import * as echarts from 'echarts';
+import { useNavigate } from 'react-router-dom';
 import agentResponseData from '../data/agentResponseData.json';
 
-const OverallComparisonChart = ({ data }: { data: any[] }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const chartRef = useRef<echarts.EChartsType | null>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-
-    if (!chartRef.current) {
-      chartRef.current = echarts.init(ref.current, undefined, {
-        renderer: 'canvas',
-      });
-    }
-
-    if (!data || data.length === 0) {
-      chartRef.current?.clear();
-      return;
-    }
-
-    const companies = data.map(d => d.company);
-    const scores = data.map(d => d['Weighted Score'] || 0);
-
-    const option: echarts.EChartsOption = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
-        formatter: (params: any) => {
-          const items = Array.isArray(params) ? params : [params];
-          const item = items[0];
-          return `
-            <div style="padding: 4px;">
-              <div><strong>${item.axisValueLabel}</strong></div>
-              <div style="margin-top: 4px;">
-                <span style="display:inline-block;width:10px;height:10px;background-color:${item.color};border-radius:2px;margin-right:5px;"></span>
-                Weighted Score: ${typeof item.value === 'number' ? item.value.toFixed(2) : item.value}
-              </div>
-            </div>
-          `;
-        },
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 8,
-      },
-      grid: {
-        left: 60,
-        right: 30,
-        top: 20,
-        bottom: 40,
-      },
-      xAxis: {
-        type: 'category',
-        data: companies,
-        axisLabel: {
-          interval: 0,
-          rotate: -45,
-          fontSize: 11,
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e0e0e0',
-          },
-        },
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Score',
-        nameLocation: 'middle',
-        nameGap: 35,
-        axisLabel: {
-          formatter: '{value}',
-          fontSize: 11,
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e0e0e0',
-          },
-        },
-        splitLine: {
-          lineStyle: {
-            type: 'dashed',
-            color: '#e0e0e0',
-          },
-        },
-      },
-      series: [
-        {
-          name: 'Weighted Score',
-          type: 'bar',
-          data: scores,
-          barWidth: '60%',
-          itemStyle: {
-            color: '#3b82f6',
-            borderRadius: [4, 4, 4, 4],
-          },
-          label: {
-            show: true,
-            position: 'top',
-            formatter: (p: any) => (typeof p.value === 'number' ? p.value.toFixed(2) : ''),
-            fontSize: 11,
-          },
-          emphasis: {
-            focus: 'series',
-          },
-        },
-      ],
-      animationDuration: 400,
-    };
-
-    chartRef.current.setOption(option);
-
-    const handleResize = () => chartRef.current?.resize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chartRef.current?.dispose();
-      chartRef.current = null;
-    };
-  }, [data]);
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="text-xl font-semibold mb-2">Overall Comparison</div>
-      <div ref={ref} className="w-full h-[300px] rounded-xl" />
-    </div>
-  );
-};
-
-const DetailedMetricsChart = ({ data }: { data: any[] }) => {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const chartRef = useRef<echarts.EChartsType | null>(null);
-
-  useEffect(() => {
-    if (!ref.current) return;
-
-    if (!chartRef.current) {
-      chartRef.current = echarts.init(ref.current, undefined, {
-        renderer: 'canvas',
-      });
-    }
-
-    if (!data || data.length === 0) {
-      chartRef.current?.clear();
-      return;
-    }
-
-    const metrics = [
-      { key: 'Module Coverage', label: 'Module Coverage', color: '#3b82f6' },
-      { key: 'SAP Partner (MENA)', label: 'SAP Partner (MENA)', color: '#10b981' },
-      { key: 'Gov Implementations', label: 'Gov Implementations', color: '#ef4444' },
-      { key: 'S/4 HANA Experience', label: 'S/4 HANA Experience', color: '#f59e0b' },
-      { key: 'GCC Experience', label: 'GCC Experience', color: '#8b5cf6' },
-    ];
-
-    const companies = data.map(d => d.company);
-
-    // Build one series per metric
-    const series: echarts.SeriesOption[] = metrics.map((metric, metricIdx) => {
-      const dataArr = companies.map((_, companyIdx) => {
-        const company = data[companyIdx];
-        return company ? (company[metric.key] || 0) : 0;
-      });
-
-      return {
-        name: metric.label,
-        type: 'bar',
-        data: dataArr,
-        barWidth: '15%',
-        itemStyle: {
-          color: metric.color,
-          borderRadius: [4, 4, 4, 4],
-        },
-        label: {
-          show: true,
-          position: 'top',
-          formatter: (p: any) => (typeof p.value === 'number' && p.value !== 0 ? p.value.toFixed(1) : ''),
-          fontSize: 11,
-        },
-        emphasis: {
-          focus: 'series',
-        },
-      } as echarts.SeriesOption;
-    });
-
-    const option: echarts.EChartsOption = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
-        formatter: (params: any) => {
-          const items = Array.isArray(params) ? params : [params];
-          const companyLabel = items[0]?.axisValueLabel ?? '';
-          let tooltipContent = `<div><strong>${companyLabel}</strong></div>`;
-          
-          items.forEach((item: any) => {
-            if (item.value && item.value !== 0) {
-              tooltipContent += `<div style="margin-top: 4px;">
-                <span style="display:inline-block;width:10px;height:10px;background-color:${item.color};border-radius:2px;margin-right:5px;"></span>
-                ${item.seriesName}: ${typeof item.value === 'number' ? item.value.toFixed(1) : item.value}/10
-              </div>`;
-            }
-          });
-          
-          return `<div style="padding: 4px;">${tooltipContent}</div>`;
-        },
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 8,
-        textStyle: {
-          color: '#333',
-        },
-      },
-      legend: {
-        top: 8,
-        type: 'scroll',
-        selectedMode: 'multiple',
-        textStyle: {
-          fontSize: 12,
-        },
-      },
-      grid: {
-        left: 80,
-        right: 45,
-        top: 48,
-        bottom: 40,
-      },
-      xAxis: {
-        type: 'category',
-        data: companies,
-        axisLabel: {
-          interval: 0,
-          rotate: -45,
-          fontSize: 11,
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e0e0e0',
-          },
-        },
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Score (0-10)',
-        nameLocation: 'middle',
-        nameGap: 35,
-        min: 0,
-        max: 10,
-        axisLabel: {
-          formatter: '{value}',
-          fontSize: 11,
-        },
-        axisLine: {
-          lineStyle: {
-            color: '#e0e0e0',
-          },
-        },
-        splitLine: {
-          lineStyle: {
-            type: 'dashed',
-            color: '#e0e0e0',
-          },
-        },
-      },
-      series,
-      animationDuration: 400,
-    };
-
-    chartRef.current.setOption(option);
-
-    const handleResize = () => chartRef.current?.resize();
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chartRef.current?.dispose();
-      chartRef.current = null;
-    };
-  }, [data]);
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="text-xl font-semibold mb-2">Detailed Metrics Comparison</div>
-      <div ref={ref} className="w-full h-[52vh] rounded-xl" />
-    </div>
-  );
-};
-
 export const EvaluationBreakdown = () => {
-  const [selectedCompany, setSelectedCompany] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('Module Coverage');
+  const navigate = useNavigate();
 
   // Use data from agentResponseData.json
   const data = agentResponseData as any[];
 
-  const companies = data.map(d => d.companyName);
+  const companies = data.map(d => d['Company Name']);
   const companyColors: Record<string, string> = {
     'EDRAKY': '#3b82f6',
     'COGNIZANT': '#10b981',
     'KAAR': '#f59e0b',
     'SOLTIUS': '#8b5cf6',
-    'TYCONZ': '#ec4899'
+    'TYCONZ': '#64748b'
+  };
+
+  const companyGradients: Record<string, { card: string; iconBg: string; titleColor: string; valueColor: string; border: string; shadow: string }> = {
+    'EDRAKY': {
+      card: 'bg-gradient-to-br from-blue-50 via-white to-indigo-100',
+      iconBg: 'from-blue-500 to-indigo-600',
+      titleColor: 'text-blue-700',
+      valueColor: 'text-blue-900',
+      border: 'border-blue-100',
+      shadow: 'shadow-[0_18px_40px_rgba(59,130,246,0.15)]'
+    },
+    'COGNIZANT': {
+      card: 'bg-gradient-to-br from-emerald-50 via-white to-emerald-100',
+      iconBg: 'from-emerald-500 to-teal-500',
+      titleColor: 'text-emerald-700',
+      valueColor: 'text-emerald-900',
+      border: 'border-emerald-100',
+      shadow: 'shadow-[0_18px_40px_rgba(5,150,105,0.15)]'
+    },
+    'KAAR': {
+      card: 'bg-gradient-to-br from-amber-50 via-white to-orange-100',
+      iconBg: 'from-amber-500 to-orange-500',
+      titleColor: 'text-amber-700',
+      valueColor: 'text-amber-900',
+      border: 'border-amber-100',
+      shadow: 'shadow-[0_18px_40px_rgba(245,158,11,0.15)]'
+    },
+    'SOLTIUS': {
+      card: 'bg-gradient-to-br from-purple-50 via-white to-violet-100',
+      iconBg: 'from-purple-500 to-violet-600',
+      titleColor: 'text-purple-700',
+      valueColor: 'text-purple-900',
+      border: 'border-purple-100',
+      shadow: 'shadow-[0_18px_40px_rgba(139,92,246,0.15)]'
+    },
+    'TYCONZ': {
+      card: 'bg-gradient-to-br from-slate-50 via-white to-slate-100',
+      iconBg: 'from-slate-500 to-slate-600',
+      titleColor: 'text-slate-700',
+      valueColor: 'text-slate-900',
+      border: 'border-slate-200',
+      shadow: 'shadow-[0_18px_40px_rgba(71,85,105,0.15)]'
+    }
+  };
+
+  // Get all criteria from Subcategory Weightages (same as Evaluation Matrix)
+  const getAllCriteria = () => {
+    if (data.length === 0) return [];
+    const firstCompany = data[0];
+    const subcategoryWeightages = (firstCompany['Subcategory Weightages'] || {}) as Record<string, any>;
+    return Object.keys(subcategoryWeightages).filter(key => subcategoryWeightages[key] !== null);
+  };
+
+  const allCriteriaList = getAllCriteria();
+
+  // Function to calculate score for a specific criterion
+  const calculateCriterionScore = (criterionName: string, companyName: string): number => {
+    const companyData = data.find(d => d['Company Name'] === companyName);
+    if (!companyData) return 0;
+
+    const subcategoryRatings = (companyData['Subcategory Ratings'] || {}) as Record<string, any>;
+    const rating = subcategoryRatings[criterionName];
+
+    if (rating === undefined || rating === null) return 0;
+
+    // Handle objects (Module Covered, Implementation Timeline, Partner Experience)
+    if (typeof rating === 'object' && rating !== null && !Array.isArray(rating)) {
+      // For Module Covered, count Yes values
+      if (criterionName === 'Module Covered') {
+        const moduleData = rating as Record<string, any>;
+        const yesCount = Object.values(moduleData).filter((v: any) => v === 'Yes').length;
+        const totalCount = Object.keys(moduleData).filter(k => moduleData[k] !== null).length;
+        return totalCount > 0 ? (yesCount / totalCount) * 10 : 0;
+      }
+      
+      // For Implementation Timeline / Consultants
+      if (criterionName === 'Implementation Timeline / Consultants') {
+        const implData = rating as Record<string, any>;
+        const manMonths = implData['Number of Man Months Considered'] || 0;
+        const onshore = implData['Number of Consultants (Onshore)'] || 0;
+        const offshore = implData['Number of Consultants (Offshore)'] || 0;
+        const arabic = implData['Number of Arabic Consultants (On shore)'] || 0;
+        const avgExp = implData['Average experience of consultants'] || 0;
+        
+        const manMonthsScore = Math.min(10, (manMonths / 300) * 10);
+        const consultantScore = Math.min(10, ((onshore + offshore) / 30) * 10);
+        const arabicScore = Math.min(10, (arabic / 15) * 10);
+        const expScore = Math.min(10, (avgExp / 10) * 10);
+        
+        return (manMonthsScore * 0.3 + consultantScore * 0.3 + arabicScore * 0.2 + expScore * 0.2);
+      }
+      
+      // For Partner Experience
+      if (criterionName === 'Partner Experience') {
+        const partnerData = rating as Record<string, any>;
+        const implementations = partnerData['Number of SAP Implementations'] || 0;
+        const s4hana = partnerData['SAP S/4HANA experience'] || 0;
+        const gcc = partnerData['GCC Experience'];
+        const partnerType = partnerData['SAP Partner Type & Age'] || '';
+        
+        let partnerTypeScore = 0;
+        if (typeof partnerType === 'string') {
+          const typeLower = partnerType.toLowerCase();
+          if (typeLower.includes('platinum')) partnerTypeScore = 10;
+          else if (typeLower.includes('gold')) partnerTypeScore = 7;
+          else if (typeLower.includes('silver')) partnerTypeScore = 5;
+          else partnerTypeScore = 3;
+        }
+        
+        const implScore = Math.min(10, (implementations / 50) * 10);
+        const s4hanaScore = Math.min(10, (s4hana / 200) * 10);
+        const gccScore = typeof gcc === 'string' && gcc.toLowerCase() === 'yes' ? 10 : 
+                        typeof gcc === 'number' ? Math.min(10, (gcc / 10) * 10) : 0;
+        
+        return (partnerTypeScore * 0.3 + implScore * 0.2 + s4hanaScore * 0.3 + gccScore * 0.2);
+      }
+    }
+
+    // Handle string values (Yes/No)
+    if (typeof rating === 'string') {
+      if (rating.toLowerCase() === 'yes') return 10;
+      if (rating.toLowerCase() === 'no') return 0;
+      return 0;
+    }
+
+    // Handle numeric values
+    if (typeof rating === 'number') {
+      // For RICEF, scale: 0-150 -> 0-10
+      if (criterionName === 'Custom Objects Considered (RICEF)') {
+        return Math.min(10, (rating / 150) * 10);
+      }
+      
+      // For Project Duration, inverse scale: shorter is better
+      if (criterionName === 'Project Duration') {
+        return Math.max(0, Math.min(10, (12 / rating) * 10));
+      }
+      
+      // For Reference count, scale: 0-50 -> 0-10
+      if (criterionName.includes('Reference') && !criterionName.includes('GCC') && !criterionName.includes('Non-GCC')) {
+        return Math.min(10, (rating / 50) * 10);
+      }
+      
+      // Default: scale to 0-10
+      return Math.min(10, Math.max(0, rating / 10));
+    }
+
+    return 0;
   };
 
   // Calculate weighted scores
   const calculateWeightedScore = (company: string) => {
-    const companyData = data.find(d => d.companyName === company);
+    const companyData = data.find(d => d['Company Name'] === company);
     if (!companyData) return '0.00';
-    let totalScore = 0;
     
-    companyData.evaluationCategories.forEach((cat: any) => {
-      cat.subCategories.forEach((sub: any) => {
-        if (sub.weight && typeof sub.rating === 'number') {
-          totalScore += sub.weight * sub.rating;
-        }
-      });
-    });
-    
-    return totalScore.toFixed(2);
+    // Use Overall Rating from the new structure
+    return companyData['Overall Rating']?.toFixed(2) || '0.00';
   };
 
-  // Prepare comparison data
+  // Prepare comparison data with all criteria
   const comparisonData = companies.map(company => {
-    const companyData = data.find(d => d.companyName === company);
+    const companyData = data.find(d => d['Company Name'] === company);
     if (!companyData) return null;
-    const moduleCoverage = companyData.evaluationCategories
-      .find((cat: any) => cat.category === 'Module Coverage')
-      ?.subCategories.find((sub: any) => sub.name === 'Module Covered')?.rating || 0;
     
-    const partnerExp = companyData.evaluationCategories
-      .find((cat: any) => cat.category === 'Partner Experience & Capability')?.subCategories || [];
+    const result: any = { company };
     
-    // Extract SAP Partner rating - convert string ratings to numbers
-    const sapPartnerSub = partnerExp.find((s: any) => s.name === 'SAP Partner Type & Age – MENA');
-    let sapPartnerRating = 0;
-    if (sapPartnerSub?.rating) {
-      if (typeof sapPartnerSub.rating === 'number') {
-        sapPartnerRating = sapPartnerSub.rating;
-      } else if (typeof sapPartnerSub.rating === 'string') {
-        // Convert partner type to numeric rating
-        const ratingStr = sapPartnerSub.rating.toLowerCase();
-        if (ratingStr.includes('platinum')) sapPartnerRating = 10;
-        else if (ratingStr.includes('gold')) sapPartnerRating = 7;
-        else if (ratingStr.includes('silver')) sapPartnerRating = 5;
-        else sapPartnerRating = 3;
-      }
-    }
+    // Calculate score for each criterion
+    allCriteriaList.forEach(criterionName => {
+      result[criterionName] = calculateCriterionScore(criterionName, company);
+    });
     
-    // Extract Gov Implementations - check for Yes/No or numeric
-    const govImplSub = partnerExp.find((s: any) => s.name.includes('Government') || s.name.includes('Public Service'));
-    let govImplRating = 0;
-    if (govImplSub?.rating) {
-      if (typeof govImplSub.rating === 'number') {
-        govImplRating = govImplSub.rating;
-      } else if (typeof govImplSub.rating === 'string' && govImplSub.rating.toLowerCase() === 'yes') {
-        govImplRating = 10;
-      }
-    }
-    
-    // Extract S/4 HANA Experience
-    const s4hanaSub = partnerExp.find((s: any) => s.name.includes('S/4 HANA'));
-    let s4hanaRating = 0;
-    if (s4hanaSub?.rating) {
-      if (typeof s4hanaSub.rating === 'number') {
-        s4hanaRating = s4hanaSub.rating;
-      } else if (typeof s4hanaSub.rating === 'string' && s4hanaSub.rating.toLowerCase() === 'yes') {
-        s4hanaRating = 10;
-      }
-    }
-    
-    // Extract GCC Experience
-    const gccSub = partnerExp.find((s: any) => s.name === 'GCC Experience');
-    let gccRating = 0;
-    if (gccSub?.rating) {
-      if (typeof gccSub.rating === 'number') {
-        gccRating = gccSub.rating;
-      } else if (typeof gccSub.rating === 'string' && gccSub.rating.toLowerCase() === 'yes') {
-        gccRating = 10;
-      }
-    }
-    
-    return {
-      company,
-      'Module Coverage': typeof moduleCoverage === 'number' ? moduleCoverage : 0,
-      'SAP Partner (MENA)': sapPartnerRating,
-      'Gov Implementations': govImplRating,
-      'S/4 HANA Experience': s4hanaRating,
-      'GCC Experience': gccRating,
-      'Weighted Score': parseFloat(calculateWeightedScore(company))
-    };
+    result['Weighted Score'] = parseFloat(calculateWeightedScore(company));
+    return result;
   }).filter(Boolean) as any[];
 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">RAK Tender Evaluation Dashboard</h1>
-          <p className="text-slate-600">Tender ID: RAK_01 | SAP S/4 HANA Implementation</p>
-        </div>
-
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {companies.map(company => (
-            <div 
-              key={company}
-              className="bg-white rounded-xl shadow-lg p-6 cursor-pointer transform transition-all hover:scale-105"
-              style={{ borderTop: `4px solid ${companyColors[company]}` }}
-              onClick={() => setSelectedCompany(company)}
-            >
-              <h3 className="text-xl font-bold text-slate-800 mb-4">{company}</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Weighted Score</span>
-                  <span className="text-2xl font-bold" style={{ color: companyColors[company] }}>
-                    {calculateWeightedScore(company)}
-                  </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {companies.map(company => {
+            const gradient = companyGradients[company] || companyGradients['EDRAKY'];
+            return (
+              <div 
+                key={company}
+                className={`${gradient.card} ${gradient.border} border rounded-xl ${gradient.shadow} p-6 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}
+                onClick={() => navigate(`/company/${encodeURIComponent(company)}`)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient.iconBg} flex items-center justify-center`}>
+                    <span className="text-white text-xl font-bold">{company.charAt(0)}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Module Coverage</span>
-                  <span className="text-lg font-semibold text-slate-700">
-                    {comparisonData.find(c => c.company === company)?.['Module Coverage']}/10
-                  </span>
+                <div className="space-y-3">
+                  <h3 className={`text-lg font-bold ${gradient.titleColor} mb-2`}>{company}</h3>
+                  <div className="flex flex-col gap-1">
+                    <span className={`text-xs font-semibold ${gradient.titleColor} uppercase tracking-wide`}>
+                      Weighted Score
+                    </span>
+                    <span className={`text-3xl font-bold ${gradient.valueColor}`}>
+                      {calculateWeightedScore(company)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-
-        {/* Charts */}
-        <div className="mb-8">
-          {/* Bar Chart */}
-          <OverallComparisonChart data={comparisonData} />
-        </div>
-
-        {/* Detailed Metrics Comparison - ECharts */}
-        <DetailedMetricsChart data={comparisonData} />
 
         {/* Detailed Table */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Evaluation Details</h2>
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden mt-8">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2.5 border-b border-slate-200">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-inner">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              Evaluation Details
+            </h2>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-slate-200">
-                  <th className="text-left p-4 text-slate-700 font-semibold">Criteria</th>
-                  <th className="text-center p-4 text-slate-700 font-semibold">Weight</th>
+                <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-300">
+                  <th className="text-left p-3 text-slate-700 font-bold text-xs uppercase tracking-wider">Criteria</th>
+                  <th className="text-center p-3 text-slate-700 font-bold text-xs uppercase tracking-wider w-20">Weight</th>
                   {companies.map(company => (
-                    <th key={company} className="text-center p-4 font-semibold" style={{ color: companyColors[company] }}>
-                      {company}
+                    <th key={company} className="text-center p-3 font-bold text-xs uppercase tracking-wider" style={{ color: companyColors[company] }}>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span>{company}</span>
+                        <div className="w-12 h-0.5 rounded-full" style={{ backgroundColor: companyColors[company], opacity: 0.3 }}></div>
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <td className="p-4 font-semibold text-slate-800">Module Coverage</td>
-                  <td className="text-center p-4 text-slate-600">35%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 font-semibold" style={{ color: companyColors[company] }}>
-                      {comparisonData.find(c => c.company === company)?.['Module Coverage']}/10
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-slate-100">
-                  <td className="p-4 text-slate-700">SAP Partner (MENA)</td>
-                  <td className="text-center p-4 text-slate-600">15%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 text-slate-700">
-                      {comparisonData.find(c => c.company === company)?.['SAP Partner (MENA)']}/10
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <td className="p-4 text-slate-700">Government Implementations</td>
-                  <td className="text-center p-4 text-slate-600">20%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 text-slate-700">
-                      {comparisonData.find(c => c.company === company)?.['Gov Implementations']}/10
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-slate-100">
-                  <td className="p-4 text-slate-700">S/4 HANA Experience</td>
-                  <td className="text-center p-4 text-slate-600">10%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 text-slate-700">
-                      {comparisonData.find(c => c.company === company)?.['S/4 HANA Experience']}/10
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  <td className="p-4 text-slate-700">GCC Experience</td>
-                  <td className="text-center p-4 text-slate-600">5%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 text-slate-700">
-                      {comparisonData.find(c => c.company === company)?.['GCC Experience']}/10
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-t-2 border-slate-200 bg-slate-100">
-                  <td className="p-4 font-bold text-slate-800">Total Weighted Score</td>
-                  <td className="text-center p-4 font-bold text-slate-800">100%</td>
-                  {companies.map(company => (
-                    <td key={company} className="text-center p-4 text-xl font-bold" style={{ color: companyColors[company] }}>
-                      {calculateWeightedScore(company)}
-                    </td>
-                  ))}
+              <tbody className="divide-y divide-slate-100">
+                {allCriteriaList.map((criterionName, idx) => {
+                  // Get weight from JSON, convert to percentage
+                  const firstCompany = data[0];
+                  const subcategoryWeightages = (firstCompany['Subcategory Weightages'] || {}) as Record<string, any>;
+                  const weightValue = subcategoryWeightages[criterionName] || 0;
+                  const weightPercent = (weightValue * 100).toFixed(0) + '%';
+                  
+                  // Get icon based on criterion name
+                  const getIcon = (name: string) => {
+                    const nameLower = name.toLowerCase();
+                    if (nameLower.includes('module')) return '📦';
+                    if (nameLower.includes('migration')) return '🔄';
+                    if (nameLower.includes('organizational') || nameLower.includes('change')) return '👥';
+                    if (nameLower.includes('support')) return '🛟';
+                    if (nameLower.includes('duration') || nameLower.includes('project')) return '⏱️';
+                    if (nameLower.includes('timeline') || nameLower.includes('consultant')) return '📅';
+                    if (nameLower.includes('partner') || nameLower.includes('experience')) return '🤝';
+                    if (nameLower.includes('reference')) return '🏛️';
+                    if (nameLower.includes('ricef') || nameLower.includes('custom')) return '⚙️';
+                    return '📋';
+                  };
+                  
+                  return (
+                    <tr key={criterionName} className={`hover:bg-slate-50 transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{getIcon(criterionName)}</span>
+                          <span className="font-semibold text-sm text-slate-800">{criterionName}</span>
+                        </div>
+                      </td>
+                      <td className="text-center p-3">
+                        <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-md border border-indigo-200">
+                          <span className="text-xs font-bold text-indigo-700">{weightPercent}</span>
+                        </div>
+                      </td>
+                      {companies.map(company => {
+                        const companyScore = comparisonData.find(c => c.company === company)?.[criterionName] || 0;
+                        const roundedScore = Math.round(companyScore * 10) / 10;
+                        const companyScorePercentage = (companyScore / 10) * 100;
+                        const companyScoreColor = companyScorePercentage >= 80 ? 'from-emerald-500 to-teal-500' : 
+                                                 companyScorePercentage >= 60 ? 'from-blue-500 to-cyan-500' : 
+                                                 companyScorePercentage >= 40 ? 'from-amber-500 to-orange-500' : 
+                                                 'from-rose-500 to-red-500';
+                        
+                        return (
+                          <td key={company} className="text-center p-3">
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-sm font-bold" style={{ color: companyColors[company] }}>
+                                {roundedScore}/10
+                              </span>
+                              <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                                <div 
+                                  className={`h-full bg-gradient-to-r ${companyScoreColor} transition-all duration-500 shadow-sm`}
+                                  style={{ width: `${companyScorePercentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+                <tr className="border-t-2 border-slate-300 bg-gradient-to-r from-slate-100 to-slate-200">
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-inner">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                      <span className="font-bold text-sm text-slate-800">Total Weighted Score</span>
+                    </div>
+                  </td>
+                  <td className="text-center p-3">
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-md">
+                      <span className="text-xs font-bold text-white">100%</span>
+                    </div>
+                  </td>
+                  {companies.map(company => {
+                    const totalScore = parseFloat(calculateWeightedScore(company));
+                    return (
+                      <td key={company} className="text-center p-3">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-lg font-bold" style={{ color: companyColors[company] }}>
+                            {totalScore.toFixed(2)}
+                          </span>
+                          <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                            <div 
+                              className="h-full bg-gradient-to-r rounded-full transition-all duration-500 shadow-sm"
+                              style={{ 
+                                width: `${Math.min((totalScore / 300) * 100, 100)}%`,
+                                background: `linear-gradient(to right, ${companyColors[company]}, ${companyColors[company]}dd)`
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               </tbody>
             </table>
@@ -542,4 +384,6 @@ export const EvaluationBreakdown = () => {
     </div>
   );
 };
+
+
 
