@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown') => void;
+  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation';
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation') => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
@@ -21,6 +21,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/tender-article': 'tender-article',
     '/evaluation': 'evaluation',
     '/evaluation-breakdown': 'evaluation-breakdown',
+    '/evaluation-recommendation': 'evaluation-recommendation',
     '/benchmark': 'benchmark',
     '/integrity': 'integrity',
     '/justification': 'justification',
@@ -87,6 +88,11 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           id: 'evaluation-breakdown' as const,
           label: 'Evaluation Breakdown',
           path: '/evaluation-breakdown',
+        },
+        {
+          id: 'evaluation-recommendation' as const,
+          label: 'Evaluation Recommendation',
+          path: '/evaluation-recommendation',
         },
       ],
     },

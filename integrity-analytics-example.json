@@ -1,0 +1,303 @@
+{
+  "integrityAnalytics": {
+    "kpiWidgets": {
+      "avgBiasScore": {
+        "value": 35.2,
+        "subtitle": "Per evaluator",
+        "trend": {
+          "value": "8%",
+          "isPositive": false
+        }
+      },
+      "collusionProbability": {
+        "value": 92,
+        "subtitle": "Highest detected",
+        "highestDetected": 0.92
+      },
+      "resolutionRate": {
+        "value": 25,
+        "subtitle": "2/8 alerts closed",
+        "resolvedAlerts": 2,
+        "totalAlerts": 8,
+        "trend": {
+          "value": "15%",
+          "isPositive": true
+        }
+      }
+    },
+    "networkGraph": {
+      "nodes": [
+        {
+          "id": "e1",
+          "name": "Sarah Chen",
+          "type": "evaluator",
+          "biasScore": 15,
+          "department": "Roads & Construction"
+        },
+        {
+          "id": "e2",
+          "name": "Michael Ross",
+          "type": "evaluator",
+          "biasScore": 78,
+          "department": "Roads & Construction"
+        },
+        {
+          "id": "e3",
+          "name": "Emily Davis",
+          "type": "evaluator",
+          "biasScore": 22,
+          "department": "Roads & Construction"
+        },
+        {
+          "id": "e4",
+          "name": "James Wilson",
+          "type": "evaluator",
+          "biasScore": 45,
+          "department": "Roads & Construction"
+        },
+        {
+          "id": "v1",
+          "name": "Acme Corp",
+          "type": "vendor"
+        },
+        {
+          "id": "v2",
+          "name": "BuildTech Ltd",
+          "type": "vendor"
+        },
+        {
+          "id": "v3",
+          "name": "Global Supplies",
+          "type": "vendor"
+        },
+        {
+          "id": "v4",
+          "name": "TechCon Solutions",
+          "type": "vendor"
+        }
+      ],
+      "edges": [
+        {
+          "source": "e1",
+          "target": "v1",
+          "strength": 0.3,
+          "isSuspicious": false
+        },
+        {
+          "source": "e1",
+          "target": "v2",
+          "strength": 0.4,
+          "isSuspicious": false
+        },
+        {
+          "source": "e2",
+          "target": "v2",
+          "strength": 0.9,
+          "isSuspicious": true
+        },
+        {
+          "source": "e3",
+          "target": "v1",
+          "strength": 0.5,
+          "isSuspicious": false
+        },
+        {
+          "source": "e4",
+          "target": "v3",
+          "strength": 0.8,
+          "isSuspicious": true
+        }
+      ],
+      "departmentData": {
+        "Roads & Construction": {
+          "nodes": [
+            {
+              "id": "e1",
+              "name": "Sarah Chen",
+              "type": "evaluator",
+              "biasScore": 15,
+              "department": "Roads & Construction"
+            },
+            {
+              "id": "e2",
+              "name": "Michael Ross",
+              "type": "evaluator",
+              "biasScore": 78,
+              "department": "Roads & Construction"
+            },
+            {
+              "id": "v1",
+              "name": "Acme Corp",
+              "type": "vendor"
+            },
+            {
+              "id": "v2",
+              "name": "BuildTech Ltd",
+              "type": "vendor"
+            }
+          ],
+          "edges": [
+            {
+              "source": "e1",
+              "target": "v1",
+              "strength": 0.3,
+              "isSuspicious": false
+            },
+            {
+              "source": "e2",
+              "target": "v2",
+              "strength": 0.9,
+              "isSuspicious": true
+            }
+          ]
+        },
+        "Water Management": {
+          "nodes": [
+            {
+              "id": "e5",
+              "name": "Omar Al-Rashid",
+              "type": "evaluator",
+              "biasScore": 32,
+              "department": "Water Management"
+            },
+            {
+              "id": "v5",
+              "name": "AquaTech Solutions",
+              "type": "vendor"
+            }
+          ],
+          "edges": [
+            {
+              "source": "e5",
+              "target": "v5",
+              "strength": 0.4,
+              "isSuspicious": false
+            }
+          ]
+        }
+      }
+    },
+    "integrityAlerts": [
+      {
+        "id": "alert-1",
+        "type": "collusion",
+        "severity": "critical",
+        "title": "Suspicious Evaluator-Vendor Pattern",
+        "description": "Michael Ross consistently scores BuildTech Ltd 25-30% higher than other evaluators across all categories.",
+        "confidenceScore": 0.92,
+        "entitiesInvolved": ["Michael Ross", "BuildTech Ltd"],
+        "status": "open",
+        "detectedAt": "2025-11-26T11:00:00.000Z",
+        "department": "Roads & Construction",
+        "category": "WORKS",
+        "tenderId": "TND-2025-001"
+      },
+      {
+        "id": "alert-2",
+        "type": "bias",
+        "severity": "high",
+        "title": "Evaluator Bias Score Threshold Exceeded",
+        "description": "Michael Ross shows a bias score of 78/100, significantly favoring BuildTech Ltd in technical and innovation categories.",
+        "confidenceScore": 0.87,
+        "entitiesInvolved": ["Michael Ross"],
+        "status": "open",
+        "detectedAt": "2025-11-26T10:55:00.000Z",
+        "department": "Roads & Construction",
+        "category": "WORKS",
+        "tenderId": "TND-2025-001"
+      },
+      {
+        "id": "alert-3",
+        "type": "collusion",
+        "severity": "high",
+        "title": "Vendor Favoritism Detected",
+        "description": "James Wilson consistently underscores competing vendors while awarding maximum points to Global Supplies.",
+        "confidenceScore": 0.81,
+        "entitiesInvolved": ["James Wilson", "Global Supplies"],
+        "status": "open",
+        "detectedAt": "2025-11-26T10:50:00.000Z",
+        "department": "Roads & Construction",
+        "category": "WORKS",
+        "tenderId": "TND-2025-001"
+      },
+      {
+        "id": "alert-4",
+        "type": "anomaly",
+        "severity": "medium",
+        "title": "Scoring Variance Anomaly",
+        "description": "James Wilson's ESG scores show 3x higher variance compared to peer evaluators.",
+        "confidenceScore": 0.73,
+        "entitiesInvolved": ["James Wilson"],
+        "status": "open",
+        "detectedAt": "2025-11-26T10:45:00.000Z",
+        "department": "Roads & Construction",
+        "category": "WORKS",
+        "tenderId": "TND-2025-001"
+      },
+      {
+        "id": "alert-5",
+        "type": "bias",
+        "severity": "low",
+        "title": "Minor Scoring Pattern",
+        "description": "Sarah Chen shows slight preference for local vendors, though within acceptable variance thresholds.",
+        "confidenceScore": 0.64,
+        "entitiesInvolved": ["Sarah Chen"],
+        "status": "cleared",
+        "detectedAt": "2025-11-26T10:30:00.000Z",
+        "department": "Roads & Construction",
+        "category": "WORKS",
+        "tenderId": "TND-2025-001"
+      }
+    ],
+    "flaggedEvaluators": [
+      {
+        "id": "e2",
+        "name": "Michael Ross",
+        "department": "Roads & Construction",
+        "biasScore": 78,
+        "alertCount": 2,
+        "reason": "Consistently scores BuildTech Ltd 25-30% higher than peer evaluators across all tender categories."
+      },
+      {
+        "id": "e4",
+        "name": "James Wilson",
+        "department": "Roads & Construction",
+        "biasScore": 45,
+        "alertCount": 2,
+        "reason": "Shows significant variance in ESG scoring and favoritism towards Global Supplies in financial criteria."
+      },
+      {
+        "id": "e7",
+        "name": "Ahmed Khalil",
+        "department": "Water Management",
+        "biasScore": 55,
+        "alertCount": 1,
+        "reason": "Demonstrates 85% correlation in scoring patterns with AquaTech Solutions across multiple tenders."
+      },
+      {
+        "id": "e11",
+        "name": "Maria Garcia",
+        "department": "Maintenance",
+        "biasScore": 67,
+        "alertCount": 1,
+        "reason": "Elevated bias score of 67/100 with documented favoritism towards FacilityMasters in service evaluations."
+      }
+    ],
+    "footer": {
+      "tenderId": "TND-2025-001",
+      "phase": "Integrity Review",
+      "openAlertCount": 4,
+      "actions": {
+        "escalateAll": true,
+        "clearAll": true
+      }
+    },
+    "metadata": {
+      "pageTitle": "Integrity Analytics",
+      "subtitle": "IntegrityBot.Agent Active",
+      "statusBadge": "Integrity Review",
+      "lastUpdated": "2025-11-26T11:25:00.000Z"
+    }
+  }
+}
+

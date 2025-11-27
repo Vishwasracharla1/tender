@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { KPIWidget } from '../components/KPIWidget';
 import { MarketCurveBoxplot } from '../components/MarketCurveBoxplot';
@@ -8,6 +8,7 @@ import { BenchmarkFooter } from '../components/BenchmarkFooter';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { TrendingDown, AlertTriangle, Target, Filter } from 'lucide-react';
 import { RAK_DEPARTMENTS } from '../data/departments';
+import { callBenchmarkAgent } from '../services/benchmarkAgent';
 
 interface Tender {
   id: string;
@@ -27,6 +28,188 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
   const [selectedTender, setSelectedTender] = useState('TND-2025-001');
   const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2025-12-31' });
   const [isApproved, setIsApproved] = useState(false);
+  
+  // Agent API state
+  const [agentData, setAgentData] = useState<any>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentError, setAgentError] = useState<string | null>(null);
+  
+  // Dynamic benchmark data state (updated from agent)
+  const [dynamicBenchmarkData, setDynamicBenchmarkData] = useState<any>(null);
+  
+  // Ref to prevent duplicate API calls (React StrictMode in development)
+  const lastFetchedTenderRef = useRef<string | null>(null);
+  
+  // Initialize dynamic benchmark data on mount
+  useEffect(() => {
+    if (!dynamicBenchmarkData) {
+      setDynamicBenchmarkData(allBenchmarkData);
+    }
+  }, []);
+
+  // Parse JSON from agent response text
+  const parseAgentResponse = (response: any): any => {
+    try {
+      // Check if response has text field with JSON
+      if (response?.text) {
+        // Extract JSON from markdown code block if present
+        let jsonText = response.text;
+        const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          jsonText = jsonMatch[1];
+        }
+        return JSON.parse(jsonText);
+      }
+      // If response is already parsed JSON
+      if (response?.vendors || response?.comparativeAnalysis) {
+        return response;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error parsing agent response:', error);
+      return null;
+    }
+  };
+
+  // Map agent response to UI components
+  const mapAgentDataToUI = (parsedData: any) => {
+    if (!parsedData) return;
+
+    // Map comparative analysis rows to table data
+    if (parsedData.comparativeAnalysis?.rows) {
+      const mappedTableData = parsedData.comparativeAnalysis.rows.map((row: any) => ({
+        id: row.id,
+        item: row.item,
+        vendor: row.vendor,
+        quotedPrice: row.quotedPrice ?? 0,
+        marketMedian: row.marketMedian ?? null,
+        deviation: row.deviation ?? null,
+        isOutlier: row.isOutlier || false,
+        flagStatus: (row.flagStatus || 'pending') as 'pending' | 'accepted' | 'rejected'
+      }));
+      setTableData(mappedTableData);
+    }
+
+    // Map AI insights
+    if (parsedData.aiInsights && Array.isArray(parsedData.aiInsights)) {
+      const mappedInsights = parsedData.aiInsights.map((insight: any) => ({
+        id: insight.id,
+        type: insight.type === 'anomaly' ? 'anomaly' as const : 
+              insight.type === 'recommendation' ? 'recommendation' as const :
+              insight.type === 'trend' ? 'trend' as const : 'anomaly' as const,
+        severity: insight.severity === 'critical' ? 'critical' as const :
+                  insight.severity === 'warning' ? 'warning' as const : 'info' as const,
+        title: insight.title,
+        description: insight.description,
+        timestamp: insight.timestamp || new Date().toISOString(),
+        isRead: insight.isRead || false
+      }));
+      setInsights(mappedInsights);
+    }
+
+    // Map market distribution to boxplot data
+    if (parsedData.marketDistribution?.categoryStats) {
+      const categoryStats = parsedData.marketDistribution.categoryStats;
+      const vendorPrices = parsedData.marketDistribution.vendorPrices || [];
+      
+      const mappedBoxplot = Object.entries(categoryStats).map(([category, stats]: [string, any]) => {
+        // Get vendor prices for this category from payment milestones
+        const categoryVendorPrices = parsedData.vendors?.map((vendor: any) => {
+          // Find milestone matching this category
+          const milestone = vendor.paymentMilestones?.find((m: any) => {
+            const name = m.name.toLowerCase();
+            if (category === 'Preparation' && (name.includes('prepare') || name.includes('preparation'))) return true;
+            if (category === 'Exploration' && (name.includes('explore'))) return true;
+            if (category === 'DevelopmentConfig' && (name.includes('development') || name.includes('configuration'))) return true;
+            if (category === 'TestingUAT' && (name.includes('uat') || name.includes('sit') || name.includes('test'))) return true;
+            if (category === 'Deployment' && (name.includes('deploy') || name.includes('go-live'))) return true;
+            if (category === 'SupportWarranty' && (name.includes('support') || name.includes('warranty') || name.includes('hypercare'))) return true;
+            return false;
+          });
+          
+          if (milestone) {
+            const vendorPrice = vendorPrices.find((vp: any) => vp.vendor === vendor.vendorName);
+            return {
+              vendor: vendor.vendorName,
+              price: milestone.amount,
+              isOutlier: vendorPrice?.isOutlier || false
+            };
+          }
+          return null;
+        }).filter(Boolean) || [];
+
+        return {
+          category: category.replace(/([A-Z])/g, ' $1').trim(),
+          min: stats.min || 0,
+          q1: stats.q1 || 0,
+          median: stats.median || 0,
+          q3: stats.q3 || 0,
+          max: stats.max || 0,
+          outliers: stats.outliers || [],
+          vendorPrices: categoryVendorPrices
+        };
+      }).filter((item: any) => item.vendorPrices.length > 0);
+
+      // Update benchmark data for current tender
+      if (mappedBoxplot.length > 0) {
+        setDynamicBenchmarkData((prev: any) => {
+          const base = prev || allBenchmarkData;
+          return {
+            ...base,
+            [selectedTender]: {
+              boxplot: mappedBoxplot,
+              accuracy: parsedData.marketDistribution?.quality?.accuracy || base[selectedTender as keyof typeof base]?.accuracy || 94.2,
+              dataPoints: parsedData.marketDistribution?.quality?.dataPoints || base[selectedTender as keyof typeof base]?.dataPoints || 847
+            }
+          };
+        });
+      }
+    }
+  };
+
+  // Fetch agent data when component mounts or tender changes
+  useEffect(() => {
+    // Extract tender ID from selectedTender (e.g., 'TND-2025-001' -> 'RAK_01')
+    const tenderId = selectedTender.replace('TND-', 'RAK_');
+    
+    // Prevent duplicate calls for the same tender (React StrictMode in development)
+    if (lastFetchedTenderRef.current === tenderId) {
+      console.log('Skipping duplicate agent call for tender:', tenderId);
+      return;
+    }
+    
+    // Mark this tender as being fetched
+    lastFetchedTenderRef.current = tenderId;
+
+    const fetchAgentData = async () => {
+      setAgentLoading(true);
+      setAgentError(null);
+      
+      try {
+        const response = await callBenchmarkAgent(tenderId);
+        setAgentData(response);
+        console.log('Benchmark agent data received:', response);
+        
+        // Parse and map agent response to UI
+        const parsedData = parseAgentResponse(response);
+        if (parsedData) {
+          mapAgentDataToUI(parsedData);
+          console.log('Agent data mapped to UI successfully');
+        } else {
+          console.warn('Could not parse agent response');
+        }
+      } catch (error) {
+        console.error('Error fetching benchmark agent data:', error);
+        setAgentError(error instanceof Error ? error.message : 'Failed to fetch benchmark data');
+        // Reset ref on error to allow retry
+        lastFetchedTenderRef.current = null;
+      } finally {
+        setAgentLoading(false);
+      }
+    };
+
+    fetchAgentData();
+  }, [selectedTender]); // Re-fetch when tender changes (with 30-second cache)
 
   const tenders: Tender[] = [
     { id: 'TND-2025-001', title: 'Municipal Building Renovation', department: 'Roads & Construction', category: 'WORKS', dateCreated: '2025-01-15' },
@@ -213,10 +396,19 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
     },
   };
 
-  const currentBenchmarkData = allBenchmarkData[selectedTender as keyof typeof allBenchmarkData] || allBenchmarkData['TND-2025-001'];
-  const boxplotData = currentBenchmarkData.boxplot;
+  const currentBenchmarkData = (dynamicBenchmarkData || allBenchmarkData)[selectedTender as keyof typeof allBenchmarkData] || allBenchmarkData['TND-2025-001'];
+  const boxplotData = currentBenchmarkData?.boxplot || [];
 
-  const [tableData, setTableData] = useState([
+  const [tableData, setTableData] = useState<Array<{
+    id: string;
+    item: string;
+    vendor: string;
+    quotedPrice: number;
+    marketMedian: number | null;
+    deviation: number | null;
+    isOutlier: boolean;
+    flagStatus: 'pending' | 'accepted' | 'rejected';
+  }>>([
     {
       id: '1',
       item: 'Structural Steel (Grade A)',
@@ -352,19 +544,77 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
     setIsApproved(true);
   };
 
-  const handleRecompute = () => {
-    alert('Recomputing benchmarks with latest market data...');
+  const handleRecompute = async () => {
+    // Clear cache and refetch agent data
+    const { clearBenchmarkCache } = await import('../services/benchmarkAgent');
+    clearBenchmarkCache();
+    
+    setAgentLoading(true);
+    setAgentError(null);
+    
+    try {
+      const tenderId = selectedTender.replace('TND-', 'RAK_');
+      const response = await callBenchmarkAgent(tenderId);
+      setAgentData(response);
+      console.log('Benchmark agent data refreshed:', response);
+    } catch (error) {
+      console.error('Error refreshing benchmark agent data:', error);
+      setAgentError(error instanceof Error ? error.message : 'Failed to refresh benchmark data');
+    } finally {
+      setAgentLoading(false);
+    }
   };
 
-  const outlierCount = tableData.filter((row) => row.isOutlier).length;
-  const avgDeviation = tableData
-    .filter((row) => row.isOutlier)
-    .reduce((sum, row) => sum + Math.abs(row.deviation), 0) / outlierCount;
+  // Calculate metrics from agent data if available, otherwise use table data
+  const agentMetrics = agentData ? (() => {
+    const parsed = parseAgentResponse(agentData);
+    return parsed?.comparativeAnalysis?.metrics;
+  })() : null;
+
+  const outlierCount = agentMetrics?.outlierCount ?? tableData.filter((row) => row.isOutlier).length;
+  const avgDeviation = agentMetrics?.avgPriceDeviation ?? (
+    tableData
+      .filter((row) => row.isOutlier && row.deviation !== null)
+      .reduce((sum, row) => sum + Math.abs(row.deviation!), 0) / (tableData.filter((row) => row.isOutlier && row.deviation !== null).length || 1)
+  );
+  const benchmarkAccuracy = agentMetrics?.benchmarkAccuracy ?? currentBenchmarkData.accuracy;
 
   return (
     <>
       <Sidebar currentPage="benchmark" onNavigate={onNavigate} />
-      <div className="app-shell min-h-screen bg-gray-50 pb-24">
+      <div className="app-shell min-h-screen bg-gray-50 pb-24 relative">
+        {/* Loading Overlay */}
+        {agentLoading && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 border-2 border-blue-200">
+              <div className="flex flex-col items-center gap-4">
+                {/* Spinner */}
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+                
+                {/* Text */}
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Agent is Examining the Documents
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Please wait while TenderIQ.Agent analyzes the benchmark data...
+                  </p>
+                </div>
+                
+                {/* Progress dots */}
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -373,11 +623,26 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
                   Benchmark Dashboard
                 </h1>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  TenderIQ.Agent Active
+                  {agentLoading ? 'TenderIQ.Agent Processing...' : agentError ? 'TenderIQ.Agent Error' : 'TenderIQ.Agent Active'}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
+                {agentLoading && (
+                  <span className="px-3 py-1 text-xs font-medium text-amber-700 bg-amber-50 rounded-full border border-amber-200 animate-pulse">
+                    Agent Processing...
+                  </span>
+                )}
+                {agentError && (
+                  <span className="px-3 py-1 text-xs font-medium text-red-700 bg-red-50 rounded-full border border-red-200">
+                    Agent Error
+                  </span>
+                )}
+                {agentData && !agentLoading && (
+                  <span className="px-3 py-1 text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full border border-emerald-200">
+                    Agent Data Loaded
+                  </span>
+                )}
                 <span className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
                   Benchmarking Phase
                 </span>
@@ -508,7 +773,7 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
 
             <KPIWidget
               title="Benchmark Accuracy"
-              value={`${currentBenchmarkData.accuracy}%`}
+              value={`${benchmarkAccuracy}%`}
               subtitle={`Based on ${currentBenchmarkData.dataPoints} data points`}
               icon={Target}
               trend={{ value: '3%', isPositive: true }}

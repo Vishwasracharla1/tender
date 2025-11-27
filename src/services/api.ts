@@ -1078,3 +1078,355 @@ export const fetchSchemaInstances = async (
   }
 };
 
+// Justification Composer Schema API
+const JUSTIFICATION_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+const JUSTIFICATION_SCHEMA_ID = '69257e9eed36767f199eb4bf';
+const EVALUATION_RECOMMENDATION_SCHEMA_ID = '6926a42db9bad705b353b1cd';
+
+export interface JustificationInstanceItem {
+  id?: string | number;
+  companyName?: string;
+  name?: string;
+  documentName?: string;
+  cdnUrl?: string;
+  cdnurl?: string;
+  cdnUrls?: string | string[];
+  fileUrl?: string;
+  fileUrls?: string | string[];
+  [key: string]: any;
+}
+
+export interface JustificationInstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: JustificationInstanceItem[];
+  content?: JustificationInstanceItem[];
+  [key: string]: any;
+}
+
+/**
+ * Fetch justification instances list for company and document dropdowns
+ * @param size - Number of instances to fetch (default: 1000)
+ * @returns Promise with list of justification instances
+ */
+export const fetchJustificationInstances = async (
+  size: number = 1000
+): Promise<JustificationInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  console.log('📥 Fetching justification instances:', {
+    url: `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${JUSTIFICATION_SCHEMA_ID}/instances/list?size=${size}`,
+  });
+
+  try {
+    const response = await axios.post<JustificationInstanceListResponse>(
+      `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${JUSTIFICATION_SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Justification instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Justification instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch justification instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch evaluation recommendation instances list for company dropdown
+ * @param size - Number of instances to fetch (default: 1000)
+ * @returns Promise with list of evaluation recommendation instances
+ */
+export const fetchEvaluationRecommendationInstances = async (
+  size: number = 1000
+): Promise<JustificationInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  console.log('📥 Fetching evaluation recommendation instances:', {
+    url: `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_RECOMMENDATION_SCHEMA_ID}/instances/list?size=${size}`,
+  });
+
+  try {
+    const response = await axios.post<JustificationInstanceListResponse>(
+      `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_RECOMMENDATION_SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Evaluation recommendation instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation recommendation instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch evaluation recommendation instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Justification Agent API
+const JUSTIFICATION_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
+const JUSTIFICATION_AGENT_ID = '019ab58b-dada-7c07-9545-1b32701a089d';
+const EVALUATION_RECOMMENDATION_AGENT_ID = '019ab61a-06b2-7c74-868d-a9782699d979';
+const GOVERNMENT_QUERIES_AGENT_ID = '019abeef-0ef0-721c-aad6-79f474b42b7e';
+
+export interface JustificationAgentRequest {
+  agentId: string;
+  query: string;
+  referenceId: string;
+  sessionId: string;
+  userId: string;
+  fileUrl: string[];
+}
+
+export interface JustificationAgentResponse {
+  status?: string;
+  msg?: string;
+  data?: any;
+  [key: string]: any;
+}
+
+/**
+ * Call justification agent to generate technical capability
+ * @param query - The query string for the agent
+ * @param fileUrls - Array of CDN URLs for the documents
+ * @param userId - User ID (default: 'gaian@123')
+ * @param agentId - Agent ID (default: justification agent ID)
+ * @returns Promise with agent response
+ */
+export const callJustificationAgent = async (
+  query: string,
+  fileUrls: string[] = [],
+  userId: string = 'gaian@123',
+  agentId: string = JUSTIFICATION_AGENT_ID
+): Promise<JustificationAgentResponse> => {
+  const token = getAuthToken();
+  
+  const requestData: JustificationAgentRequest = {
+    agentId: agentId,
+    query: query,
+    referenceId: '',
+    sessionId: '',
+    userId: userId,
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Justification Agent API:', {
+    url: `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    query: query,
+    fileCount: fileUrls.length,
+    userId: userId,
+  });
+
+  try {
+    const response = await axios.post<JustificationAgentResponse>(
+      `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Justification Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Justification Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Justification Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Evaluation Recommendation Agent API
+ * @param query - The query string for the agent
+ * @param fileUrls - Array of CDN URLs to send to the agent
+ * @param userId - User ID (default: 'gaian@123')
+ * @param agentId - Agent ID (default: EVALUATION_RECOMMENDATION_AGENT_ID)
+ * @returns Promise with agent response
+ */
+export const callEvaluationRecommendationAgent = async (
+  query: string,
+  fileUrls: string[] = [],
+  userId: string = 'gaian@123',
+  agentId: string = EVALUATION_RECOMMENDATION_AGENT_ID
+): Promise<JustificationAgentResponse> => {
+  const token = getAuthToken();
+  
+  const requestData: JustificationAgentRequest = {
+    agentId: agentId,
+    query: query,
+    referenceId: '',
+    sessionId: '',
+    userId: userId,
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Evaluation Recommendation Agent API:', {
+    url: `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    query: query,
+    fileCount: fileUrls.length,
+    fileUrls: fileUrls,
+    userId: userId,
+  });
+
+  try {
+    const response = await axios.post<JustificationAgentResponse>(
+      `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation Recommendation Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation Recommendation Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Evaluation Recommendation Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Government Queries Agent API
+ * Triggers the government queries agent with the same payload structure
+ * used for the evaluation recommendation agent.
+ */
+export const callGovernmentQueriesAgent = async (
+  query: string,
+  fileUrls: string[] = [],
+  userId: string = 'gaian@123',
+  agentId: string = GOVERNMENT_QUERIES_AGENT_ID
+): Promise<JustificationAgentResponse> => {
+  const token = getAuthToken();
+
+  const requestData: JustificationAgentRequest = {
+    agentId: agentId,
+    query: query,
+    referenceId: '',
+    sessionId: '',
+    userId: userId,
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Government Queries Agent API:', {
+    url: `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    query: query,
+    fileCount: fileUrls.length,
+    fileUrls: fileUrls,
+    userId: userId,
+  });
+
+  try {
+    const response = await axios.post<JustificationAgentResponse>(
+      `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Government Queries Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Government Queries Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Government Queries Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+

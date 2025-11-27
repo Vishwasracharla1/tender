@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, Sparkles, Eye, FileText, Edit3 } from 'lucide-react';
 
 interface Section {
@@ -30,8 +30,102 @@ export function DocumentEditor({ sections, onSectionUpdate, onAddComment, onComp
   const [activeSectionId, setActiveSectionId] = useState<string | null>(sections[0]?.id || null);
   const [newComment, setNewComment] = useState('');
   const [showCommentBox, setShowCommentBox] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState<{ [key: string]: boolean }>({});
 
   const activeSection = sections.find(s => s.id === activeSectionId);
+
+  // Automatically select first section when sections change
+  useEffect(() => {
+    if (sections.length > 0) {
+      // If no section is selected or the current section doesn't exist, select the first one
+      if (!activeSectionId || !sections.find(s => s.id === activeSectionId)) {
+        setActiveSectionId(sections[0].id);
+      }
+    } else {
+      setActiveSectionId(null);
+    }
+  }, [sections, activeSectionId]);
+
+  // Convert markdown bold (**text**) to HTML bold and format bullet points
+  const convertMarkdownToHTML = (text: string): string => {
+    if (!text) return '';
+    
+    // First, convert **text** to a placeholder to preserve it during processing
+    const boldPlaceholder = '___BOLD_PLACEHOLDER___';
+    const boldMatches: string[] = [];
+    let processedText = text.replace(/\*\*([^*]+)\*\*/g, (match, content) => {
+      const index = boldMatches.length;
+      boldMatches.push(content);
+      return `${boldPlaceholder}${index}${boldPlaceholder}`;
+    });
+    
+    // Escape HTML to prevent XSS
+    processedText = processedText
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Restore bold placeholders as HTML
+    boldMatches.forEach((content, index) => {
+      processedText = processedText.replace(
+        `${boldPlaceholder}${index}${boldPlaceholder}`,
+        `<strong>${content}</strong>`
+      );
+    });
+    
+    // Make "Rating:" and rating values bold
+    processedText = processedText.replace(/(Rating:\s*)([\d.]+)/gi, '<strong>$1$2</strong>');
+    
+    // Split by lines and process
+    const lines = processedText.split('\n');
+    const processedLines: string[] = [];
+    let inList = false;
+    
+    lines.forEach((line) => {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.length === 0) {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        return;
+      }
+      
+      // Check for bullet points (starting with - or •)
+      if (trimmedLine.match(/^[-•]\s+/)) {
+        if (!inList) {
+          processedLines.push('<ul>');
+          inList = true;
+        }
+        const content = trimmedLine.replace(/^[-•]\s+/, '');
+        processedLines.push(`<li>${content}</li>`);
+      }
+      // Check for numbered lists
+      else if (trimmedLine.match(/^\d+\.\s+/)) {
+        if (!inList) {
+          processedLines.push('<ul class="numbered-list">');
+          inList = true;
+        }
+        const content = trimmedLine.replace(/^\d+\.\s+/, '');
+        processedLines.push(`<li>${content}</li>`);
+      }
+      // Regular paragraph
+      else {
+        if (inList) {
+          processedLines.push('</ul>');
+          inList = false;
+        }
+        processedLines.push(`<p>${trimmedLine}</p>`);
+      }
+    });
+    
+    if (inList) {
+      processedLines.push('</ul>');
+    }
+    
+    return processedLines.join('');
+  };
 
   const handleContentChange = (sectionId: string, value: string) => {
     onSectionUpdate(sectionId, value);
@@ -154,13 +248,79 @@ export function DocumentEditor({ sections, onSectionUpdate, onAddComment, onComp
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gradient-to-br from-white via-slate-50/20 to-white">
-                <textarea
-                  value={activeSection.finalContent}
-                  onChange={(e) => handleContentChange(activeSection.id, e.target.value)}
-                  className="w-full h-full min-h-[400px] p-5 text-sm leading-relaxed text-gray-900 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 resize-none bg-white shadow-sm focus:shadow-md transition-all duration-200"
-                  placeholder="Start writing your justification..."
-                />
+              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gradient-to-br from-white via-slate-50/20 to-white" style={{ height: '100%', overflowY: 'auto' }}>
+                {isEditing[activeSection.id] ? (
+                  <textarea
+                    value={activeSection.finalContent}
+                    onChange={(e) => handleContentChange(activeSection.id, e.target.value)}
+                    onBlur={() => setIsEditing(prev => ({ ...prev, [activeSection.id]: false }))}
+                    className="w-full min-h-[400px] p-5 text-sm leading-relaxed text-gray-900 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-300 resize-y bg-white shadow-sm focus:shadow-md transition-all duration-200"
+                    placeholder="Start writing your justification..."
+                    autoFocus
+                    style={{ minHeight: '400px' }}
+                  />
+                ) : (
+                  <div
+                    onClick={() => setIsEditing(prev => ({ ...prev, [activeSection.id]: true }))}
+                    className="w-full p-6 text-base leading-relaxed text-gray-800 border-2 border-slate-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-200 cursor-text outline-none prose prose-slate max-w-none"
+                    style={{ minHeight: '400px', fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}
+                    dangerouslySetInnerHTML={{ 
+                      __html: `
+                        <style>
+                          .justification-content {
+                            font-size: 15px;
+                            line-height: 1.75;
+                            color: #1e293b;
+                          }
+                          .justification-content strong {
+                            font-weight: 700;
+                            color: #111827;
+                            background: #e5e7eb;
+                            padding: 2px 6px;
+                            border-radius: 4px;
+                          }
+                          .justification-content ul {
+                            list-style: none;
+                            padding-left: 0;
+                            margin: 1.5rem 0;
+                          }
+                          .justification-content ul li {
+                            position: relative;
+                            padding-left: 1.75rem;
+                            margin-bottom: 0.75rem;
+                            line-height: 1.7;
+                            color: #334155;
+                          }
+                          .justification-content ul li:before {
+                            content: "▸";
+                            position: absolute;
+                            left: 0;
+                            color: #1f2937;
+                            font-weight: bold;
+                            font-size: 1.1em;
+                          }
+                          .justification-content ul li strong {
+                            font-weight: 600;
+                            color: #111827;
+                            background: transparent;
+                            padding: 0;
+                          }
+                          .justification-content p {
+                            margin-bottom: 1.25rem;
+                            line-height: 1.75;
+                            color: #334155;
+                          }
+                          .justification-content p:last-child {
+                            margin-bottom: 0;
+                          }
+                        </style>
+                        <div class="justification-content">
+                          ${convertMarkdownToHTML(activeSection.finalContent) || '<span class="text-gray-400 italic">Start writing your justification...</span>'}
+                        </div>
+                      `
+                    }}
+                  />
+                )}
 
                 {showCommentBox === activeSection.id && (
                   <div className="mt-4 p-5 rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 shadow-md">
@@ -230,11 +390,6 @@ export function DocumentEditor({ sections, onSectionUpdate, onAddComment, onComp
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gradient-to-br from-slate-50 via-white to-slate-50">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center mb-4">
-                <FileText className="w-8 h-8 text-slate-500" />
-              </div>
-              <p className="text-sm font-medium text-gray-700">Select a section to start editing</p>
-              <p className="text-xs text-gray-500 mt-1">Choose a section from the sidebar to begin</p>
             </div>
           )}
         </div>
