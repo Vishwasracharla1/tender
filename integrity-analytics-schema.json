@@ -1,0 +1,100 @@
+{
+  "integrityAnalytics": {
+    "kpiWidgets": {
+      "avgBiasScore": {
+        "value": "number (0-100)",
+        "subtitle": "string",
+        "trend": {
+          "value": "string (e.g., '8%')",
+          "isPositive": "boolean"
+        }
+      },
+      "collusionProbability": {
+        "value": "number (0-100, percentage)",
+        "subtitle": "string",
+        "highestDetected": "number (0-1, decimal)"
+      },
+      "resolutionRate": {
+        "value": "number (0-100, percentage)",
+        "subtitle": "string",
+        "resolvedAlerts": "number",
+        "totalAlerts": "number",
+        "trend": {
+          "value": "string (e.g., '15%')",
+          "isPositive": "boolean"
+        }
+      }
+    },
+    "networkGraph": {
+      "nodes": [
+        {
+          "id": "string (unique identifier)",
+          "name": "string",
+          "type": "'evaluator' | 'vendor'",
+          "biasScore": "number (0-100, optional, only for evaluators)",
+          "department": "string (optional, only for evaluators)",
+          "x": "number (optional, x coordinate)",
+          "y": "number (optional, y coordinate)"
+        }
+      ],
+      "edges": [
+        {
+          "source": "string (node id)",
+          "target": "string (node id)",
+          "strength": "number (0-1, decimal, relationship strength)",
+          "isSuspicious": "boolean",
+          "interactionCount": "number (optional)",
+          "tenderHistory": ["string (optional, array of tender IDs)"]
+        }
+      ],
+      "departmentData": {
+        "departmentName": {
+          "nodes": ["array of nodes for this department"],
+          "edges": ["array of edges for this department"]
+        }
+      }
+    },
+    "integrityAlerts": [
+      {
+        "id": "string (unique identifier)",
+        "type": "'bias' | 'collusion' | 'anomaly'",
+        "severity": "'low' | 'medium' | 'high' | 'critical'",
+        "title": "string",
+        "description": "string",
+        "confidenceScore": "number (0-1, decimal)",
+        "entitiesInvolved": ["string (array of entity names)"],
+        "status": "'open' | 'cleared' | 'escalated'",
+        "detectedAt": "string (ISO 8601 timestamp)",
+        "department": "string",
+        "category": "string",
+        "tenderId": "string"
+      }
+    ],
+    "flaggedEvaluators": [
+      {
+        "id": "string (unique identifier)",
+        "name": "string",
+        "department": "string",
+        "biasScore": "number (0-100)",
+        "alertCount": "number",
+        "reason": "string (description of why they are flagged)"
+      }
+    ],
+    "footer": {
+      "tenderId": "string | 'ALL-TENDERS'",
+      "phase": "string (e.g., 'Integrity Review')",
+      "openAlertCount": "number",
+      "actions": {
+        "escalateAll": "boolean (action available)",
+        "clearAll": "boolean (action available)"
+      }
+    },
+    "metadata": {
+      "pageTitle": "Integrity Analytics",
+      "subtitle": "IntegrityBot.Agent Active",
+      "statusBadge": "string (e.g., 'Integrity Review')",
+      "lastUpdated": "string (ISO 8601 timestamp)"
+    }
+  }
+}
+

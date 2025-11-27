@@ -202,11 +202,6 @@ export const EvaluationBreakdown = () => {
                 className={`${gradient.card} ${gradient.border} border rounded-xl ${gradient.shadow} p-6 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}
                 onClick={() => navigate(`/company/${encodeURIComponent(company)}`)}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient.iconBg} flex items-center justify-center`}>
-                    <span className="text-white text-xl font-bold">{company.charAt(0)}</span>
-                  </div>
-                </div>
                 <div className="space-y-3">
                   <h3 className={`text-lg font-bold ${gradient.titleColor} mb-2`}>{company}</h3>
                   <div className="flex flex-col gap-1">
@@ -226,12 +221,7 @@ export const EvaluationBreakdown = () => {
         {/* Detailed Table */}
         <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden mt-8">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2.5 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-inner">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
+            <h2 className="text-lg font-bold text-slate-800">
               Evaluation Details
             </h2>
           </div>
@@ -259,28 +249,10 @@ export const EvaluationBreakdown = () => {
                   const weightValue = subcategoryWeightages[criterionName] || 0;
                   const weightPercent = (weightValue * 100).toFixed(0) + '%';
                   
-                  // Get icon based on criterion name
-                  const getIcon = (name: string) => {
-                    const nameLower = name.toLowerCase();
-                    if (nameLower.includes('module')) return '📦';
-                    if (nameLower.includes('migration')) return '🔄';
-                    if (nameLower.includes('organizational') || nameLower.includes('change')) return '👥';
-                    if (nameLower.includes('support')) return '🛟';
-                    if (nameLower.includes('duration') || nameLower.includes('project')) return '⏱️';
-                    if (nameLower.includes('timeline') || nameLower.includes('consultant')) return '📅';
-                    if (nameLower.includes('partner') || nameLower.includes('experience')) return '🤝';
-                    if (nameLower.includes('reference')) return '🏛️';
-                    if (nameLower.includes('ricef') || nameLower.includes('custom')) return '⚙️';
-                    return '📋';
-                  };
-                  
                   return (
                     <tr key={criterionName} className={`hover:bg-slate-50 transition-colors duration-150 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                       <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{getIcon(criterionName)}</span>
-                          <span className="font-semibold text-sm text-slate-800">{criterionName}</span>
-                        </div>
+                        <span className="font-semibold text-sm text-slate-800">{criterionName}</span>
                       </td>
                       <td className="text-center p-3">
                         <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-md border border-indigo-200">
@@ -317,14 +289,7 @@ export const EvaluationBreakdown = () => {
                 })}
                 <tr className="border-t-2 border-slate-300 bg-gradient-to-r from-slate-100 to-slate-200">
                   <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center shadow-inner">
-                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                      </div>
-                      <span className="font-bold text-sm text-slate-800">Total Weighted Score</span>
-                    </div>
+                    <span className="font-bold text-sm text-slate-800">Total Weighted Score</span>
                   </td>
                   <td className="text-center p-3">
                     <div className="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-slate-600 to-slate-700 rounded-md">
@@ -363,19 +328,19 @@ export const EvaluationBreakdown = () => {
           <h2 className="text-2xl font-bold text-slate-800 mb-4">Key Insights</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
-              <h3 className="font-bold text-amber-900 mb-2">🏆 Highest Module Coverage</h3>
+              <h3 className="font-bold text-amber-900 mb-2">Highest Module Coverage</h3>
               <p className="text-amber-800">KAAR leads with 9.5/10 in module coverage</p>
             </div>
             <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-              <h3 className="font-bold text-blue-900 mb-2">💼 Overall Leader</h3>
+              <h3 className="font-bold text-blue-900 mb-2">Overall Leader</h3>
               <p className="text-blue-800">KAAR has the highest weighted score at {calculateWeightedScore('KAAR')}</p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-              <h3 className="font-bold text-green-900 mb-2">🌍 Strong GCC Presence</h3>
+              <h3 className="font-bold text-green-900 mb-2">Strong GCC Presence</h3>
               <p className="text-green-800">KAAR demonstrates strongest GCC experience (10/10)</p>
             </div>
             <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-              <h3 className="font-bold text-purple-900 mb-2">⚙️ S/4 HANA Expertise</h3>
+              <h3 className="font-bold text-purple-900 mb-2">S/4 HANA Expertise</h3>
               <p className="text-purple-800">Three vendors (COGNIZANT, KAAR, SOLTIUS) score perfect 10/10</p>
             </div>
           </div>

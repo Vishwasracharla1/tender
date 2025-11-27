@@ -6,8 +6,8 @@ interface TableRow {
   item: string;
   vendor: string;
   quotedPrice: number;
-  marketMedian: number;
-  deviation: number;
+  marketMedian: number | null;
+  deviation: number | null;
   isOutlier: boolean;
   flagStatus: 'pending' | 'accepted' | 'rejected';
 }
@@ -27,8 +27,15 @@ export function ComparativeTable({ data, onFlagAction }: ComparativeTableProps) 
     return { text: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' };
   };
 
-  const getDeviationBadge = (deviation: number) => {
-    const absDev = Math.abs(deviation);
+  const getDeviationBadge = (deviation: number | null) => {
+    if (deviation === null) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border text-slate-500 bg-slate-50 border-slate-200 shadow-sm">
+          N/A
+        </span>
+      );
+    }
+    
     const colors = getDeviationColor(deviation);
     const isPositive = deviation > 0;
     
@@ -150,12 +157,16 @@ export function ComparativeTable({ data, onFlagAction }: ComparativeTableProps) 
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-sm font-bold text-gray-900">
-                      ${row.quotedPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      {row.quotedPrice !== null && row.quotedPrice !== undefined 
+                        ? `$${row.quotedPrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                        : 'N/A'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-sm font-medium text-gray-600">
-                      ${row.marketMedian.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      {row.marketMedian !== null && row.marketMedian !== undefined
+                        ? `$${row.marketMedian.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                        : 'N/A'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
