@@ -62,6 +62,32 @@ const normalizePageName = (pageName) => {
 };
 
 /**
+ * Map related pages to a canonical page name for permission checks.
+ * This lets a single permission like "Evaluation Matrix_read"
+ * automatically grant access to its child pages such as
+ * "Evaluation Breakdown" and "Evaluation Recommendation".
+ *
+ * @param {string} pageName - Original page name
+ * @returns {string} - Canonical page name used for comparisons
+ */
+const getCanonicalPageName = (pageName) => {
+  const normalized = normalizePageName(pageName);
+
+  // Group Evaluation pages: parent + children use same canonical name
+  const evaluationGroup = [
+    'Evaluation Matrix',
+    'Evaluation Breakdown',
+    'Evaluation Recommendation',
+  ];
+
+  if (evaluationGroup.includes(normalized)) {
+    return 'Evaluation Matrix';
+  }
+
+  return normalized;
+};
+
+/**
  * Check if user has access to a page with specific access type
  * @param {string[]} rolesArray - Array of permission strings from user.piref_role[0].roles
  * @param {string} pageName - Page name to check
@@ -71,7 +97,7 @@ const normalizePageName = (pageName) => {
 const hasPermissionInRoles = (rolesArray, pageName, accessType) => {
   if (!Array.isArray(rolesArray)) return false;
 
-  const normalizedPageName = normalizePageName(pageName);
+  const canonicalPageName = getCanonicalPageName(pageName);
   const normalizedAccessType = accessType.toLowerCase();
 
   // Check for exact match first
@@ -80,11 +106,18 @@ const hasPermissionInRoles = (rolesArray, pageName, accessType) => {
     const lastUnderscoreIndex = permission.lastIndexOf('_');
     if (lastUnderscoreIndex === -1) return false;
     
-    const permPageName = normalizePageName(permission.substring(0, lastUnderscoreIndex).trim());
-    const permAccessType = permission.substring(lastUnderscoreIndex + 1).trim().toLowerCase();
+    const permPageName = getCanonicalPageName(
+      permission.substring(0, lastUnderscoreIndex).trim()
+    );
+    const permAccessType = permission
+      .substring(lastUnderscoreIndex + 1)
+      .trim()
+      .toLowerCase();
     
-    return permPageName.toLowerCase() === normalizedPageName.toLowerCase() &&
-           permAccessType === normalizedAccessType;
+    return (
+      permPageName.toLowerCase() === canonicalPageName.toLowerCase() &&
+      permAccessType === normalizedAccessType
+    );
   });
 
   return exactMatch;

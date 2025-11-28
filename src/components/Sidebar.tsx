@@ -125,13 +125,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       ],
     },
     {
-    //   id: 'benchmark' as const,
-    //   label: 'Benchmark Dashboard',
-    //   icon: TrendingUp,
-    //   description: 'Market Analysis',
-    //   path: '/benchmark',
-    // },
-    // {
+      id: 'benchmark' as const,
+      label: 'Benchmark Dashboard',
+      icon: TrendingUp,
+      description: 'Market Analysis',
+      path: '/benchmark',
+    },
+    {
       id: 'integrity' as const,
       label: 'Integrity Analytics',
       icon: ShieldAlert,
