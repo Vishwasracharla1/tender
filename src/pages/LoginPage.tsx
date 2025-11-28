@@ -12,7 +12,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuthStore();
+  const { login, isAuthenticated, getFirstAccessibleRoute } = useAuthStore();
   const { validateUserCredentials, setUsers, getUsers } = useAdminStore();
 
   // Get schema ID from environment
@@ -21,9 +21,11 @@ export function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      const accessibleRoute = getFirstAccessibleRoute();
+      const redirectPath = accessibleRoute || '/monitoring';
+      navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, getFirstAccessibleRoute]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +67,14 @@ export function LoginPage() {
         { username: username.trim(), password },
         validateUserCredentials
       );
-      // Redirect to dashboard on success
-      navigate('/', { replace: true });
+      
+      // Get first accessible page for user
+      const accessibleRoute = getFirstAccessibleRoute();
+      
+      // Redirect to first accessible page, or default to monitoring if none found
+      const redirectPath = accessibleRoute || '/monitoring';
+      console.log('🔄 Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
     } catch (err) {
       console.error('❌ Login error:', err);
       setError(err.message || 'Invalid credentials');
