@@ -1937,16 +1937,27 @@ export const updateKPIDefinition = async (
     throw new Error('Instance ID is required for update');
   }
 
+  // Build request body matching correct curl structure
+  // URL should be /instances (not /instances/{id})
+  // Body should have primarykeyEnable and bulkUpdate array
+  const requestBody = {
+    primarykeyEnable: true,
+    bulkUpdate: [payload],
+  };
+
+  const url = `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`;
+
   console.log('📝 Updating entity instance:', {
-    url: `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances/${payload.id}`,
+    url,
     schemaId,
     instanceId: payload.id,
+    requestBody,
   });
 
   try {
     const response = await axios.put<EntityInstance>(
-      `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances/${payload.id}`,
-      payload,
+      url,
+      requestBody,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1960,6 +1971,10 @@ export const updateKPIDefinition = async (
     );
 
     console.log('✅ Entity instance updated:', response.data);
+    // Return the first item from bulkUpdate if response has data array
+    if (response.data && Array.isArray(response.data.bulkUpdate) && response.data.bulkUpdate.length > 0) {
+      return response.data.bulkUpdate[0];
+    }
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
