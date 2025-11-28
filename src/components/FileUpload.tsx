@@ -1,7 +1,7 @@
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import type { TenderDocument } from '../lib/supabase';
-import { uploadFileToCDN, ingestFilesToSchema } from '../services/api';
+import { uploadFileToCDN, ingestFilesToSchema, callTenderIntakeAgent, updateSchemaInstanceWithAgentResponse } from '../services/api';
 
 interface FileUploadProps {
   tenderId: string;
@@ -13,6 +13,7 @@ export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: Fi
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<TenderDocument[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
+  const [isAgentProcessing, setIsAgentProcessing] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -264,19 +265,115 @@ export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: Fi
           {onSubmitToOverview && (
             <div className="pt-2 flex justify-end">
               <button
-                onClick={() => {
-                  setUploadedFiles([]);
-                  setUploadingFiles(new Set());
-                  // Navigate to overview page
-                  onSubmitToOverview();
+                onClick={async () => {
+                  // Get CDN URLs from successfully uploaded files
+                  const cdnUrls = uploadedFiles
+                    .filter(doc => doc.cdn_url && doc.upload_status === 'validated')
+                    .map(doc => doc.cdn_url!);
+                  
+                  if (cdnUrls.length === 0) {
+                    alert('Please upload at least one file before submitting.');
+                    return;
+                  }
+
+                  setIsAgentProcessing(true);
+                  
+                  try {
+                    console.log('🤖 Calling Tender Intake Agent with uploaded documents...');
+                    const agentResponse = await callTenderIntakeAgent(tenderId, cdnUrls);
+                    console.log('✅ Tender Intake Agent processed documents:', agentResponse);
+                    
+                    // Wait a moment for agent processing to complete
+                    console.log('⏳ Waiting 3 seconds for agent processing to complete...');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    // Update schema instance with agent response using stored ID
+                    try {
+                      console.log('📝 Updating schema instance with agent response...');
+                      await updateSchemaInstanceWithAgentResponse(agentResponse);
+                      console.log('✅ Schema instance updated successfully with agent response');
+                    } catch (updateError) {
+                      console.error('❌ Failed to update schema instance:', updateError);
+                      // Don't fail the whole process if update fails, just log the error
+                    }
+                    
+                    // Extract tender data from agent response and store in sessionStorage
+                    // Try to parse the text field from agent response
+                    let parsedText: any = {};
+                    if (agentResponse?.text) {
+                      try {
+                        parsedText = typeof agentResponse.text === 'string' 
+                          ? JSON.parse(agentResponse.text) 
+                          : agentResponse.text;
+                      } catch (e) {
+                        // If parsing fails, try to extract JSON
+                        const jsonMatch = agentResponse.text.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                          parsedText = JSON.parse(jsonMatch[0]);
+                        }
+                      }
+                    }
+                    
+                    // Use parsed text or fallback to agentResponse.data or agentResponse
+                    const responseData = parsedText || agentResponse.data || agentResponse;
+                    
+                    // Store tender data in sessionStorage for TenderOverviewPage
+                    sessionStorage.setItem('agent_response', JSON.stringify(responseData));
+                    console.log('💾 Stored tender data in sessionStorage for TenderOverviewPage');
+                    
+                    // Clear files and navigate to overview page
+                    setUploadedFiles([]);
+                    setUploadingFiles(new Set());
+                    
+                    // Navigate to tender overview page
+                    if (onSubmitToOverview) {
+                      onSubmitToOverview();
+                    }
+                    
+                  } catch (agentError) {
+                    console.error(`❌ Failed to call Tender Intake Agent:`, agentError);
+                    alert('Failed to process documents with agent. Please try again.');
+                  } finally {
+                    setIsAgentProcessing(false);
+                  }
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                disabled={isAgentProcessing || uploadingFiles.size > 0}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FileText className="w-3.5 h-3.5" />
-                Submit
+                {isAgentProcessing ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Agent Extracting...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-3.5 h-3.5" />
+                    Submit
+                  </>
+                )}
               </button>
             </div>
           )}
+          
+          {/* Agent Processing Loader Overlay */}
+          {isAgentProcessing && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Agent Processing Documents
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      The agent is extracting and analyzing your documents. This may take a few moments...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

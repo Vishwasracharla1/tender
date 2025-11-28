@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Sparkles, Edit2, BarChart3 } from 'lucide-react';
+import { Sparkles, BarChart3 } from 'lucide-react';
 
 interface Criterion {
   id: string;
@@ -39,27 +38,10 @@ export function EvaluationMatrix({
   onScoreChange,
   onCriterionClick,
 }: EvaluationMatrixProps) {
-  const [editingCell, setEditingCell] = useState<string | null>(null);
-
   const getScore = (criterionId: string, vendorId: string): Score | undefined => {
     return scores.find(
       (s) => s.criterionId === criterionId && s.vendorId === vendorId
     );
-  };
-
-  const handleScoreClick = (criterionId: string, vendorId: string) => {
-    if (!isLocked) {
-      setEditingCell(`${criterionId}-${vendorId}`);
-    }
-  };
-
-  const handleScoreChange = (
-    criterionId: string,
-    vendorId: string,
-    value: string
-  ) => {
-    const numValue = Math.min(100, Math.max(0, parseFloat(value) || 0));
-    onScoreChange(criterionId, vendorId, numValue);
   };
 
   const totalWeight = criteria.reduce((sum, c) => sum + c.weight, 0);
@@ -109,7 +91,7 @@ export function EvaluationMatrix({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {criteria.map((criterion, idx) => (
+            {criteria.map((criterion) => (
               <tr key={criterion.id} className="hover:bg-slate-50 transition-all duration-200">
                 <td className="px-6 py-4">
                   {onCriterionClick ? (
@@ -127,31 +109,19 @@ export function EvaluationMatrix({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-col items-center gap-2">
-                    <div className="relative w-24">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={criterion.weight}
-                        onChange={(e) =>
-                          onWeightChange(criterion.id, parseFloat(e.target.value))
-                        }
-                        disabled={isLocked}
-                        className="w-full h-2 bg-gradient-to-r from-emerald-200 to-teal-200 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-br [&::-webkit-slider-thumb]:from-emerald-500 [&::-webkit-slider-thumb]:to-teal-500 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
-                        style={{
-                          background: `linear-gradient(to right, rgb(16, 185, 129) 0%, rgb(16, 185, 129) ${criterion.weight}%, rgb(229, 231, 235) ${criterion.weight}%, rgb(229, 231, 235) 100%)`
-                        }}
+                    <div className="relative w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-300"
+                        style={{ width: `${criterion.weight}%` }}
                       />
                     </div>
                     <span className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">
-                      {criterion.weight.toFixed(0)}%
+                      {criterion.weight.toFixed(0)}
                     </span>
                   </div>
                 </td>
                 {vendors.map((vendor) => {
                   const scoreData = getScore(criterion.id, vendor.id);
-                  const cellKey = `${criterion.id}-${vendor.id}`;
-                  const isEditing = editingCell === cellKey;
                   const score = scoreData?.score || 0;
                   const percentage = score;
                   const scoreColor = percentage >= 80 ? 'from-emerald-500 to-teal-500' : 
@@ -167,42 +137,13 @@ export function EvaluationMatrix({
                     <td key={vendor.id} className="px-4 py-4">
                       <div className="flex flex-col gap-2">
                         <div
-                          className={`
-                            relative rounded-xl border-2 transition-all duration-200
-                            ${isLocked
-                              ? `bg-gradient-to-br ${scoreBg}`
-                              : `bg-gradient-to-br ${scoreBg} hover:shadow-md hover:-translate-y-0.5 cursor-pointer`
-                            }
-                          `}
-                          onClick={() => handleScoreClick(criterion.id, vendor.id)}
+                          className={`relative rounded-xl border-2 transition-all duration-200 bg-gradient-to-br ${scoreBg}`}
                         >
-                          {isEditing ? (
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={scoreData?.score || 0}
-                              onChange={(e) =>
-                                handleScoreChange(
-                                  criterion.id,
-                                  vendor.id,
-                                  e.target.value
-                                )
-                              }
-                              onBlur={() => setEditingCell(null)}
-                              autoFocus
-                              className="w-full px-4 py-2.5 text-base font-bold text-center text-gray-900 bg-white border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            />
-                          ) : (
-                            <div className="px-4 py-2.5 flex items-center justify-center gap-2">
-                              <span className="text-base font-bold text-gray-900">
-                                {scoreData?.score?.toFixed(1) || '0.0'}
-                              </span>
-                              {!isLocked && (
-                                <Edit2 className="w-3.5 h-3.5 text-gray-400" />
-                              )}
-                            </div>
-                          )}
+                          <div className="px-4 py-2.5 flex items-center justify-center">
+                            <span className="text-base font-bold text-gray-900">
+                              {scoreData?.score?.toFixed(1) || '0.0'}
+                            </span>
+                          </div>
                         </div>
 
                         {scoreData?.isAiGenerated && (

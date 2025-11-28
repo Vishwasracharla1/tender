@@ -788,6 +788,15 @@ export interface AgentInteractionRequest {
   fileUrl: string[];
 }
 
+export interface TenderIntakeAgentRequest {
+  agentId: string;
+  query: string;
+  referenceId: string;
+  sessionId: string;
+  userId: string;
+  fileUrl: string[];
+}
+
 export interface AgentInteractionResponse {
   status?: string;
   msg?: string;
@@ -796,6 +805,7 @@ export interface AgentInteractionResponse {
 }
 
 const AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/agent-orchestration-framework-fastapi';
+const TENDER_INTAKE_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
 
 export const interactWithAgent = async (
   departmentName: string,
@@ -847,6 +857,71 @@ export const interactWithAgent = async (
         agentId: targetAgentId,
       });
       throw new Error(`Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Tender Intake Agent for document processing
+ * @param tenderId - The tender ID to include in the query
+ * @param fileUrls - Array of CDN URLs for uploaded documents
+ * @param agentId - Agent ID (default: DataValidation agent)
+ * @returns Promise with agent response
+ */
+export const callTenderIntakeAgent = async (
+  tenderId: string,
+  fileUrls: string[],
+  agentId: string = '019ac97d-fe32-7718-9991-58faaac179e2'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+  
+  const requestData: TenderIntakeAgentRequest = {
+    agentId: agentId,
+    query: `TenderId: ${tenderId}`,
+    referenceId: '',
+    sessionId: '',
+    userId: 'gaian@123',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Tender Intake Agent API:', {
+    url: `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    tenderId: tenderId,
+    fileCount: fileUrls.length,
+    fileUrls: fileUrls,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Referer': window.location.origin,
+          'sec-ch-ua-platform': '"Windows"',
+          'sec-ch-ua': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+          'sec-ch-ua-mobile': '?0',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        },
+      }
+    );
+
+    console.log('✅ Tender Intake Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Tender Intake Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Tender Intake Agent API error: ${error.response?.data?.msg || error.message}`);
     }
     throw error;
   }
@@ -943,11 +1018,48 @@ const SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-servic
 const SCHEMA_ID = '691d9ee2e7db832feb59b79f';
 
 // Ingest single file to schema
+// Stores the instance ID in sessionStorage after ingestion
 export const ingestFileToSchema = async (
   filename: string,
   cdnUrl: string
-): Promise<SchemaInstanceResponse> => {
-  return ingestFilesToSchema([{ filename, cdnUrl }]);
+): Promise<SchemaInstanceResponse & { instanceId?: string }> => {
+  const result = await ingestFilesToSchema([{ filename, cdnUrl }]);
+  
+  // Extract instance ID from response
+  let instanceId: string | undefined;
+  
+  console.log('🔍 Ingestion response structure:', JSON.stringify(result, null, 2));
+  
+  // Try to extract ID from various possible response structures
+  if (result.data) {
+    if (Array.isArray(result.data)) {
+      instanceId = result.data[0]?.id;
+      console.log('📋 Found ID in array:', instanceId);
+    } else if (typeof result.data === 'object') {
+      instanceId = result.data.id || result.data.data?.id;
+      // If data.data is an array, get first item
+      if (!instanceId && Array.isArray(result.data.data)) {
+        instanceId = result.data.data[0]?.id;
+      }
+      console.log('📋 Found ID in object:', instanceId);
+    }
+  }
+  
+  // Also check top-level response
+  if (!instanceId && (result as any).id) {
+    instanceId = (result as any).id;
+    console.log('📋 Found ID at top level:', instanceId);
+  }
+  
+  // Store ID in sessionStorage if found
+  if (instanceId) {
+    sessionStorage.setItem('schema_instance_id', instanceId);
+    console.log('✅ Stored instance ID in sessionStorage:', instanceId);
+  } else {
+    console.warn('⚠️ Could not extract instance ID from response');
+  }
+  
+  return { ...result, instanceId };
 };
 
 // Ingest multiple files to schema
@@ -956,9 +1068,23 @@ export const ingestFilesToSchema = async (
 ): Promise<SchemaInstanceResponse> => {
   const token = getAuthToken();
   
+  // Generate UUIDs for each file and store the first one (for single file uploads)
+  const filesWithIds = files.map((file) => ({
+    id: crypto.randomUUID(),
+    filename: file.filename,
+    cdnUrl: file.cdnUrl,
+  }));
+  
+  // Store the first file's ID in sessionStorage (for single file uploads)
+  if (filesWithIds.length > 0) {
+    const generatedId = filesWithIds[0].id;
+    sessionStorage.setItem('schema_instance_id', generatedId);
+    console.log('🆔 Generated and stored UUID in sessionStorage:', generatedId);
+  }
+  
   const requestData: SchemaInstanceRequest = {
-    data: files.map((file) => ({
-      id: crypto.randomUUID(),
+    data: filesWithIds.map((file) => ({
+      id: file.id,
       filename: file.filename,
       cdnUrls: [file.cdnUrl], // Array of CDN URLs (single file = array with one URL)
     })),
@@ -993,6 +1119,274 @@ export const ingestFilesToSchema = async (
         data: error.response?.data,
       });
       throw new Error(`Schema ingestion failed: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Schema Instance Bulk Update API - Update instance with agent response
+export interface SchemaInstanceBulkUpdateItem {
+  id: string;
+  metadata?: {
+    tender_reference_number?: string;
+    document_title?: string;
+    document_type?: string;
+    issue_date?: string;
+    issuer?: string;
+    country?: string;
+    [key: string]: any;
+  };
+  tender_summary?: {
+    project_title?: string;
+    objective?: string;
+    scope_summary?: string;
+    [key: string]: any;
+  };
+  administration?: {
+    submission_deadline?: string;
+    proposal_validity_days?: number | string;
+    submission_instructions?: string;
+    [key: string]: any;
+  };
+  evaluation?: {
+    technical_weight_percent?: number;
+    financial_weight_percent?: number;
+    evaluation_criteria?: Array<{
+      name?: string;
+      weight_percent?: number;
+      [key: string]: any;
+    }>;
+    [key: string]: any;
+  };
+  requirements?: {
+    functional_requirements?: string[];
+    technical_requirements?: string[];
+    [key: string]: any;
+  };
+  pricing?: {
+    currency?: string;
+    pricing_structure?: string;
+    [key: string]: any;
+  };
+  contact_information?: {
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export interface SchemaInstanceBulkUpdateRequest {
+  primarykeyEnable: boolean;
+  bulkUpdate: SchemaInstanceBulkUpdateItem[];
+}
+
+export interface SchemaInstanceBulkUpdateResponse {
+  status?: string;
+  msg?: string;
+  data?: any;
+  [key: string]: any;
+}
+
+/**
+ * Update schema instance with agent response data using bulk update API
+ * Reads instance ID from sessionStorage and uses agent response to update
+ * @param agentResponse - The agent response data to update the instance with
+ * @returns Promise with update response
+ */
+export const updateSchemaInstanceWithAgentResponse = async (
+  agentResponse: any
+): Promise<SchemaInstanceBulkUpdateResponse> => {
+  const token = getAuthToken();
+
+  // Get instance ID from sessionStorage
+  const instanceId = sessionStorage.getItem('schema_instance_id');
+  
+  if (!instanceId) {
+    throw new Error('Instance ID not found in sessionStorage. Please ingest the file first.');
+  }
+
+  console.log('🔍 Processing agent response for update:', {
+    instanceId: instanceId,
+    responseType: typeof agentResponse,
+  });
+
+  // Parse agent response - it might be a string (JSON) or already an object
+  let parsedResponse: any;
+  if (typeof agentResponse === 'string') {
+    try {
+      parsedResponse = JSON.parse(agentResponse);
+      console.log('✅ Parsed JSON string response');
+    } catch (e) {
+      // If parsing fails, try to extract JSON from the string
+      const jsonMatch = agentResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedResponse = JSON.parse(jsonMatch[0]);
+        console.log('✅ Extracted and parsed JSON from string');
+      } else {
+        console.error('❌ Agent response is not valid JSON:', agentResponse);
+        throw new Error('Agent response is not valid JSON');
+      }
+    }
+  } else {
+    parsedResponse = agentResponse;
+    console.log('✅ Using object response directly');
+  }
+
+  // Extract the 'text' field from agent response - this contains the actual tender data
+  // The agent response has metadata fields (agentId, sessionId, etc.) that we should NOT send
+  let responseData: any;
+  
+  // First, try to get the text field directly
+  if (parsedResponse.text) {
+    responseData = parsedResponse.text;
+    console.log('✅ Found text field in agent response');
+  } else if (parsedResponse.data?.text) {
+    responseData = parsedResponse.data.text;
+    console.log('✅ Found text field in agent response.data');
+  } else if (parsedResponse.msg) {
+    responseData = parsedResponse.msg;
+    console.log('✅ Using msg field from agent response');
+  } else if (parsedResponse.response?.text) {
+    responseData = parsedResponse.response.text;
+    console.log('✅ Found text field in agent response.response');
+  } else {
+    // Fallback to data or the whole response
+    responseData = parsedResponse.data || parsedResponse;
+    console.log('⚠️ No text field found, using data or full response');
+  }
+  
+  // If responseData is a string, try to parse it as JSON (it should contain the tender data)
+  if (typeof responseData === 'string') {
+    try {
+      responseData = JSON.parse(responseData);
+      console.log('✅ Parsed text field as JSON');
+    } catch (e) {
+      // If parsing fails, try to extract JSON from the string
+      const jsonMatch = responseData.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          responseData = JSON.parse(jsonMatch[0]);
+          console.log('✅ Extracted and parsed JSON from text string');
+        } catch (parseError) {
+          console.error('❌ Could not parse JSON from text:', parseError);
+          throw new Error('Agent response text is not valid JSON');
+        }
+      } else {
+        console.error('❌ No JSON found in text field');
+        throw new Error('Agent response text does not contain valid JSON');
+      }
+    }
+  }
+
+  // Store the cleaned agent response (only the tender data) in sessionStorage
+  sessionStorage.setItem('agent_response', JSON.stringify(responseData));
+  console.log('💾 Stored cleaned agent response (text content only) in sessionStorage');
+
+  console.log('📋 Extracted tender data from agent response:', JSON.stringify(responseData, null, 2));
+  console.log('📋 Agent response data structure:', {
+    hasMetadata: !!responseData?.metadata,
+    hasTenderSummary: !!responseData?.tender_summary,
+    hasEvaluation: !!responseData?.evaluation,
+    hasAdministration: !!responseData?.administration,
+    hasRequirements: !!responseData?.requirements,
+    hasPricing: !!responseData?.pricing,
+    hasContactInfo: !!responseData?.contact_information,
+    allKeys: responseData && typeof responseData === 'object' ? Object.keys(responseData) : 'N/A',
+  });
+
+  // Build the bulk update item - start with ID and include ALL agent response data
+  const bulkUpdateItem: SchemaInstanceBulkUpdateItem = {
+    id: instanceId, // Use the ID from sessionStorage
+  };
+
+  // Map ALL fields from agent response to bulk update structure
+  // Include all fields even if they're empty/null to ensure complete data transfer
+  if (responseData && typeof responseData === 'object') {
+    // Remove id from responseData if present (we'll use the instanceId from sessionStorage)
+    const { id, ...restData } = responseData;
+    
+    // Directly assign all fields from agent response
+    if (restData.metadata) {
+      bulkUpdateItem.metadata = restData.metadata;
+    }
+    if (restData.tender_summary) {
+      bulkUpdateItem.tender_summary = restData.tender_summary;
+    }
+    if (restData.administration) {
+      bulkUpdateItem.administration = restData.administration;
+    }
+    if (restData.evaluation) {
+      bulkUpdateItem.evaluation = restData.evaluation;
+    }
+    if (restData.requirements) {
+      bulkUpdateItem.requirements = restData.requirements;
+    }
+    if (restData.pricing) {
+      bulkUpdateItem.pricing = restData.pricing;
+    }
+    if (restData.contact_information) {
+      bulkUpdateItem.contact_information = restData.contact_information;
+    }
+    
+    // Also include any other fields that might be in the response
+    // This ensures we don't miss any data
+    Object.keys(restData).forEach(key => {
+      if (!['metadata', 'tender_summary', 'administration', 'evaluation', 'requirements', 'pricing', 'contact_information'].includes(key)) {
+        // Include any additional fields
+        (bulkUpdateItem as any)[key] = restData[key];
+      }
+    });
+  }
+  
+  console.log('📦 Final bulk update item:', JSON.stringify(bulkUpdateItem, null, 2));
+
+  const requestData: SchemaInstanceBulkUpdateRequest = {
+    primarykeyEnable: true,
+    bulkUpdate: [bulkUpdateItem],
+  };
+
+  const UPDATE_API_URL = 'https://ig.gov-cloud.ai/pi-entity-instances-service/v2.0';
+
+  console.log('📤 Full request payload being sent:', JSON.stringify(requestData, null, 2));
+  console.log('📤 Updating schema instance with agent response:', {
+    url: `${UPDATE_API_URL}/schemas/${SCHEMA_ID}/instances`,
+    instanceId: instanceId,
+    updateData: bulkUpdateItem,
+    hasMetadata: !!bulkUpdateItem.metadata,
+    hasTenderSummary: !!bulkUpdateItem.tender_summary,
+    hasEvaluation: !!bulkUpdateItem.evaluation,
+    hasAdministration: !!bulkUpdateItem.administration,
+    hasRequirements: !!bulkUpdateItem.requirements,
+    hasPricing: !!bulkUpdateItem.pricing,
+    hasContactInfo: !!bulkUpdateItem.contact_information,
+  });
+
+  try {
+    const response = await axios.put<SchemaInstanceBulkUpdateResponse>(
+      `${UPDATE_API_URL}/schemas/${SCHEMA_ID}/instances`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+        },
+      }
+    );
+
+    console.log('✅ Schema instance update response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Schema instance update error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        instanceId: instanceId,
+      });
+      throw new Error(`Schema instance update failed: ${error.response?.data?.msg || error.message}`);
     }
     throw error;
   }
