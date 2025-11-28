@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { TabNavigation } from '../components/TabNavigation';
 import { EvaluationMatrix } from '../components/EvaluationMatrix';
-import { VarianceRadarChart } from '../components/VarianceRadarChart';
 import { KPIWidget } from '../components/KPIWidget';
 import { KPIDetailModal } from '../components/KPIDetailModal';
 import { EvaluationFooter } from '../components/EvaluationFooter';
@@ -58,6 +57,8 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   const [agentError, setAgentError] = useState<string | null>(null);
   const [companiesFromAgent, setCompaniesFromAgent] = useState<Vendor[]>([]);
   const [categoriesFromAgent, setCategoriesFromAgent] = useState<Array<{id: string, name: string}>>([]);
+  const [apiData, setApiData] = useState<any[]>([]);
+  const apiCalledRef = useRef(false);
 
   // Function to extract data from static JSON file
   const useStaticData = () => {
@@ -100,9 +101,17 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
     { id: 'TND-2025-007', title: 'Parking System Upgrade', department: 'Parking Management', category: 'WORKS', dateCreated: '2025-03-10', status: 'evaluation' },
   ];
 
-  // Call agent API when component mounts
+  // Call agent API when component mounts (only once)
   useEffect(() => {
+    // Prevent multiple calls - only call if not already called and no data exists
+    if (apiCalledRef.current || apiData.length > 0) {
+      return;
+    }
+
     const callAgentAPI = async () => {
+      // Mark as called immediately to prevent duplicate calls
+      apiCalledRef.current = true;
+      
       try {
         setAgentLoading(true);
         setAgentError(null);
@@ -122,10 +131,11 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              agentId: '019ab540-50cc-7e45-a383-487c653e49eb',
-              query: 'tender_01',
+              agentId: '1a60b7a8-8188-4c9e-b234-a6c49d239b85',
+                query: 'TenderId: RAK_01',
               referenceId: '',
               sessionId: '',
+              userId: 'gaian@123',
               fileUrl: [
                 'https://cdn.gov-cloud.ai//_ENC(nIw4FQRwLOQd0b8T2HcImBUJ5a9zjZEImv/UhJi8/+yUl7Ez+m0qAiCCaOJbNgi5)/CMS/94b90898-cb67-411c-896d-bb61fd06752e_$$_V1_PSD%20-%20SAP%20Implementation%20Program%20-%20Technical%20Evaluation%20Form%201.0_17-03-2020.pdf'
               ],
@@ -153,18 +163,24 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
           const parsedData = JSON.parse(jsonText);
           
           if (Array.isArray(parsedData) && parsedData.length > 0) {
-            // Extract unique company names
-            const companyNames = [...new Set(parsedData.map((item: any) => item.companyName).filter(Boolean))];
+            // Store the full API data
+            setApiData(parsedData);
+            
+            // Extract unique company names from "Company Name" field
+            const companyNames = [...new Set(parsedData.map((item: any) => item['Company Name']).filter(Boolean))];
             const extractedVendors = companyNames.map((name: string, index: number) => ({
               id: `v${index + 1}`,
               name: name
             }));
             setCompaniesFromAgent(extractedVendors);
             
-            // Extract unique category names from the first company (assuming all companies have same categories)
-            if (parsedData[0]?.evaluationCategories) {
-              const categories = parsedData[0].evaluationCategories.map((cat: any) => cat.category);
-              const extractedCategories = categories.map((catName: string, index: number) => ({
+            // Extract subcategory names from Subcategory Weightages
+            if (parsedData[0]?.['Subcategory Weightages']) {
+              const weightages = parsedData[0]['Subcategory Weightages'] as Record<string, any>;
+              const subcategoryNames = Object.keys(weightages).filter(
+                key => weightages[key] !== null
+              );
+              const extractedCategories = subcategoryNames.map((catName: string, index: number) => ({
                 id: `cat${index + 1}`,
                 name: catName
               }));
@@ -334,6 +350,117 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
     allCriteria.reduce((acc, c) => ({ ...acc, [c.id]: c.weight }), {})
   );
 
+  // Function to calculate score from API data (similar to EvaluationBreakdown)
+  const calculateCriterionScore = useCallback((criterionName: string, companyName: string): number => {
+    const companyData = apiData.find((d: any) => d['Company Name'] === companyName);
+    if (!companyData) return 0;
+
+    const subcategoryRatings = (companyData['Subcategory Ratings'] || {}) as Record<string, any>;
+    
+    // Handle "Module Covered" specially - it's an aggregate of individual modules
+    if (criterionName === 'Module Covered') {
+      // Count all modules that are "Yes" (excluding the main criteria names)
+      const moduleKeys = ['FICO', 'PS/PPM', 'PM', 'FM', 'MM', 'IM/WM', 'Embedded Analytics', 
+        'SOLMAN', 'BASIS', 'FIORI', 'Group Consolidation (S4 Hana)', 'Integration Services',
+        'SAP HCM – Payroll', 'Inspection Fees', 'Fleet Management', 'Toll Management',
+        'Call Center Integration', 'Fuel Management', 'mRAK / RAKPay / e-Dirham'];
+      const yesCount = moduleKeys.filter(key => subcategoryRatings[key] === 'Yes').length;
+      const totalCount = moduleKeys.filter(key => subcategoryRatings[key] !== null && subcategoryRatings[key] !== undefined).length;
+      return totalCount > 0 ? (yesCount / totalCount) * 10 : 0;
+    }
+    
+    const rating = subcategoryRatings[criterionName];
+
+    if (rating === undefined || rating === null) return 0;
+
+    // Handle objects (Implementation Timeline, Partner Experience)
+    if (typeof rating === 'object' && rating !== null && !Array.isArray(rating)) {
+      // For Implementation Timeline / Consultants
+      if (criterionName === 'Implementation Timeline / Consultants') {
+        const implData = rating as Record<string, any>;
+        const manMonths = implData['Number of Man Months Considered'] || 0;
+        const onshore = implData['Number of Consultants (Onshore)'] || 0;
+        const offshore = implData['Number of Consultants (Offshore)'] || 0;
+        const arabic = implData['Number of Arabic Consultants (On shore)'] || 0;
+        const avgExp = implData['Average experience of consultants'] || 0;
+        
+        const manMonthsScore = Math.min(10, (manMonths / 300) * 10);
+        const consultantScore = Math.min(10, ((onshore + offshore) / 30) * 10);
+        const arabicScore = Math.min(10, (arabic / 15) * 10);
+        const expScore = Math.min(10, (avgExp / 10) * 10);
+        
+        return (manMonthsScore * 0.3 + consultantScore * 0.3 + arabicScore * 0.2 + expScore * 0.2);
+      }
+      
+      // For Partner Experience
+      if (criterionName === 'Partner Experience') {
+        const partnerData = rating as Record<string, any>;
+        const implementations = partnerData['Number of SAP Implementations'] || 0;
+        const s4hana = partnerData['SAP S/4HANA experience'] || 0;
+        const gcc = partnerData['GCC Experience'];
+        const partnerType = partnerData['SAP Partner Type & Age'] || '';
+        
+        let partnerTypeScore = 0;
+        if (typeof partnerType === 'string') {
+          const typeLower = partnerType.toLowerCase();
+          if (typeLower.includes('platinum')) partnerTypeScore = 10;
+          else if (typeLower.includes('gold')) partnerTypeScore = 7;
+          else if (typeLower.includes('silver')) partnerTypeScore = 5;
+          else partnerTypeScore = 3;
+        }
+        
+        const implScore = Math.min(10, (implementations / 50) * 10);
+        const s4hanaScore = Math.min(10, (s4hana / 200) * 10);
+        const gccScore = typeof gcc === 'string' && gcc.toLowerCase() === 'yes' ? 10 : 
+                        typeof gcc === 'number' ? Math.min(10, (gcc / 10) * 10) : 0;
+        
+        return (partnerTypeScore * 0.3 + implScore * 0.2 + s4hanaScore * 0.3 + gccScore * 0.2);
+      }
+    }
+
+    // Handle string values (Yes/No)
+    if (typeof rating === 'string') {
+      if (rating.toLowerCase() === 'yes') return 10;
+      if (rating.toLowerCase() === 'no') return 0;
+      return 0;
+    }
+
+    // Handle numeric values
+    if (typeof rating === 'number') {
+      // For Implementation Timeline / Consultants (when it's a number representing man months)
+      if (criterionName === 'Implementation Timeline / Consultants') {
+        // Scale: 0-700 -> 0-10 (based on sample data where max is 700)
+        return Math.min(10, (rating / 700) * 10);
+      }
+      
+      // For Partner Experience (when it's already a calculated score)
+      if (criterionName === 'Partner Experience') {
+        // It's already a score out of 10, just ensure it's in range
+        return Math.min(10, Math.max(0, rating));
+      }
+      
+      // For RICEF, scale: 0-150 -> 0-10
+      if (criterionName === 'Custom Objects Considered (RICEF)') {
+        return Math.min(10, (rating / 150) * 10);
+      }
+      
+      // For Project Duration, inverse scale: shorter is better
+      if (criterionName === 'Project Duration') {
+        return Math.max(0, Math.min(10, (12 / rating) * 10));
+      }
+      
+      // For Reference count, scale: 0-50 -> 0-10
+      if (criterionName.includes('Reference') && !criterionName.includes('GCC') && !criterionName.includes('Non-GCC')) {
+        return Math.min(10, (rating / 50) * 10);
+      }
+      
+      // Default: scale to 0-10
+      return Math.min(10, Math.max(0, rating / 10));
+    }
+
+    return 0;
+  }, [apiData]);
+
   useEffect(() => {
     setScores(
       allCriteria.flatMap((criterion) =>
@@ -351,6 +478,39 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
     );
     setIsLocked(currentTender.status === 'locked' || currentTender.status === 'completed');
   }, [selectedTender]);
+
+  // Update scores when API data is loaded
+  useEffect(() => {
+    if (apiData.length > 0 && vendors.length > 0 && allCriteria.length > 0) {
+      const newScores = allCriteria.flatMap((criterion) =>
+        vendors.map((vendor) => {
+          const companyName = vendor.name;
+          const calculatedScore = calculateCriterionScore(criterion.name, companyName);
+          return {
+            criterionId: criterion.id,
+            vendorId: vendor.id,
+            score: calculatedScore,
+            aiConfidence: 0.9,
+            isAiGenerated: true,
+          };
+        })
+      );
+      setScores(newScores);
+      
+      // Update weights from API data if available
+      if (apiData[0]?.['Subcategory Weightages']) {
+        const weightages = apiData[0]['Subcategory Weightages'] as Record<string, any>;
+        const newWeights: Record<string, number> = {};
+        allCriteria.forEach((criterion) => {
+          const weight = weightages[criterion.name];
+          if (weight !== null && weight !== undefined) {
+            newWeights[criterion.id] = weight * 100; // Convert to percentage
+          }
+        });
+        setCriteriaWeights((prev) => ({ ...prev, ...newWeights }));
+      }
+    }
+  }, [apiData, vendors, allCriteria, calculateCriterionScore]);
 
   const activeCriteria = allCriteria
     .filter((c) => c.category === activeTab)
@@ -374,6 +534,7 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
     );
   };
 
+
   const handleLockMatrix = () => {
     setIsLocked(true);
   };
@@ -385,19 +546,12 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
   const totalWeight = activeCriteria.reduce((sum, c) => sum + c.weight, 0);
   const weightAlignment = Math.abs(100 - totalWeight) <= 5 ? 98 : 75;
 
-  const varianceData = [
-    { label: 'Tech', value: 85 },
-    { label: 'Financial', value: 72 },
-    { label: 'ESG', value: 68 },
-    { label: 'Innovation', value: 91 },
-  ];
-
   return (
     <>
       <Sidebar currentPage="evaluation" onNavigate={onNavigate} />
       <div className="app-shell min-h-screen bg-gray-50 pb-24">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-[95rem] mx-auto px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-semibold text-gray-900">
@@ -423,7 +577,7 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-[95rem] mx-auto px-6 py-8">
         <div className="relative rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 shadow-[0_20px_45px_rgba(59,130,246,0.12)] overflow-hidden p-6 mb-8">
           <div className="flex items-center gap-2 mb-5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
@@ -548,8 +702,8 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 min-w-0 overflow-hidden">
+        <div className="w-full">
+          <div className="min-w-0 overflow-hidden">
             <EvaluationMatrix
               criteria={activeCriteria}
               vendors={vendors}
@@ -563,9 +717,11 @@ export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) 
             />
           </div>
 
+          {/* Evaluator Variance Radar temporarily disabled
           <div className="min-w-0 overflow-hidden">
             <VarianceRadarChart data={varianceData} />
           </div>
+          */}
         </div>
       </main>
 
