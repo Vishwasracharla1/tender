@@ -1,12 +1,13 @@
 import { Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
+import { useAuthStore } from '../store/authStore';
 
 interface ProtectedRouteProps {
   children: ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+  const { isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
