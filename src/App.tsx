@@ -1,7 +1,19 @@
 import { RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from './routes';
 import { JotformAgent } from './components/JotformAgent';
 import { useEffect, useState } from 'react';
+
+// Create a QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 // Component to conditionally show Jotform agent on all pages except tender-overview
 function ConditionalJotformAgent() {
@@ -77,10 +89,10 @@ function ConditionalJotformAgent() {
 
 function App() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
       <ConditionalJotformAgent />
-    </>
+    </QueryClientProvider>
   );
 }
 

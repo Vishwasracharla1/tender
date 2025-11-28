@@ -1,6 +1,7 @@
 import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 interface SidebarProps {
   currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin';
@@ -12,6 +13,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(['evaluation']);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout, user } = useAuthStore();
 
   // Map routes to page IDs
   const routeToPageId: Record<string, string> = {
@@ -281,17 +283,24 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <div className="p-4 border-t border-white/60 space-y-2">
             <div className="flex items-center gap-3 p-3 bg-white/70 rounded-xl shadow-lg">
               <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center border border-sky-100">
-                <span className="text-xs font-semibold text-slate-700 tracking-wide">JD</span>
+                <span className="text-xs font-semibold text-slate-700 tracking-wide">
+                  {user?.firstName?.[0] || user?.username?.[0] || 'U'}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900">John Doe</p>
-                <p className="text-xs text-slate-500">Evaluation Chair</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {user?.firstName && user?.lastName
+                    ? `${user.firstName} ${user.lastName}`
+                    : user?.username || 'User'}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {user?.role || (user?.piref_role && user.piref_role[0]?.rolename) || 'User'}
+                </p>
               </div>
             </div>
             <button
               onClick={() => {
-                sessionStorage.removeItem('isAuthenticated');
-                sessionStorage.removeItem('username');
+                logout();
                 navigate('/login', { replace: true });
               }}
               className="w-full flex items-center gap-3 px-3 py-2.5 bg-white/70 hover:bg-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl group"
