@@ -297,6 +297,49 @@
       "subtitle": "IntegrityBot.Agent Active",
       "statusBadge": "Integrity Review",
       "lastUpdated": "2025-11-26T11:25:00.000Z"
+    },
+    "aiCausalAnalysis": {
+      "summary": "AI has identified evaluator bias and vendor relationships as primary drivers of integrity risk in this tender.",
+      "rootCauses": [
+        {
+          "id": "cause-1",
+          "type": "evaluator_bias",
+          "description": "Michael Ross consistently scores BuildTech Ltd 25-30% higher than peer evaluators across multiple categories.",
+          "confidence": 0.92,
+          "impactScore": 0.87,
+          "relatedAlerts": ["alert-1", "alert-2"],
+          "primaryEntities": ["Michael Ross", "BuildTech Ltd"]
+        },
+        {
+          "id": "cause-2",
+          "type": "vendor_favoritism",
+          "description": "James Wilson shows systematic favoritism towards Global Supplies and undervalues competing vendors.",
+          "confidence": 0.81,
+          "impactScore": 0.79,
+          "relatedAlerts": ["alert-3", "alert-4"],
+          "primaryEntities": ["James Wilson", "Global Supplies"]
+        }
+      ],
+      "mitigationActions": [
+        {
+          "id": "action-1",
+          "title": "Rebalance evaluation panel for high-risk tenders",
+          "description": "Temporarily remove or shadow high-bias evaluators from panels where flagged vendors participate.",
+          "owner": "Head of Procurement Compliance",
+          "dueDate": "2025-12-15",
+          "priority": "high",
+          "status": "planned"
+        },
+        {
+          "id": "action-2",
+          "title": "Introduce blinded scoring for financial criteria",
+          "description": "Hide vendor identities for price and ESG criteria to reduce known-vendor favoritism.",
+          "owner": "Integrity Office",
+          "dueDate": "2026-01-10",
+          "priority": "medium",
+          "status": "planned"
+        }
+      ]
     }
   }
 }

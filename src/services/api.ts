@@ -1429,4 +1429,337 @@ export const callGovernmentQueriesAgent = async (
   }
 };
 
+// Admin Panel Schema API
+const ADMIN_PANEL_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+const ADMIN_PANEL_USERS_SCHEMA_ID = '69294686fd9c66658f22d6ad';
+const ADMIN_PANEL_ROLES_SCHEMA_ID = '692944eafd9c66658f22d6ab';
+
+export interface AdminPanelInstanceItem {
+  id?: string | number;
+  username?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  department?: string;
+  status?: 'active' | 'inactive' | string;
+  permissions?: string[];
+  userCount?: number;
+  description?: string;
+  [key: string]: any;
+}
+
+export interface AdminPanelInstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: AdminPanelInstanceItem[];
+  content?: AdminPanelInstanceItem[];
+  [key: string]: any;
+}
+
+/**
+ * Fetch admin panel users
+ * @param size - Number of instances to fetch (default: 3000)
+ * @returns Promise with list of admin panel user instances
+ */
+export const fetchAdminPanelUsers = async (
+  size: number = 3000
+): Promise<AdminPanelInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  const queryParams = new URLSearchParams({
+    size: size.toString(),
+    showDBaaSReservedKeywords: 'true',
+    showReferencedData: 'true',
+    showPageableMetaData: 'true',
+  });
+
+  console.log('📥 Fetching admin panel users:', {
+    url: `${ADMIN_PANEL_API_BASE_URL}/schemas/${ADMIN_PANEL_USERS_SCHEMA_ID}/instances/list?${queryParams}`,
+  });
+
+  try {
+    const response = await axios.post<AdminPanelInstanceListResponse>(
+      `${ADMIN_PANEL_API_BASE_URL}/schemas/${ADMIN_PANEL_USERS_SCHEMA_ID}/instances/list?${queryParams}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+          'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0',
+        },
+      }
+    );
+
+    console.log('✅ Admin panel users response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Admin panel users fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch admin panel users: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch admin panel roles
+ * @param size - Number of instances to fetch (default: 3000)
+ * @returns Promise with list of admin panel role instances
+ */
+export const fetchAdminPanelRoles = async (
+  size: number = 3000
+): Promise<AdminPanelInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  const queryParams = new URLSearchParams({
+    size: size.toString(),
+    showDBaaSReservedKeywords: 'true',
+    showReferencedData: 'true',
+    showPageableMetaData: 'true',
+  });
+
+  console.log('📥 Fetching admin panel roles:', {
+    url: `${ADMIN_PANEL_API_BASE_URL}/schemas/${ADMIN_PANEL_ROLES_SCHEMA_ID}/instances/list?${queryParams}`,
+  });
+
+  try {
+    const response = await axios.post<AdminPanelInstanceListResponse>(
+      `${ADMIN_PANEL_API_BASE_URL}/schemas/${ADMIN_PANEL_ROLES_SCHEMA_ID}/instances/list?${queryParams}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+          'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0',
+        },
+      }
+    );
+
+    console.log('✅ Admin panel roles response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Admin panel roles fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch admin panel roles: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Integrity Analytics Schema API
+const INTEGRITY_ANALYTICS_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+const INTEGRITY_ANALYTICS_SCHEMA_ID = '69257e9eed36767f199eb4bf'; // Using same schema as justification for now, can be updated later
+
+export interface IntegrityAnalyticsInstanceItem {
+  id?: string | number;
+  companyName?: string;
+  company_name?: string;
+  company?: string;
+  name?: string;
+  documentName?: string;
+  document_name?: string;
+  filename?: string;
+  cdnUrl?: string;
+  cdnurl?: string;
+  cdnUrls?: string | string[];
+  fileUrl?: string;
+  fileUrls?: string | string[];
+  [key: string]: any;
+}
+
+export interface IntegrityAnalyticsInstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: IntegrityAnalyticsInstanceItem[];
+  content?: IntegrityAnalyticsInstanceItem[];
+  [key: string]: any;
+}
+
+/**
+ * Fetch integrity analytics instances list for company dropdown
+ * @param size - Number of instances to fetch (default: 1000)
+ * @returns Promise with list of integrity analytics instances
+ */
+export const fetchIntegrityAnalyticsInstances = async (
+  size: number = 1000
+): Promise<IntegrityAnalyticsInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  console.log('📥 Fetching integrity analytics instances:', {
+    url: `${INTEGRITY_ANALYTICS_SCHEMA_API_BASE_URL}/schemas/${INTEGRITY_ANALYTICS_SCHEMA_ID}/instances/list?size=${size}`,
+  });
+
+  try {
+    const response = await axios.post<IntegrityAnalyticsInstanceListResponse>(
+      `${INTEGRITY_ANALYTICS_SCHEMA_API_BASE_URL}/schemas/${INTEGRITY_ANALYTICS_SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Integrity analytics instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Integrity analytics instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch integrity analytics instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+// Integrity Analytics Agent API
+const INTEGRITY_ANALYTICS_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
+const INTEGRITY_ANALYTICS_AGENT_ID = '019ac4ce-da3d-7fdc-84a1-dd459c0bff54';
+export const INTEGRITY_ANALYTICS_AGENT_ID_2 = '019ac4e6-f6af-7dff-bce8-705be20735b5';
+
+export interface IntegrityAnalyticsAgentRequest {
+  agentId: string;
+  query: string;
+  referenceId: string;
+  sessionId: string;
+  userId: string;
+  fileUrl: string[];
+}
+
+export interface IntegrityAnalyticsAgentResponse {
+  status?: string;
+  msg?: string;
+  data?: any;
+  text?: string;
+  [key: string]: any;
+}
+
+/**
+ * Call integrity analytics agent to generate integrity analytics data
+ * @param query - The query string for the agent
+ * @param fileUrls - Array of CDN URLs for the documents
+ * @param userId - User ID (default: 'gaian@123')
+ * @param agentId - Agent ID (default: integrity analytics agent ID)
+ * @returns Promise with agent response
+ */
+export const callIntegrityAnalyticsAgent = async (
+  query: string,
+  fileUrls: string[] = [],
+  userId: string = 'gaian@123',
+  agentId: string = INTEGRITY_ANALYTICS_AGENT_ID
+): Promise<IntegrityAnalyticsAgentResponse> => {
+  const token = getAuthToken();
+  
+  const requestData: IntegrityAnalyticsAgentRequest = {
+    agentId: agentId,
+    query: query,
+    referenceId: '',
+    sessionId: '',
+    userId: userId,
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Integrity Analytics Agent API:', {
+    url: `${INTEGRITY_ANALYTICS_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: agentId,
+    query: query,
+    fileCount: fileUrls.length,
+    userId: userId,
+  });
+
+  try {
+    const response = await axios.post<IntegrityAnalyticsAgentResponse>(
+      `${INTEGRITY_ANALYTICS_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Integrity Analytics Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Integrity Analytics Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+      });
+      throw new Error(`Integrity Analytics Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 

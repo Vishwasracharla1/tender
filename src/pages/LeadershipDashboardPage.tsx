@@ -876,7 +876,7 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
 
           <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
             <h2 className="text-sm font-semibold text-gray-900 mb-6">Vendor Analytics</h2>
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-3 gap-6">
             <KPIWidget
               title="Active Vendors"
               value={isLoadingVendorAnalytics ? '...' : vendorAnalytics.totalVendors.toString()}
@@ -899,14 +899,6 @@ export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageP
                 subtitle={topPerformerError ? 'Error loading data' : (topPerformerData ? `${topPerformerData.reliabilityScore?.toFixed(1) || '0.0'}% reliability` : 'Loading...')}
                 icon={Award}
                 onClick={() => setActiveModal('topVendor')}
-              />
-
-              <KPIWidget
-                title="Risk Vendors"
-                value={vendorAnalytics.riskVendors.toString()}
-                subtitle="Flagged for high risk or errors"
-                icon={ShieldAlert}
-                onClick={() => setActiveModal('riskVendors')}
               />
             </div>
           </div>

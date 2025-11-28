@@ -13,29 +13,33 @@ import { TenderOverviewPage } from '../pages/TenderOverviewPage';
 import { EvaluationBreakdownPage } from '../pages/EvaluationBreakdownPage';
 import { EvaluationRecommendationPage } from '../pages/EvaluationRecommendationPage';
 import { CompanyDetailPage } from '../pages/CompanyDetailPage';
+import { LoginPage } from '../pages/LoginPage';
+import { AdminPanelPage } from '../pages/AdminPanelPage';
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
-// Helper function to create navigation handler
-const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
-  return (page: string) => {
-    const pathMap: Record<string, string> = {
-      'leadership': '/',
-      'intake': '/intake',
-      'tender-overview': '/tender-overview',
-      'tender-article': '/tender-article',
-      'evaluation': '/evaluation',
-      'evaluation-breakdown': '/evaluation-breakdown',
-      'evaluation-recommendation': '/evaluation-recommendation',
-      'benchmark': '/benchmark',
-      'integrity': '/integrity',
-      'justification': '/justification',
-      'award': '/award',
-      'monitoring': '/monitoring',
-      'integration': '/integration',
+  // Helper function to create navigation handler
+  const createNavigateHandler = (navigate: ReturnType<typeof useNavigate>) => {
+    return (page: string) => {
+      const pathMap: Record<string, string> = {
+        'leadership': '/',
+        'intake': '/intake',
+        'tender-overview': '/tender-overview',
+        'tender-article': '/tender-article',
+        'evaluation': '/evaluation',
+        'evaluation-breakdown': '/evaluation-breakdown',
+        'evaluation-recommendation': '/evaluation-recommendation',
+        'benchmark': '/benchmark',
+        'integrity': '/integrity',
+        'justification': '/justification',
+        'award': '/award',
+        'monitoring': '/monitoring',
+        'integration': '/integration',
+        'admin': '/admin',
+      };
+      const path = pathMap[page] || '/';
+      navigate(path);
     };
-    const path = pathMap[page] || '/';
-    navigate(path);
   };
-};
 
 // Wrapper components to handle navigation
 const LeadershipDashboardWrapper = () => {
@@ -122,65 +126,139 @@ const CompanyDetailWrapper = () => {
   return <CompanyDetailPage onNavigate={handleNavigate} />;
 };
 
+const AdminPanelWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <AdminPanelPage onNavigate={handleNavigate} />;
+};
+
 export const router = createBrowserRouter([
   {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
     path: '/',
-    element: <LeadershipDashboardWrapper />,
+    element: (
+      <ProtectedRoute>
+        <LeadershipDashboardWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/intake',
-    element: <TenderIntakeWrapper />,
+    element: (
+      <ProtectedRoute>
+        <TenderIntakeWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/tender-overview',
-    element: <TenderOverviewWrapper />,
+    element: (
+      <ProtectedRoute>
+        <TenderOverviewWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/tender-article',
-    element: <TenderArticleWrapper />,
+    element: (
+      <ProtectedRoute>
+        <TenderArticleWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/evaluation',
-    element: <EvaluationMatrixWrapper />,
+    element: (
+      <ProtectedRoute>
+        <EvaluationMatrixWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/evaluation-breakdown',
-    element: <EvaluationBreakdownWrapper />,
+    element: (
+      <ProtectedRoute>
+        <EvaluationBreakdownWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/evaluation-recommendation',
-    element: <EvaluationRecommendationWrapper />,
+    element: (
+      <ProtectedRoute>
+        <EvaluationRecommendationWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/company/:companyName',
-    element: <CompanyDetailWrapper />,
+    element: (
+      <ProtectedRoute>
+        <CompanyDetailWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/benchmark',
-    element: <BenchmarkDashboardWrapper />,
+    element: (
+      <ProtectedRoute>
+        <BenchmarkDashboardWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/integrity',
-    element: <IntegrityAnalyticsWrapper />,
+    element: (
+      <ProtectedRoute>
+        <IntegrityAnalyticsWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/justification',
-    element: <JustificationComposerWrapper />,
+    element: (
+      <ProtectedRoute>
+        <JustificationComposerWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/award',
-    element: <AwardSimulationWrapper />,
+    element: (
+      <ProtectedRoute>
+        <AwardSimulationWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/monitoring',
-    element: <AgentMonitoringWrapper />,
+    element: (
+      <ProtectedRoute>
+        <AgentMonitoringWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/integration',
-    element: <IntegrationManagementWrapper />,
+    element: (
+      <ProtectedRoute>
+        <IntegrationManagementWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <ProtectedRoute>
+        <AdminPanelWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '*',
-    element: <Navigate to="/" replace />,
+    element: <Navigate to="/login" replace />,
   },
 ]);
