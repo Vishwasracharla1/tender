@@ -30,13 +30,36 @@ interface CausalInsight {
   affectedNodes: string[];
 }
 
+interface AICausalAnalysis {
+  summary?: string;
+  rootCauses?: Array<{
+    id: string;
+    type: string;
+    description: string;
+    confidence: number;
+    impactScore?: number;
+    relatedAlerts?: string[];
+    primaryEntities?: string[];
+  }>;
+  mitigationActions?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    owner?: string;
+    dueDate?: string;
+    priority?: string;
+    status?: string;
+  }>;
+}
+
 interface NetworkGraphProps {
   nodes: Node[];
   edges: Edge[];
   onNodeClick: (nodeId: string) => void;
+  aiCausalAnalysis?: AICausalAnalysis;
 }
 
-export function EnhancedNetworkGraph({ nodes, edges, onNodeClick }: NetworkGraphProps) {
+export function EnhancedNetworkGraph({ nodes, edges, onNodeClick, aiCausalAnalysis }: NetworkGraphProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<string | null>(null);
@@ -87,6 +110,37 @@ export function EnhancedNetworkGraph({ nodes, edges, onNodeClick }: NetworkGraph
   const vendors = nodes.filter(n => n.type === 'vendor');
 
   const generateCausalInsights = (): CausalInsight[] => {
+    // If AI Causal Analysis data is provided, use it
+    if (aiCausalAnalysis?.rootCauses && aiCausalAnalysis.rootCauses.length > 0) {
+      return aiCausalAnalysis.rootCauses.map((cause) => {
+        // Map root cause types to insight types
+        let insightType: 'warning' | 'info' | 'critical' = 'info';
+        if (cause.type === 'evaluator_bias' || cause.type === 'vendor_favoritism') {
+          insightType = cause.confidence > 0.85 ? 'critical' : 'warning';
+        }
+
+        // Find affected node IDs from primary entities
+        const affectedNodes: string[] = [];
+        cause.primaryEntities?.forEach((entityName) => {
+          const node = nodes.find(n => n.name === entityName);
+          if (node) {
+            affectedNodes.push(node.id);
+          }
+        });
+
+        return {
+          type: insightType,
+          title: cause.type === 'evaluator_bias' ? 'Evaluator Bias Detected' :
+                 cause.type === 'vendor_favoritism' ? 'Vendor Favoritism Pattern' :
+                 'Integrity Risk Pattern',
+          description: cause.description,
+          confidence: Math.round(cause.confidence * 100),
+          affectedNodes: affectedNodes.length > 0 ? affectedNodes : []
+        };
+      });
+    }
+
+    // Fallback to generated insights if no AI data
     const insights: CausalInsight[] = [];
 
     const suspiciousEdges = edges.filter(e => e.isSuspicious);
@@ -255,37 +309,48 @@ export function EnhancedNetworkGraph({ nodes, edges, onNodeClick }: NetworkGraph
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-4 h-4 text-gray-500" />
-            <span className="text-xs font-medium text-gray-700">Total Evaluators</span>
+        {/* Total Evaluators Card */}
+        <div className="bg-gradient-to-br from-blue-50 via-white to-cyan-100 border border-blue-200 rounded-lg p-4 shadow-[0_8px_20px_rgba(59,130,246,0.12)] hover:shadow-[0_12px_28px_rgba(59,130,246,0.18)] transition-all duration-300">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-sm">
+              <Users className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Total Evaluators</span>
           </div>
-          <p className="text-xl font-semibold text-gray-900">{evaluators.length}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-2xl font-bold text-blue-900 mb-1">{evaluators.length}</p>
+          <p className="text-xs font-medium text-blue-600 mt-0.5">
             {evaluators.filter(e => e.biasScore && e.biasScore > 50).length} flagged
           </p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-gray-500" />
-            <span className="text-xs font-medium text-gray-700">Relationships</span>
+        {/* Relationships Card */}
+        <div className="bg-gradient-to-br from-purple-50 via-white to-violet-100 border border-purple-200 rounded-lg p-4 shadow-[0_8px_20px_rgba(147,51,234,0.12)] hover:shadow-[0_12px_28px_rgba(147,51,234,0.18)] transition-all duration-300">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg shadow-sm">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Relationships</span>
           </div>
-          <p className="text-xl font-semibold text-gray-900">{edges.length}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-2xl font-bold text-purple-900 mb-1">{edges.length}</p>
+          <p className="text-xs font-medium text-purple-600 mt-0.5">
             {edges.filter(e => e.isSuspicious).length} suspicious
           </p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-4 h-4 text-gray-500" />
-            <span className="text-xs font-medium text-gray-700">Avg Bias Score</span>
+        {/* Avg Bias Score Card */}
+        <div className="bg-gradient-to-br from-emerald-50 via-white to-teal-100 border border-emerald-200 rounded-lg p-4 shadow-[0_8px_20px_rgba(5,150,105,0.12)] hover:shadow-[0_12px_28px_rgba(5,150,105,0.18)] transition-all duration-300">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-1.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg shadow-sm">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Avg Bias Score</span>
           </div>
-          <p className="text-xl font-semibold text-gray-900">
-            {(evaluators.reduce((sum, e) => sum + (e.biasScore || 0), 0) / evaluators.length).toFixed(1)}
+          <p className="text-2xl font-bold text-emerald-900 mb-1">
+            {evaluators.length > 0 
+              ? (evaluators.reduce((sum, e) => sum + (e.biasScore || 0), 0) / evaluators.length).toFixed(1)
+              : '0.0'}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">Department average</p>
+          <p className="text-xs font-medium text-emerald-600 mt-0.5">Department average</p>
         </div>
       </div>
 
@@ -586,6 +651,11 @@ export function EnhancedNetworkGraph({ nodes, edges, onNodeClick }: NetworkGraph
                 <h3 className="text-sm font-semibold text-gray-900">AI Causal Analysis</h3>
               </div>
               <p className="text-xs text-gray-600 mt-1">Real-time pattern detection</p>
+              {aiCausalAnalysis?.summary && (
+                <div className="mt-2 p-2 bg-white/80 rounded border border-blue-200">
+                  <p className="text-xs text-gray-700 leading-relaxed">{aiCausalAnalysis.summary}</p>
+                </div>
+              )}
             </div>
             <div className="p-3 space-y-3">
               {causalInsights.map((insight, idx) => (

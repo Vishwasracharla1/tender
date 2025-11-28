@@ -1,10 +1,10 @@
-import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch } from 'lucide-react';
+import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation') => void;
+  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin';
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin') => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
@@ -28,6 +28,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/award': 'award',
     '/monitoring': 'monitoring',
     '/integration': 'integration',
+    '/admin': 'admin',
   };
 
   // Get current page from route
@@ -49,6 +50,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   }, [isOpen]);
 
   const menuItems = [
+    {
+      id: 'admin' as const,
+      label: 'Admin Panel',
+      icon: Settings,
+      description: 'User & Role Management',
+      path: '/admin',
+    },
     {
       id: 'leadership' as const,
       label: 'Leadership Dashboard',
@@ -97,13 +105,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       ],
     },
     {
-      id: 'benchmark' as const,
-      label: 'Benchmark Dashboard',
-      icon: TrendingUp,
-      description: 'Market Analysis',
-      path: '/benchmark',
-    },
-    {
+    //   id: 'benchmark' as const,
+    //   label: 'Benchmark Dashboard',
+    //   icon: TrendingUp,
+    //   description: 'Market Analysis',
+    //   path: '/benchmark',
+    // },
+    // {
       id: 'integrity' as const,
       label: 'Integrity Analytics',
       icon: ShieldAlert,
@@ -270,7 +278,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             })}
           </nav>
 
-          <div className="p-4 border-t border-white/60">
+          <div className="p-4 border-t border-white/60 space-y-2">
             <div className="flex items-center gap-3 p-3 bg-white/70 rounded-xl shadow-lg">
               <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center border border-sky-100">
                 <span className="text-xs font-semibold text-slate-700 tracking-wide">JD</span>
@@ -280,6 +288,19 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
                 <p className="text-xs text-slate-500">Evaluation Chair</p>
               </div>
             </div>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('isAuthenticated');
+                sessionStorage.removeItem('username');
+                navigate('/login', { replace: true });
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 bg-white/70 hover:bg-white rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-50 to-rose-50 flex items-center justify-center border border-red-100 group-hover:from-red-100 group-hover:to-rose-100 transition-colors">
+                <LogOut className="w-4 h-4 text-red-600" />
+              </div>
+              <span className="text-sm font-semibold text-slate-900">Logout</span>
+            </button>
           </div>
         </div>
       </aside>

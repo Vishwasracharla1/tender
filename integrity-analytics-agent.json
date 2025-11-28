@@ -1,0 +1,190 @@
+{
+  "integrityAnalytics": {
+    "kpiWidgets": {
+      "avgBiasScore": {
+        "value": 0.15,
+        "subtitle": "per evaluator",
+        "trend": 5,
+        "isPositive": true
+      },
+      "topImpactedVendors": [
+        {
+          "vendorId": "V001",
+          "vendorName": "Vendor A",
+          "impactScore": 0.8
+        },
+        {
+          "vendorId": "V002",
+          "vendorName": "Vendor B",
+          "impactScore": 0.6
+        }
+      ],
+      "collusionProbability": {
+        "value": 20,
+        "subtitle": "highest detected"
+      },
+      "highestDetected": 0.7,
+      "involvedVendor": {
+        "vendorId": "V003",
+        "vendorName": "Vendor C",
+        "riskRating": "high",
+        "sector": "SERVICES"
+      },
+      "resolutionRate": {
+        "value": 75,
+        "subtitle": "3 out of 4 alerts closed"
+      },
+      "resolvedAlerts": 3,
+      "totalAlerts": 4,
+      "trend": 10,
+      "isPositive": true,
+      "vendorsWithResolvedAlerts": [
+        {
+          "vendorId": "V001",
+          "vendorName": "Vendor A"
+        }
+      ]
+    },
+    "integrityAlerts": [
+      {
+        "id": "A001",
+        "type": "collusion",
+        "severity": "high",
+        "title": "Potential collusion detected",
+        "description": "Evaluator behavior indicates possible collusion with Vendor A.",
+        "confidenceScore": 0.85,
+        "entitiesInvolved": [
+          {
+            "entityType": "evaluator",
+            "entityId": "E001",
+            "entityName": "Evaluator 1",
+            "status": "under_review"
+          },
+          {
+            "entityType": "vendor",
+            "entityId": "V001",
+            "entityName": "Vendor A",
+            "status": "under_review"
+          }
+        ],
+        "detectedAt": "2025-11-26T11:00:00Z",
+        "department": "Public Services Department",
+        "category": "SERVICES"
+      }
+    ],
+    "flaggedEvaluators": [
+      {
+        "id": "E001",
+        "name": "Evaluator 1",
+        "department": "Public Services Department",
+        "biasScore": 0.25,
+        "alertCount": 2,
+        "status": "under_review",
+        "reason": "Inconsistent scoring patterns",
+        "firstFlaggedAt": "2025-11-01T10:00:00Z",
+        "lastFlaggedAt": "2025-11-25T10:00:00Z"
+      }
+    ],
+    "footer": {
+      "tenderId": "Tender_01",
+      "phase": "Integrity Review",
+      "openAlertCount": 1,
+      "actions": {
+        "escalateAll": true,
+        "clearAll": false
+      }
+    },
+    "metadata": {
+      "pageTitle": "Integrity Analytics Summary",
+      "subtitle": "Tender Integrity Review for SAP S/4HANA Implementation",
+      "statusBadge": "Under Review",
+      "lastUpdated": "2025-11-26T12:00:00Z"
+    },
+    "networkGraph": {
+      "nodes": [
+        {
+          "id": "e1",
+          "name": "Cognizant Project Manager",
+          "type": "evaluator",
+          "biasScore": 85,
+          "department": "Public Services Department"
+        },
+        {
+          "id": "e2",
+          "name": "Cognizant SAP Consultant",
+          "type": "evaluator",
+          "biasScore": 80,
+          "department": "Public Services Department"
+        },
+        {
+          "id": "e3",
+          "name": "Cognizant Technical Consultant",
+          "type": "evaluator",
+          "biasScore": 75,
+          "department": "Public Services Department"
+        },
+        {
+          "id": "v1",
+          "name": "Cognizant",
+          "type": "vendor"
+        }
+      ],
+      "edges": [
+        {
+          "source": "e1",
+          "target": "v1",
+          "strength": 0.9,
+          "isSuspicious": false
+        },
+        {
+          "source": "e2",
+          "target": "v1",
+          "strength": 0.85,
+          "isSuspicious": false
+        },
+        {
+          "source": "e3",
+          "target": "v1",
+          "strength": 0.8,
+          "isSuspicious": false
+        }
+      ],
+      "departmentData": {
+        "Public Services Department": {
+          "nodes": ["e1", "e2", "e3", "v1"],
+          "edges": [
+            { "source": "e1", "target": "v1" },
+            { "source": "e2", "target": "v1" },
+            { "source": "e3", "target": "v1" }
+          ]
+        }
+      }
+    },
+    "aiCausalAnalysis": {
+      "summary": "Evaluator bias and concentrated vendor relationships are primary drivers of integrity risk in this tender.",
+      "rootCauses": [
+        {
+          "id": "cause-1",
+          "type": "evaluator_bias",
+          "description": "Cognizant evaluators show a tendency to favor their own company in scoring, leading to potential bias.",
+          "confidence": 0.9,
+          "impactScore": 0.8,
+          "relatedAlerts": [],
+          "primaryEntities": [
+            "Cognizant Project Manager",
+            "Cognizant SAP Consultant"
+          ]
+        },
+        {
+          "id": "cause-2",
+          "type": "vendor_favoritism",
+          "description": "High scoring by evaluators for Cognizant compared to other vendors indicates favoritism.",
+          "confidence": 0.85,
+          "impactScore": 0.75,
+          "relatedAlerts": [],
+          "primaryEntities": ["Cognizant"]
+        }
+      ]
+    }
+  }
+}

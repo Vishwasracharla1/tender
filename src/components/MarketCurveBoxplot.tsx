@@ -1,768 +1,386 @@
-// import { useState } from 'react';
-// import { TrendingUp, BarChart3 } from 'lucide-react';
-
-// interface BoxplotData {
-//   category: string;
-//   min: number;
-//   q1: number;
-//   median: number;
-//   q3: number;
-//   max: number;
-//   outliers: number[];
-//   vendorPrices: { vendor: string; price: number; isOutlier: boolean }[];
-// }
-
-// interface MarketCurveBoxplotProps {
-//   data: BoxplotData[];
-//   onOutlierClick: (category: string, price: number) => void;
-// }
-
-// export function MarketCurveBoxplot({ data, onOutlierClick }: MarketCurveBoxplotProps) {
-//   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-//   const [hoveredOutlier, setHoveredOutlier] = useState<{ category: string; price: number; x: number; y: number } | null>(null);
-  
-//   const chartHeight = 450;
-//   const chartWidth = 700;
-//   const padding = { top: 50, right: 50, bottom: 70, left: 90 };
-//   const plotWidth = chartWidth - padding.left - padding.right;
-//   const plotHeight = chartHeight - padding.top - padding.bottom;
-
-//   const allValues = data.flatMap(d => [d.min, d.max, ...d.outliers]);
-//   const globalMin = Math.min(...allValues);
-//   const globalMax = Math.max(...allValues);
-//   const valueRange = globalMax - globalMin;
-
-//   // Add some padding to the range for better visualization
-//   const paddedMin = globalMin - valueRange * 0.05;
-//   const paddedMax = globalMax + valueRange * 0.05;
-//   const paddedRange = paddedMax - paddedMin;
-
-//   const yScale = (value: number) => {
-//     return padding.top + plotHeight - ((value - paddedMin) / paddedRange) * plotHeight;
-//   };
-
-//   const categoryWidth = plotWidth / data.length;
-//   const boxWidth = Math.min(categoryWidth * 0.6, 80);
-
-//   // Generate Y-axis tick values
-//   const generateYTicks = () => {
-//     const ticks = [];
-//     const numTicks = 6;
-//     for (let i = 0; i <= numTicks; i++) {
-//       const value = paddedMin + (paddedRange * i) / numTicks;
-//       ticks.push(value);
-//     }
-//     return ticks;
-//   };
-
-//   const yTicks = generateYTicks();
-
-//   return (
-//     <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden h-full flex flex-col max-h-[600px]">
-//       <div className="relative px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-//         <div className="flex items-center gap-2">
-//           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
-//             <BarChart3 className="w-4 h-4 text-white" />
-//           </div>
-//           <div>
-//             <h2 className="text-base font-semibold text-gray-900">
-//               Market Price Distribution
-//             </h2>
-//             <p className="text-xs text-gray-500 mt-0.5">Box Plot Analysis</p>
-//           </div>
-//         </div>
-//         <div className="flex items-center gap-2">
-//           <TrendingUp className="w-4 h-4 text-blue-600" />
-//           <span className="text-xs font-medium text-blue-700">Price Trends</span>
-//         </div>
-//       </div>
-
-//       <div className="p-6 flex-1 overflow-y-auto custom-scrollbar min-h-0">
-//         <svg width={chartWidth} height={chartHeight} className="mx-auto">
-//           <defs>
-//             <linearGradient id="boxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-//               <stop offset="0%" stopColor="#ECFDF5" stopOpacity="0.9" />
-//               <stop offset="100%" stopColor="#D1FAE5" stopOpacity="0.6" />
-//             </linearGradient>
-//             <linearGradient id="boxBorderGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-//               <stop offset="0%" stopColor="#10B981" />
-//               <stop offset="100%" stopColor="#059669" />
-//             </linearGradient>
-//             <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-//               <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-//               <feOffset dx="0" dy="2" result="offsetblur"/>
-//               <feComponentTransfer>
-//                 <feFuncA type="linear" slope="0.3"/>
-//               </feComponentTransfer>
-//               <feMerge>
-//                 <feMergeNode/>
-//                 <feMergeNode in="SourceGraphic"/>
-//               </feMerge>
-//             </filter>
-//             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-//               <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E5E7EB" strokeWidth="0.5" opacity="0.5"/>
-//             </pattern>
-//           </defs>
-
-//           {/* Background grid */}
-//           <rect
-//             x={padding.left}
-//             y={padding.top}
-//             width={plotWidth}
-//             height={plotHeight}
-//             fill="url(#grid)"
-//             className="opacity-50"
-//           />
-          
-//           {/* Y-axis background gradient */}
-//           <rect
-//             x={padding.left}
-//             y={padding.top}
-//             width={plotWidth}
-//             height={plotHeight}
-//             fill="url(#linearGradient)"
-//             opacity="0.03"
-//           />
-//           <defs>
-//             <linearGradient id="linearGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-//               <stop offset="0%" stopColor="#3B82F6" />
-//               <stop offset="100%" stopColor="#10B981" />
-//             </linearGradient>
-//           </defs>
-
-//         {/* Y-axis line */}
-//         <line
-//           x1={padding.left}
-//           y1={padding.top}
-//           x2={padding.left}
-//           y2={padding.top + plotHeight}
-//           stroke="#6B7280"
-//           strokeWidth="2"
-//         />
-
-//         {/* X-axis line */}
-//         <line
-//           x1={padding.left}
-//           y1={padding.top + plotHeight}
-//           x2={padding.left + plotWidth}
-//           y2={padding.top + plotHeight}
-//           stroke="#6B7280"
-//           strokeWidth="2"
-//         />
-
-//         {/* Y-axis ticks and labels */}
-//         {yTicks.map((value, index) => {
-//           const y = yScale(value);
-//           return (
-//             <g key={`y-tick-${index}`}>
-//               <line
-//                 x1={padding.left - 5}
-//                 y1={y}
-//                 x2={padding.left}
-//                 y2={y}
-//                 stroke="#6B7280"
-//                 strokeWidth="1.5"
-//               />
-//               <line
-//                 x1={padding.left}
-//                 y1={y}
-//                 x2={padding.left + plotWidth}
-//                 y2={y}
-//                 stroke="#E5E7EB"
-//                 strokeWidth="0.5"
-//                 strokeDasharray="4,4"
-//                 opacity="0.6"
-//               />
-//               <text
-//                 x={padding.left - 12}
-//                 y={y}
-//                 textAnchor="end"
-//                 dominantBaseline="middle"
-//                 className="text-xs fill-gray-700 font-medium"
-//               >
-//                 ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-//               </text>
-//             </g>
-//           );
-//         })}
-
-//         {/* Box plots */}
-//         {data.map((item, index) => {
-//           const centerX = padding.left + categoryWidth * index + categoryWidth / 2;
-//           const isHovered = hoveredCategory === item.category;
-
-//           const minY = yScale(item.min);
-//           const q1Y = yScale(item.q1);
-//           const medianY = yScale(item.median);
-//           const q3Y = yScale(item.q3);
-//           const maxY = yScale(item.max);
-
-//           return (
-//             <g 
-//               key={index}
-//               onMouseEnter={() => setHoveredCategory(item.category)}
-//               onMouseLeave={() => setHoveredCategory(null)}
-//               className="cursor-pointer"
-//             >
-//               {/* Whisker line */}
-//               <line
-//                 x1={centerX}
-//                 y1={minY}
-//                 x2={centerX}
-//                 y2={maxY}
-//                 stroke={isHovered ? "#3B82F6" : "#9CA3AF"}
-//                 strokeWidth={isHovered ? "2" : "1.5"}
-//                 strokeDasharray={isHovered ? "0" : "3,3"}
-//                 opacity={isHovered ? "1" : "0.7"}
-//                 className="transition-all duration-200"
-//               />
-
-//               {/* Min whisker cap */}
-//               <line
-//                 x1={centerX - 10}
-//                 y1={minY}
-//                 x2={centerX + 10}
-//                 y2={minY}
-//                 stroke={isHovered ? "#3B82F6" : "#6B7280"}
-//                 strokeWidth={isHovered ? "2.5" : "2"}
-//                 className="transition-all duration-200"
-//               />
-
-//               {/* Max whisker cap */}
-//               <line
-//                 x1={centerX - 10}
-//                 y1={maxY}
-//                 x2={centerX + 10}
-//                 y2={maxY}
-//                 stroke={isHovered ? "#3B82F6" : "#6B7280"}
-//                 strokeWidth={isHovered ? "2.5" : "2"}
-//                 className="transition-all duration-200"
-//               />
-
-//               {/* IQR Box with gradient */}
-//               <rect
-//                 x={centerX - boxWidth / 2}
-//                 y={q3Y}
-//                 width={boxWidth}
-//                 height={q1Y - q3Y}
-//                 fill={isHovered ? "url(#boxGradient)" : "#ECFDF5"}
-//                 stroke={isHovered ? "url(#boxBorderGradient)" : "#10B981"}
-//                 strokeWidth={isHovered ? "2.5" : "2"}
-//                 rx="4"
-//                 filter={isHovered ? "url(#shadow)" : "none"}
-//                 className="transition-all duration-200"
-//               />
-
-//               {/* Median line */}
-//               <line
-//                 x1={centerX - boxWidth / 2}
-//                 y1={medianY}
-//                 x2={centerX + boxWidth / 2}
-//                 y2={medianY}
-//                 stroke={isHovered ? "#059669" : "#047857"}
-//                 strokeWidth={isHovered ? "3.5" : "3"}
-//                 className="transition-all duration-200"
-//               />
-
-//               {/* Q1 line (subtle) */}
-//               <line
-//                 x1={centerX - boxWidth / 2 - 2}
-//                 y1={q1Y}
-//                 x2={centerX + boxWidth / 2 + 2}
-//                 y2={q1Y}
-//                 stroke="#10B981"
-//                 strokeWidth="1"
-//                 opacity="0.4"
-//                 strokeDasharray="2,2"
-//               />
-
-//               {/* Q3 line (subtle) */}
-//               <line
-//                 x1={centerX - boxWidth / 2 - 2}
-//                 y1={q3Y}
-//                 x2={centerX + boxWidth / 2 + 2}
-//                 y2={q3Y}
-//                 stroke="#10B981"
-//                 strokeWidth="1"
-//                 opacity="0.4"
-//                 strokeDasharray="2,2"
-//               />
-
-//               {/* Outliers */}
-//               {item.outliers.map((outlier, oIndex) => {
-//                 const outlierX = centerX + (Math.random() - 0.5) * 25;
-//                 const outlierY = yScale(outlier);
-//                 const isOutlierHovered = hoveredOutlier?.category === item.category && hoveredOutlier?.price === outlier;
-                
-//                 return (
-//                   <g key={`outlier-${oIndex}`}>
-//                     <circle
-//                       cx={outlierX}
-//                       cy={outlierY}
-//                       r={isOutlierHovered ? "6" : "5"}
-//                       fill="#EF4444"
-//                       stroke="#FFFFFF"
-//                       strokeWidth={isOutlierHovered ? "3" : "2"}
-//                       className="cursor-pointer transition-all duration-200 hover:opacity-90"
-//                       onClick={() => onOutlierClick(item.category, outlier)}
-//                       onMouseEnter={(e) => {
-//                         const rect = e.currentTarget.getBoundingClientRect();
-//                         setHoveredOutlier({ 
-//                           category: item.category, 
-//                           price: outlier,
-//                           x: rect.left + rect.width / 2,
-//                           y: rect.top
-//                         });
-//                       }}
-//                       onMouseLeave={() => setHoveredOutlier(null)}
-//                       filter="url(#shadow)"
-//                     />
-//                     {isOutlierHovered && (
-//                       <text
-//                         x={outlierX}
-//                         y={outlierY - 12}
-//                         textAnchor="middle"
-//                         className="text-[10px] fill-red-600 font-semibold"
-//                       >
-//                         ${outlier.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-//                       </text>
-//                     )}
-//                   </g>
-//                 );
-//               })}
-
-//               {/* Vendor prices (non-outliers) */}
-//               {item.vendorPrices.map((vp, vIndex) => {
-//                 if (!vp.isOutlier) {
-//                   return (
-//                     <circle
-//                       key={`vendor-${vIndex}`}
-//                       cx={centerX + (Math.random() - 0.5) * 20}
-//                       cy={yScale(vp.price)}
-//                       r="3"
-//                       fill="#10B981"
-//                       opacity={isHovered ? "0.8" : "0.5"}
-//                       className="transition-all duration-200"
-//                     />
-//                   );
-//                 }
-//                 return null;
-//               })}
-
-//               {/* Category label */}
-//               <text
-//                 x={centerX}
-//                 y={chartHeight - padding.bottom + 25}
-//                 textAnchor="middle"
-//                 className={`text-sm fill-gray-700 font-semibold transition-all duration-200 ${isHovered ? 'fill-blue-700' : ''}`}
-//               >
-//                 {item.category}
-//               </text>
-
-//               {/* Hover info box */}
-//               {isHovered && (
-//                 <g>
-//                   <rect
-//                     x={centerX - 60}
-//                     y={padding.top + 10}
-//                     width="120"
-//                     height="80"
-//                     fill="white"
-//                     stroke="#3B82F6"
-//                     strokeWidth="2"
-//                     rx="8"
-//                     filter="url(#shadow)"
-//                     opacity="0.95"
-//                   />
-//                   <text
-//                     x={centerX}
-//                     y={padding.top + 30}
-//                     textAnchor="middle"
-//                     className="text-xs fill-gray-900 font-bold"
-//                   >
-//                     {item.category}
-//                   </text>
-//                   <text
-//                     x={centerX}
-//                     y={padding.top + 48}
-//                     textAnchor="middle"
-//                     className="text-[10px] fill-gray-600"
-//                   >
-//                     Median: ${item.median.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-//                   </text>
-//                   <text
-//                     x={centerX}
-//                     y={padding.top + 62}
-//                     textAnchor="middle"
-//                     className="text-[10px] fill-gray-600"
-//                   >
-//                     IQR: ${item.q1.toLocaleString('en-US', { maximumFractionDigits: 0 })} - ${item.q3.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-//                   </text>
-//                   <text
-//                     x={centerX}
-//                     y={padding.top + 76}
-//                     textAnchor="middle"
-//                     className="text-[10px] fill-red-600 font-semibold"
-//                   >
-//                     {item.outliers.length} Outlier{item.outliers.length !== 1 ? 's' : ''}
-//                   </text>
-//                 </g>
-//               )}
-//             </g>
-//           );
-//         })}
-
-//         {/* Y-axis label */}
-//         <text
-//           x={padding.left - 50}
-//           y={padding.top + plotHeight / 2}
-//           textAnchor="middle"
-//           transform={`rotate(-90 ${padding.left - 50} ${padding.top + plotHeight / 2})`}
-//           className="text-sm fill-gray-700 font-semibold"
-//         >
-//           Price ($)
-//         </text>
-//       </svg>
-//       </div>
-
-//       {/* Enhanced Legend */}
-//       <div className="px-6 pb-6 pt-4 border-t border-slate-200 flex-shrink-0">
-//         <div className="flex items-center justify-center gap-8 flex-wrap">
-//           <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-//             <div className="w-5 h-5 bg-gradient-to-br from-emerald-400 to-emerald-600 border-2 border-emerald-700 rounded shadow-sm"></div>
-//             <span className="text-xs font-semibold text-emerald-700">IQR Range</span>
-//           </div>
-//           <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-//             <div className="w-8 h-1 bg-gradient-to-r from-emerald-600 to-emerald-800 rounded shadow-sm"></div>
-//             <span className="text-xs font-semibold text-emerald-700">Median</span>
-//           </div>
-//           <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-red-50 to-rose-50 rounded-lg border border-red-200">
-//             <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-red-600 border-2 border-white rounded-full shadow-md"></div>
-//             <span className="text-xs font-semibold text-red-700">Outliers</span>
-//           </div>
-//           <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-//             <div className="w-3 h-3 bg-emerald-500 rounded-full opacity-60"></div>
-//             <span className="text-xs font-semibold text-emerald-700">Vendor Prices</span>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 import { useState } from 'react';
-import { TrendingUp, BarChart3 } from 'lucide-react';
 
-interface BoxplotData {
-  category: string;
+interface BoxplotStats {
   min: number;
   q1: number;
   median: number;
   q3: number;
   max: number;
   outliers: number[];
-  vendorPrices: { vendor: string; price: number; isOutlier: boolean }[];
+}
+
+interface MarketDistributionData {
+  marketDistribution?: {
+    categoryStats?: { [category: string]: BoxplotStats };
+  };
 }
 
 interface MarketCurveBoxplotProps {
-  data: BoxplotData[];
-  onOutlierClick: (category: string, price: number) => void;
+  data?: { [category: string]: BoxplotStats } | MarketDistributionData;
+  onOutlierClick?: (category: string, price: number) => void;
 }
 
+// Helper function to format category names
+const formatCategoryName = (category: string): string => {
+  // Handle camelCase category names from agent response
+  if (category === 'DevelopmentConfig') return 'Development & Config';
+  if (category === 'TestingUAT') return 'Testing & UAT';
+  if (category === 'SupportWarranty') return 'Support & Warranty';
+  // If already formatted, return as is
+  return category;
+};
+
+// Type guard to check if data has marketDistribution structure
+const hasMarketDistribution = (data: any): data is MarketDistributionData => {
+  return data && typeof data === 'object' && 'marketDistribution' in data;
+};
+
 export function MarketCurveBoxplot({ data, onOutlierClick }: MarketCurveBoxplotProps) {
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-  const [hoveredOutlier, setHoveredOutlier] = useState<{ category: string; price: number; x: number; y: number } | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+  const [hoveredElement, setHoveredElement] = useState<string | null>(null);
+
+  // Extract categoryStats from nested structure or use data directly
+  let categoryStats: { [category: string]: BoxplotStats } = {};
   
-  // Ensure we have data before calculating
-  if (!data || data.length === 0) {
+  if (data) {
+    // Check if data has nested marketDistribution structure
+    if (hasMarketDistribution(data) && data.marketDistribution?.categoryStats) {
+      categoryStats = data.marketDistribution.categoryStats;
+    } 
+    // Check if data is already the categoryStats object
+    else if (!hasMarketDistribution(data)) {
+      categoryStats = data as { [category: string]: BoxplotStats };
+    }
+  }
+
+  // Format category names and ensure outliers array exists
+  const plotData: { [category: string]: BoxplotStats } = {};
+  Object.entries(categoryStats).forEach(([key, stats]) => {
+    const formattedName = formatCategoryName(key);
+    plotData[formattedName] = {
+      min: stats.min || 0,
+      q1: stats.q1 || 0,
+      median: stats.median || 0,
+      q3: stats.q3 || 0,
+      max: stats.max || 0,
+      outliers: Array.isArray(stats.outliers) ? stats.outliers : [] // Ensure outliers array always exists
+    };
+  });
+  
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+  const categories = Object.keys(plotData);
+  
+  // Calculate min/max including outliers - handle empty arrays properly
+  const allValues: number[] = [];
+  categories.forEach(cat => {
+    allValues.push(plotData[cat].min, plotData[cat].max);
+    if (plotData[cat].outliers && plotData[cat].outliers.length > 0) {
+      allValues.push(...plotData[cat].outliers);
+    }
+  });
+  
+  const maxValue = allValues.length > 0 ? Math.max(...allValues) : 0;
+  const minValue = allValues.length > 0 ? Math.min(...allValues) : 0;
+  const range = maxValue - minValue || 1; // Avoid division by zero
+  const padding = range * 0.1;
+  const formatCurrency = (value: number) => `₹${(value/1000).toFixed(0)}K`;
+
+  if (!data || Object.keys(plotData).length === 0) {
     return (
-      <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden h-full flex flex-col max-h-[600px]">
-        <div className="relative px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
-              <BarChart3 className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Market Price Distribution</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Box Plot Analysis</p>
-            </div>
-          </div>
-        </div>
-        <div className="p-6 flex-1 flex items-center justify-center">
+      <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 flex items-center justify-center">
+        <div className="text-center">
           <p className="text-gray-500">No data available</p>
         </div>
       </div>
     );
   }
 
-  // Dynamic sizing based on number of categories
-  const minCategoryWidth = 60; // Minimum width per category
-  const baseChartWidth = 700;
-  const calculatedWidth = Math.max(baseChartWidth, data.length * minCategoryWidth + 180); // 180 for padding
-  
-  const chartHeight = 450;
-  const chartWidth = calculatedWidth;
-  // Extra bottom padding for x-axis labels, slightly smaller left padding so Y-axis is closer to the card edge
-  const padding = { top: 50, right: 50, bottom: 145, left: 70 };
-  const plotWidth = chartWidth - padding.left - padding.right;
-  const plotHeight = chartHeight - padding.top - padding.bottom;
-
-  const allValues = data.flatMap(d => [d.min, d.max, ...d.outliers]);
-  const globalMin = Math.min(...allValues);
-  const globalMax = Math.max(...allValues);
-  const valueRange = globalMax - globalMin;
-
-  const paddedMin = globalMin - valueRange * 0.05;
-  const paddedMax = globalMax + valueRange * 0.05;
-  const paddedRange = paddedMax - paddedMin;
-
-  const yScale = (value: number) => {
-    return padding.top + plotHeight - ((value - paddedMin) / paddedRange) * plotHeight;
-  };
-
-  const categoryWidth = plotWidth / data.length;
-  // Ensure box width is reasonable - at least 30px, but not more than 80px
-  const boxWidth = Math.max(30, Math.min(categoryWidth * 0.6, 80));
-
-  const generateYTicks = () => {
-    const ticks = [];
-    const numTicks = 6;
-    for (let i = 0; i <= numTicks; i++) {
-      ticks.push(paddedMin + (paddedRange * i) / numTicks);
-    }
-    return ticks;
-  };
-
-  const yTicks = generateYTicks();
-
   return (
-    <div className="relative rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/30 to-slate-50 shadow-[0_20px_45px_rgba(15,23,42,0.08)] overflow-hidden h-full flex flex-col max-h-[600px]">
-      <div className="relative px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-inner">
-            <BarChart3 className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-semibold text-gray-900">Market Price Distribution</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Box Plot Analysis</p>
-          </div>
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8 flex items-center justify-center">
+      <style>{`
+        .box-hover {
+          transition: all 0.2s ease;
+        }
+        
+        .box-hover:hover {
+          opacity: 0.9;
+        }
+        
+        .whisker-line {
+          transition: all 0.2s ease;
+        }
+        
+        .outlier-dot {
+          cursor: pointer;
+          pointer-events: all;
+        }
+      `}</style>
+      <div className="w-full max-w-6xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Market Distribution Box Plot
+          </h1>
+          <p className="text-gray-600">Interactive Statistical Analysis</p>
         </div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-blue-600" />
-          <span className="text-xs font-medium text-blue-700">Price Trends</span>
-        </div>
-      </div>
-
-      <div className="p-6 flex-1 overflow-x-auto overflow-y-auto custom-scrollbar min-h-0">
-        <svg width={chartWidth} height={chartHeight} className="mx-auto" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <linearGradient id="boxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ECFDF5" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#D1FAE5" stopOpacity="0.6" />
-            </linearGradient>
-            <linearGradient id="boxBorderGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#10B981" />
-              <stop offset="100%" stopColor="#059669" />
-            </linearGradient>
-            <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-              <feOffset dx="0" dy="2" result="offsetblur"/>
-              <feComponentTransfer>
-                <feFuncA type="linear" slope="0.3"/>
-              </feComponentTransfer>
-              <feMerge>
-                <feMergeNode/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E5E7EB" strokeWidth="0.5" opacity="0.5"/>
-            </pattern>
-            <linearGradient id="linearGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3B82F6" />
-              <stop offset="100%" stopColor="#10B981" />
-            </linearGradient>
-          </defs>
-
-          {/* Background grid */}
-          <rect x={padding.left} y={padding.top} width={plotWidth} height={plotHeight} fill="url(#grid)" opacity="0.5" />
-          <rect x={padding.left} y={padding.top} width={plotWidth} height={plotHeight} fill="url(#linearGradient)" opacity="0.03" />
-
-          {/* Y-axis line */}
-          <line x1={padding.left} y1={padding.top} x2={padding.left} y2={padding.top + plotHeight} stroke="#6B7280" strokeWidth="2" />
-
-          {/* X-axis line */}
-          <line x1={padding.left} y1={padding.top + plotHeight} x2={padding.left + plotWidth} y2={padding.top + plotHeight} stroke="#6B7280" strokeWidth="2" />
-
-          {/* Y-axis ticks */}
-          {yTicks.map((value, index) => {
-            const y = yScale(value);
-            return (
-              <g key={`y-tick-${index}`}>
-                <line x1={padding.left - 5} y1={y} x2={padding.left} y2={y} stroke="#6B7280" strokeWidth="1.5" />
-                <line x1={padding.left} y1={y} x2={padding.left + plotWidth} y2={y} stroke="#E5E7EB" strokeWidth="0.5" strokeDasharray="4,4" opacity="0.6" />
-                <text x={padding.left - 12} y={y} textAnchor="end" dominantBaseline="middle" className="text-xs fill-gray-700 font-medium">
-                  ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Boxplots */}
-          {data.map((item, index) => {
-            const centerX = padding.left + categoryWidth * index + categoryWidth / 2;
-            const isHovered = hoveredCategory === item.category;
-
-            const minY = yScale(item.min);
-            const q1Y = yScale(item.q1);
-            const medianY = yScale(item.median);
-            const q3Y = yScale(item.q3);
-            const maxY = yScale(item.max);
+        
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl">
+          <svg width="100%" height="550" viewBox="0 0 900 550" className="overflow-visible">
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              
+              <linearGradient id="gridGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style={{stopColor: '#000000', stopOpacity: 0.1}} />
+                <stop offset="100%" style={{stopColor: '#000000', stopOpacity: 0.05}} />
+              </linearGradient>
+            </defs>
             
-            // Calculate box height - q1Y > q3Y since q1 < q3 in value and yScale inverts
-            const boxHeight = Math.abs(q1Y - q3Y) || 1;
-
-            return (
-              <g 
-                key={index}
-                onMouseEnter={() => setHoveredCategory(item.category)}
-                onMouseLeave={() => setHoveredCategory(null)}
-                className="cursor-pointer"
-              >
-
-                {/* ⭐ NEW: Vendor price range line (min → max) */}
-                {(() => {
-                  const vendorValues = item.vendorPrices
-                    .filter(v => !v.isOutlier)
-                    .map(v => v.price);
-
-                  if (vendorValues.length > 1) {
-                    const vMin = Math.min(...vendorValues);
-                    const vMax = Math.max(...vendorValues);
-
+            {/* Grid lines */}
+            {[0, 1, 2, 3, 4, 5, 6].map(i => {
+              const y = 50 + (i * 60);
+              const value = (maxValue + padding) - (i * (maxValue + padding - minValue + padding) / 6);
+              return (
+                <g key={i} style={{opacity: 0.6}}>
+                  <line x1="60" y1={y} x2="850" y2={y} 
+                        stroke="url(#gridGradient)" strokeWidth="1"/>
+                  <text x="50" y={y + 4} fontSize="11" fill="#4b5563" textAnchor="end" fontWeight="500">
+                    {(value/1000).toFixed(0)}K
+                  </text>
+                </g>
+              );
+            })}
+            
+            {/* Axes */}
+            <line x1="60" y1="50" x2="60" y2="410" stroke="#6b7280" strokeWidth="2"/>
+            <line x1="60" y1="410" x2="850" y2="410" stroke="#6b7280" strokeWidth="2"/>
+            
+            {/* Y-axis label */}
+            <text x="20" y="230" fontSize="13" fill="#374151" fontWeight="600" 
+                  textAnchor="middle" transform="rotate(-90 20 230)">
+              Cost (₹)
+            </text>
+            
+            {/* Box plots */}
+            {categories.map((category, idx) => {
+              const stats = plotData[category];
+              const x = 120 + (idx * 120);
+              const boxWidth = 60;
+              const isHovered = hoveredCategory === idx;
+              
+              const scale = (val: number) => {
+                const normalized = (val - (minValue - padding)) / ((maxValue + padding) - (minValue - padding));
+                return 410 - (normalized * 360);
+              };
+              
+              const minY = scale(stats.min);
+              const q1Y = scale(stats.q1);
+              const medianY = scale(stats.median);
+              const q3Y = scale(stats.q3);
+              const maxY = scale(stats.max);
+              
+              // Calculate box height: Q3 is at top (smaller Y), Q1 is at bottom (larger Y)
+              // In SVG, Y increases downward, so q3Y < q1Y when q3 > q1 in value
+              const boxHeight = Math.abs(q1Y - q3Y);
+              // Ensure minimum visible box height when Q1 = Q3
+              const minBoxHeight = 8;
+              const finalBoxHeight = boxHeight < minBoxHeight ? minBoxHeight : boxHeight;
+              
+              // Position box at Q3 (top of box)
+              const adjustedQ3Y = q3Y;
+              const adjustedQ1Y = q1Y;
+              
+              return (
+                <g key={category}>
+                  {/* Upper whisker */}
+                  <line 
+                    x1={x + boxWidth/2} y1={maxY} 
+                    x2={x + boxWidth/2} y2={adjustedQ3Y} 
+                    stroke={isHovered ? colors[idx] : '#9ca3af'}
+                    strokeWidth={isHovered ? "2.5" : "1.5"}
+                    className="whisker-line"
+                    onMouseEnter={() => {
+                      setHoveredCategory(idx);
+                      setHoveredElement('max');
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCategory(null);
+                      setHoveredElement(null);
+                    }}
+                  />
+                  
+                  {/* Lower whisker */}
+                  <line 
+                    x1={x + boxWidth/2} y1={adjustedQ1Y} 
+                    x2={x + boxWidth/2} y2={minY} 
+                    stroke={isHovered ? colors[idx] : '#9ca3af'}
+                    strokeWidth={isHovered ? "2.5" : "1.5"}
+                    className="whisker-line"
+                    onMouseEnter={() => {
+                      setHoveredCategory(idx);
+                      setHoveredElement('min');
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCategory(null);
+                      setHoveredElement(null);
+                    }}
+                  />
+                  
+                  {/* Min cap */}
+                  <line 
+                    x1={x + boxWidth/3} y1={minY} 
+                    x2={x + 2*boxWidth/3} y2={minY} 
+                    stroke={isHovered && hoveredElement === 'min' ? colors[idx] : '#9ca3af'}
+                    strokeWidth={isHovered && hoveredElement === 'min' ? "3" : "2"}
+                  />
+                  
+                  {/* Max cap */}
+                  <line 
+                    x1={x + boxWidth/3} y1={maxY} 
+                    x2={x + 2*boxWidth/3} y2={maxY} 
+                    stroke={isHovered && hoveredElement === 'max' ? colors[idx] : '#9ca3af'}
+                    strokeWidth={isHovered && hoveredElement === 'max' ? "3" : "2"}
+                  />
+                  
+                  {/* Box */}
+                  <rect 
+                    x={x} y={adjustedQ3Y} 
+                    width={boxWidth} height={finalBoxHeight}
+                    fill={colors[idx]} 
+                    fillOpacity={isHovered ? "0.9" : "0.7"}
+                    stroke={isHovered ? colors[idx] : colors[idx]}
+                    strokeWidth="1.5"
+                    rx="4"
+                    className="box-hover"
+                    style={{
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={() => setHoveredCategory(idx)}
+                    onMouseLeave={() => setHoveredCategory(null)}
+                  />
+                  
+                  {/* Median line */}
+                  <line 
+                    x1={x + 2} y1={medianY} 
+                    x2={x + boxWidth - 2} y2={medianY}
+                    stroke={isHovered ? '#ffffff' : '#1f2937'}
+                    strokeWidth="2.5"
+                    onMouseEnter={() => {
+                      setHoveredCategory(idx);
+                      setHoveredElement('median');
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCategory(null);
+                      setHoveredElement(null);
+                    }}
+                  />
+                  
+                  {/* Outliers */}
+                  {stats.outliers && stats.outliers.map((outlier: number, oidx: number) => {
+                    const outlierY = scale(outlier);
                     return (
-                      <line
-                        x1={centerX}
-                        y1={yScale(vMin)}
-                        x2={centerX}
-                        y2={yScale(vMax)}
-                        stroke="#10B981"
-                        strokeWidth="3"
-                        opacity="0.35"
+                      <circle 
+                        key={oidx} 
+                        cx={x + boxWidth/2} 
+                        cy={outlierY} 
+                        r="5"
+                        fill={colors[idx]} 
+                        stroke="#ffffff" 
+                        strokeWidth="1.5"
+                        className="outlier-dot"
+                        onClick={() => onOutlierClick && onOutlierClick(category, outlier)}
                       />
                     );
-                  }
-                })()}
-
-                {/* Whisker line */}
-                <line x1={centerX} y1={minY} x2={centerX} y2={maxY} stroke={isHovered ? "#3B82F6" : "#9CA3AF"} strokeWidth={isHovered ? "2" : "1.5"} strokeDasharray={isHovered ? "0" : "3,3"} opacity={isHovered ? "1" : "0.7"} />
-
-                {/* Min cap */}
-                <line x1={centerX - 10} y1={minY} x2={centerX + 10} y2={minY} stroke={isHovered ? "#3B82F6" : "#6B7280"} strokeWidth={isHovered ? "2.5" : "2"} />
-
-                {/* Max cap */}
-                <line x1={centerX - 10} y1={maxY} x2={centerX + 10} y2={maxY} stroke={isHovered ? "#3B82F6" : "#6B7280"} strokeWidth={isHovered ? "2.5" : "2"} />
-
-                {/* Box - q3 is at top (smaller y), q1 is at bottom (larger y) */}
-                <rect 
-                  x={centerX - boxWidth / 2} 
-                  y={q3Y} 
-                  width={boxWidth} 
-                  height={boxHeight} 
-                  fill={isHovered ? "url(#boxGradient)" : "#ECFDF5"} 
-                  stroke={isHovered ? "url(#boxBorderGradient)" : "#10B981"} 
-                  strokeWidth={isHovered ? "2.5" : "2"} 
-                  rx="4" 
-                />
-
-                {/* Median */}
-                <line x1={centerX - boxWidth / 2} y1={medianY} x2={centerX + boxWidth / 2} y2={medianY} stroke={isHovered ? "#059669" : "#047857"} strokeWidth={isHovered ? "3.5" : "3"} />
-
-                {/* Outliers */}
-                {item.outliers.map((outlier, oIndex) => {
-                  const outlierX = centerX + (Math.random() - 0.5) * 25;
-                  const outlierY = yScale(outlier);
-                  const isOutlierHovered = hoveredOutlier?.category === item.category && hoveredOutlier?.price === outlier;
-
-                  return (
-                    <g key={`outlier-${oIndex}`}>
-                      <circle
-                        cx={outlierX}
-                        cy={outlierY}
-                        r={isOutlierHovered ? "6" : "5"}
-                        fill="#EF4444"
-                        stroke="#FFFFFF"
-                        strokeWidth={isOutlierHovered ? "3" : "2"}
-                        onClick={() => onOutlierClick(item.category, outlier)}
-                        onMouseEnter={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect();
-                          setHoveredOutlier({ 
-                            category: item.category, 
-                            price: outlier,
-                            x: rect.left + rect.width / 2,
-                            y: rect.top
-                          });
+                  })}
+                  
+                  {/* Category label */}
+                  <text 
+                    x={x + boxWidth/2} y="430" 
+                    fontSize="11" 
+                    fill={isHovered ? colors[idx] : '#374151'}
+                    textAnchor="middle" 
+                    fontWeight={isHovered ? "700" : "500"}
+                  >
+                    {category.split(' & ')[0]}
+                  </text>
+                  {category.includes(' & ') && (
+                    <text 
+                      x={x + boxWidth/2} y="443" 
+                      fontSize="11" 
+                      fill={isHovered ? colors[idx] : '#374151'}
+                      textAnchor="middle" 
+                      fontWeight={isHovered ? "700" : "500"}
+                    >
+                      {category.split(' & ')[1]}
+                    </text>
+                  )}
+                  
+                  {/* Tooltip */}
+                  {isHovered && (
+                    <g className="tooltip">
+                      <rect 
+                        x={x - 50} y={adjustedQ3Y - 130}
+                        width="160" height="115"
+                        fill="#1e293b" 
+                        stroke={colors[idx]}
+                        strokeWidth="2"
+                        rx="8"
+                        style={{
+                          filter: `drop-shadow(0 10px 30px ${colors[idx]}60)`
                         }}
-                        onMouseLeave={() => setHoveredOutlier(null)}
                       />
+                      <text x={x + 30} y={adjustedQ3Y - 110} fontSize="11" fill="#ffffff" textAnchor="middle" fontWeight="700">
+                        {category}
+                      </text>
+                      <text x={x - 35} y={adjustedQ3Y - 90} fontSize="10" fill="#94a3b8" fontWeight="500">
+                        Max: <tspan fill={colors[idx]} fontWeight="700">{formatCurrency(stats.max)}</tspan>
+                      </text>
+                      <text x={x - 35} y={adjustedQ3Y - 75} fontSize="10" fill="#94a3b8" fontWeight="500">
+                        Q3: <tspan fill={colors[idx]} fontWeight="700">{formatCurrency(stats.q3)}</tspan>
+                      </text>
+                      <text x={x - 35} y={adjustedQ3Y - 60} fontSize="10" fill="#94a3b8" fontWeight="500">
+                        Median: <tspan fill={colors[idx]} fontWeight="700">{formatCurrency(stats.median)}</tspan>
+                      </text>
+                      <text x={x - 35} y={adjustedQ3Y - 45} fontSize="10" fill="#94a3b8" fontWeight="500">
+                        Q1: <tspan fill={colors[idx]} fontWeight="700">{formatCurrency(stats.q1)}</tspan>
+                      </text>
+                      <text x={x - 35} y={adjustedQ3Y - 30} fontSize="10" fill="#94a3b8" fontWeight="500">
+                        Min: <tspan fill={colors[idx]} fontWeight="700">{formatCurrency(stats.min)}</tspan>
+                      </text>
                     </g>
-                  );
-                })}
-
-                {/* Vendor prices */}
-                {item.vendorPrices.map((vp, vIndex) => {
-                  if (!vp.isOutlier) {
-                    return (
-                      <circle
-                        key={`vendor-${vIndex}`}
-                        cx={centerX + (Math.random() - 0.5) * 20}
-                        cy={yScale(vp.price)}
-                        r="3"
-                        fill="#10B981"
-                        opacity={isHovered ? "0.8" : "0.5"}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-
-                {/* Category label - rotated and pushed further down so it doesn't clash with the chart */}
-                <text
-                  x={centerX}
-                  y={chartHeight - padding.bottom + 55}
-                  textAnchor="middle"
-                  transform={`rotate(-45 ${centerX} ${chartHeight - padding.bottom + 55})`}
-                  className={`text-xs fill-gray-700 font-semibold ${isHovered ? 'fill-blue-700' : ''}`}
-                >
-                  {item.category}
-                </text>
-
-              </g>
-            );
-          })}
-
-          {/* Y-axis label removed as per UX requirement */}
-        </svg>
-      </div>
-
-      {/* Legend */}
-      <div className="px-6 pb-6 pt-4 border-t border-slate-200 flex-shrink-0">
-        <div className="flex items-center justify-center gap-8 flex-wrap">
-          <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-            <div className="w-5 h-5 bg-gradient-to-br from-emerald-400 to-emerald-600 border-2 border-emerald-700 rounded"></div>
-            <span className="text-xs font-semibold text-emerald-700">IQR Range</span>
-          </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-            <div className="w-8 h-1 bg-gradient-to-r from-emerald-600 to-emerald-800 rounded"></div>
-            <span className="text-xs font-semibold text-emerald-700">Median</span>
-          </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-red-50 to-rose-50 rounded-lg border border-red-200">
-            <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-red-600 border-2 border-white rounded-full"></div>
-            <span className="text-xs font-semibold text-red-700">Outliers</span>
-          </div>
-          <div className="flex items-center gap-2.5 px-3 py-2 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-            <div className="w-3 h-3 bg-emerald-500 rounded-full opacity-60"></div>
-            <span className="text-xs font-semibold text-emerald-700">Vendor Prices</span>
-          </div>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+        {/* Legend */}
+        <div className="mt-8 flex flex-wrap gap-4 justify-center">
+          {categories.map((category, idx) => (
+            <div 
+              key={category} 
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-gray-200 hover:border-gray-400 hover:shadow-lg transition-all cursor-pointer"
+              onMouseEnter={() => setHoveredCategory(idx)}
+              onMouseLeave={() => setHoveredCategory(null)}
+              style={{
+                transform: hoveredCategory === idx ? 'scale(1.1)' : 'scale(1)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div 
+                className="w-4 h-4 rounded" 
+                style={{
+                  backgroundColor: colors[idx],
+                  boxShadow: hoveredCategory === idx ? `0 0 20px ${colors[idx]}` : 'none'
+                }}
+              ></div>
+              <span className="text-sm text-gray-700 font-medium">{category}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

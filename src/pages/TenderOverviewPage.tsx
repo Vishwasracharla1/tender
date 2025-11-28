@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
 import { interactWithAgent, fetchSchemaInstances, type SchemaInstanceListItem } from '../services/api';
-import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers } from 'lucide-react';
+import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers, Search } from 'lucide-react';
 import '../styles/TenderEvaluationTable.css';
 
 // Function to aggressively remove Jotform agent elements
@@ -1258,6 +1258,12 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [selectedDocument, setSelectedDocument] = useState<string>('');
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentsError, setDocumentsError] = useState<string | null>(null);
+  const [departmentSearch, setDepartmentSearch] = useState<string>('');
+  const [documentSearch, setDocumentSearch] = useState<string>('');
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState<boolean>(false);
+  const [showDocumentDropdown, setShowDocumentDropdown] = useState<boolean>(false);
+  const departmentDropdownRef = useRef<HTMLDivElement>(null);
+  const documentDropdownRef = useRef<HTMLDivElement>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -1377,8 +1383,92 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     };
   }, []);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (departmentDropdownRef.current && !departmentDropdownRef.current.contains(event.target as Node)) {
+        setShowDepartmentDropdown(false);
+      }
+      if (documentDropdownRef.current && !documentDropdownRef.current.contains(event.target as Node)) {
+        setShowDocumentDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const hasDocuments = schemaInstances.length > 0;
   const isSubmitDisabled = !selectedDepartment || (hasDocuments && !selectedDocument) || isSubmitting;
+
+  // Filter departments based on search input
+  const filteredDepartments = departmentSearch.trim()
+    ? RAK_DEPARTMENTS.filter(dept =>
+        dept.name.toLowerCase().includes(departmentSearch.toLowerCase().trim())
+      )
+    : RAK_DEPARTMENTS;
+
+  // Filter documents based on search input
+  const filteredDocuments = documentSearch.trim() && hasDocuments
+    ? schemaInstances.filter(instance => {
+        const filename = getFileNameWithoutExtension(instance.filename);
+        return filename.toLowerCase().includes(documentSearch.toLowerCase().trim());
+      })
+    : schemaInstances;
+
+  const handleDepartmentSelect = (departmentName: string) => {
+    setSelectedDepartment(departmentName);
+    setDepartmentSearch('');
+    setShowDepartmentDropdown(false);
+  };
+
+  const handleDocumentSelect = (documentId: string) => {
+    setSelectedDocument(documentId);
+    setDocumentSearch('');
+    setShowDocumentDropdown(false);
+  };
+
+  const handleDepartmentSearch = () => {
+    if (!departmentSearch.trim()) {
+      setShowDepartmentDropdown(true);
+      return;
+    }
+    
+    // If there's exactly one match, select it
+    if (filteredDepartments.length === 1) {
+      handleDepartmentSelect(filteredDepartments[0].name);
+    } else if (filteredDepartments.length > 1) {
+      // Show dropdown if multiple matches
+      setShowDepartmentDropdown(true);
+    } else {
+      // No matches
+      alert(`Department "${departmentSearch}" not found. Please try again.`);
+      setDepartmentSearch('');
+    }
+  };
+
+  const handleDocumentSearch = () => {
+    if (!hasDocuments || isLoadingDocuments) return;
+    
+    if (!documentSearch.trim()) {
+      setShowDocumentDropdown(true);
+      return;
+    }
+    
+    // If there's exactly one match, select it
+    if (filteredDocuments.length === 1) {
+      handleDocumentSelect(filteredDocuments[0].id.toString());
+    } else if (filteredDocuments.length > 1) {
+      // Show dropdown if multiple matches
+      setShowDocumentDropdown(true);
+    } else {
+      // No matches
+      alert(`Document "${documentSearch}" not found. Please try again.`);
+      setDocumentSearch('');
+    }
+  };
 
   const handleSubmit = async () => {
     if (isSubmitDisabled) return;
@@ -1505,61 +1595,122 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
               <div className="mb-8">
                 <div className="space-y-6">
                   <div>
-                    <label htmlFor="department-select" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
+                    <label htmlFor="department-search" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
                       Select Department
                     </label>
-                    <div className="relative">
-                      <select
-                        id="department-select"
-                        value={selectedDepartment}
-                        onChange={(e) => setSelectedDepartment(e.target.value)}
-                        className="w-full px-4 py-4 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 appearance-none cursor-pointer hover:border-sky-400 shadow-sm"
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'right 1rem center',
-                          paddingRight: '3rem'
-                        }}
+                    <div className="flex gap-2">
+                      <div className="relative flex-1" ref={departmentDropdownRef}>
+                        <input
+                          id="department-search"
+                          type="text"
+                          value={departmentSearch}
+                          onChange={(e) => {
+                            setDepartmentSearch(e.target.value);
+                            setShowDepartmentDropdown(true);
+                          }}
+                          onFocus={() => setShowDepartmentDropdown(true)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleDepartmentSearch();
+                            }
+                          }}
+                          placeholder="Type to search department..."
+                          className="w-full px-4 py-4 pl-12 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 hover:border-sky-400 shadow-sm"
+                        />
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        
+                        {/* Dropdown List */}
+                        {showDepartmentDropdown && filteredDepartments.length > 0 && (
+                          <div className="absolute z-50 w-full mt-2 bg-white border-2 border-sky-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                            {filteredDepartments.map((dept) => (
+                              <div
+                                key={dept.id}
+                                onClick={() => handleDepartmentSelect(dept.name)}
+                                className="px-4 py-3 hover:bg-sky-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                              >
+                                <p className="text-sm font-medium text-gray-900">{dept.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={handleDepartmentSearch}
+                        className="px-6 py-4 bg-gradient-to-r from-sky-400 to-blue-400 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2"
                       >
-                        <option value="" disabled className="text-gray-500">
-                          Choose a department...
-                        </option>
-                        {RAK_DEPARTMENTS.map((dept) => (
-                          <option key={dept.id} value={dept.name} className="py-2">
-                            {dept.name}
-                          </option>
-                        ))}
-                      </select>
+                        <Search className="w-5 h-5" />
+                        Search
+                      </button>
                     </div>
+                    {selectedDepartment && (
+                      <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          Selected: <span className="font-semibold text-sky-600">{selectedDepartment}</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    <label htmlFor="document-select" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
+                    <label htmlFor="document-search" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
                       Select Document
                     </label>
-                    <div className="relative">
-                      <select
-                        id="document-select"
-                        value={selectedDocument}
-                        onChange={(e) => setSelectedDocument(e.target.value)}
+                    <div className="flex gap-2">
+                      <div className="relative flex-1" ref={documentDropdownRef}>
+                        <input
+                          id="document-search"
+                          type="text"
+                          value={documentSearch}
+                          onChange={(e) => {
+                            setDocumentSearch(e.target.value);
+                            setShowDocumentDropdown(true);
+                          }}
+                          onFocus={() => {
+                            if (hasDocuments && !isLoadingDocuments) {
+                              setShowDocumentDropdown(true);
+                            }
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleDocumentSearch();
+                            }
+                          }}
+                          placeholder={isLoadingDocuments ? 'Loading documents...' : hasDocuments ? 'Type to search document...' : 'No documents available'}
+                          disabled={!hasDocuments || isLoadingDocuments}
+                          className={`w-full px-4 py-4 pl-12 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white ${hasDocuments && !isLoadingDocuments ? 'border-sky-300 text-gray-900 focus:ring-2 focus:ring-sky-400 focus:border-transparent hover:border-sky-400 shadow-sm' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}
+                        />
+                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        
+                        {/* Dropdown List */}
+                        {showDocumentDropdown && hasDocuments && !isLoadingDocuments && filteredDocuments.length > 0 && (
+                          <div className="absolute z-50 w-full mt-2 bg-white border-2 border-sky-200 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                            {filteredDocuments.map((instance) => {
+                              const filename = getFileNameWithoutExtension(instance.filename);
+                              return (
+                                <div
+                                  key={instance.id}
+                                  onClick={() => handleDocumentSelect(instance.id.toString())}
+                                  className="px-4 py-3 hover:bg-sky-50 cursor-pointer transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                                >
+                                  <p className="text-sm font-medium text-gray-900">{filename}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={handleDocumentSearch}
                         disabled={!hasDocuments || isLoadingDocuments}
-                        className={`w-full px-4 py-4 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white appearance-none ${hasDocuments && !isLoadingDocuments ? 'border-sky-300 text-gray-900 cursor-pointer focus:ring-2 focus:ring-sky-400 focus:border-transparent hover:border-sky-400 shadow-sm' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}
-                        style={{
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23787989' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                          backgroundRepeat: 'no-repeat',
-                          backgroundPosition: 'right 1rem center',
-                          paddingRight: '3rem'
-                        }}
+                        className={`px-6 py-4 font-semibold rounded-xl transition-all duration-200 transform flex items-center gap-2 ${
+                          hasDocuments && !isLoadingDocuments
+                            ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white hover:shadow-lg hover:scale-105 active:scale-95'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
                       >
-                        <option value="">
-                          {isLoadingDocuments ? 'Loading documents...' : hasDocuments ? 'Choose a document...' : 'No documents available'}
-                        </option>
-                        {schemaInstances.map((instance) => (
-                          <option key={instance.id} value={instance.id.toString()}>
-                            {getFileNameWithoutExtension(instance.filename)}
-                          </option>
-                        ))}
-                      </select>
+                        <Search className="w-5 h-5" />
+                        Search
+                      </button>
                     </div>
                     {isLoadingDocuments && (
                       <p className="mt-2 text-xs text-gray-500 text-center">
@@ -1571,9 +1722,20 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         {documentsError}
                       </p>
                     )}
+                    {selectedDocument && (
+                      <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          Selected: <span className="font-semibold text-sky-600">
+                            {getFileNameWithoutExtension(schemaInstances.find(instance => 
+                              instance.id.toString() === selectedDocument || instance.id === selectedDocument
+                            )?.filename || 'Selected')}
+                          </span>
+                        </p>
+                      </div>
+                    )}
                     {hasDocuments && !selectedDocument && !isLoadingDocuments && (
                       <p className="mt-2 text-xs text-gray-500 text-center">
-                        Select a document to continue.
+                        Search and select a document to continue.
                       </p>
                     )}
                     {!hasDocuments && !isLoadingDocuments && !documentsError && (

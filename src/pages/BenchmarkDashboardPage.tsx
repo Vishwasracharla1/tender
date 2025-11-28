@@ -107,63 +107,27 @@ export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPagePro
       setInsights(mappedInsights);
     }
 
-    // Map market distribution to boxplot data
+    // Map market distribution to boxplot data - pass directly from response
     if (parsedData.marketDistribution?.categoryStats) {
-      const categoryStats = parsedData.marketDistribution.categoryStats;
-      const vendorPrices = parsedData.marketDistribution.vendorPrices || [];
-      
-      const mappedBoxplot = Object.entries(categoryStats).map(([category, stats]: [string, any]) => {
-        // Get vendor prices for this category from payment milestones
-        const categoryVendorPrices = parsedData.vendors?.map((vendor: any) => {
-          // Find milestone matching this category
-          const milestone = vendor.paymentMilestones?.find((m: any) => {
-            const name = m.name.toLowerCase();
-            if (category === 'Preparation' && (name.includes('prepare') || name.includes('preparation'))) return true;
-            if (category === 'Exploration' && (name.includes('explore'))) return true;
-            if (category === 'DevelopmentConfig' && (name.includes('development') || name.includes('configuration'))) return true;
-            if (category === 'TestingUAT' && (name.includes('uat') || name.includes('sit') || name.includes('test'))) return true;
-            if (category === 'Deployment' && (name.includes('deploy') || name.includes('go-live'))) return true;
-            if (category === 'SupportWarranty' && (name.includes('support') || name.includes('warranty') || name.includes('hypercare'))) return true;
-            return false;
-          });
-          
-          if (milestone) {
-            const vendorPrice = vendorPrices.find((vp: any) => vp.vendor === vendor.vendorName);
-            return {
-              vendor: vendor.vendorName,
-              price: milestone.amount,
-              isOutlier: vendorPrice?.isOutlier || false
-            };
-          }
-          return null;
-        }).filter(Boolean) || [];
-
-        return {
-          category: category.replace(/([A-Z])/g, ' $1').trim(),
-          min: stats.min || 0,
-          q1: stats.q1 || 0,
-          median: stats.median || 0,
-          q3: stats.q3 || 0,
-          max: stats.max || 0,
-          outliers: stats.outliers || [],
-          vendorPrices: categoryVendorPrices
-        };
-      }).filter((item: any) => item.vendorPrices.length > 0);
+      // Store the marketDistribution object directly for the boxplot component
+      const marketDistributionData = {
+        marketDistribution: {
+          categoryStats: parsedData.marketDistribution.categoryStats
+        }
+      };
 
       // Update benchmark data for current tender
-      if (mappedBoxplot.length > 0) {
-        setDynamicBenchmarkData((prev: any) => {
-          const base = prev || allBenchmarkData;
-          return {
-            ...base,
-            [selectedTender]: {
-              boxplot: mappedBoxplot,
-              accuracy: parsedData.marketDistribution?.quality?.accuracy || base[selectedTender as keyof typeof base]?.accuracy || 94.2,
-              dataPoints: parsedData.marketDistribution?.quality?.dataPoints || base[selectedTender as keyof typeof base]?.dataPoints || 847
-            }
-          };
-        });
-      }
+      setDynamicBenchmarkData((prev: any) => {
+        const base = prev || allBenchmarkData;
+        return {
+          ...base,
+          [selectedTender]: {
+            boxplot: marketDistributionData, // Pass the nested structure directly
+            accuracy: parsedData.marketDistribution?.quality?.accuracy || base[selectedTender as keyof typeof base]?.accuracy || 94.2,
+            dataPoints: parsedData.marketDistribution?.quality?.dataPoints || base[selectedTender as keyof typeof base]?.dataPoints || 847
+          }
+        };
+      });
     }
   };
 

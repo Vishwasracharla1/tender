@@ -1,0 +1,300 @@
+{
+  "leadershipDashboard": {
+    "kpiMetrics": {
+      "activeTenders": {
+        "value": 142,
+        "subtitle": "Across all departments",
+        "trend": {
+          "value": "12%",
+          "isPositive": true,
+          "description": "12% increase vs last period"
+        },
+        "breakdown": {
+          "intake": {
+            "total": 45,
+            "pendingValidation": 8,
+            "normalized": 37
+          },
+          "evaluation": {
+            "total": 52,
+            "scoring": 28,
+            "review": 24
+          },
+          "benchmark": {
+            "total": 30,
+            "marketAnalysis": 18,
+            "outlierReview": 12
+          },
+          "justification": {
+            "total": 10
+          },
+          "award": {
+            "total": 5,
+            "finalApproval": 3,
+            "contractPrep": 2
+          }
+        },
+        "totalEstimatedValue": 847200000,
+        "avgTimeInSystem": 23.5
+      },
+      "avgEvalDuration": {
+        "value": 23,
+        "unit": "days",
+        "subtitle": "15 days under target",
+        "trend": {
+          "value": "15.8%",
+          "isPositive": true,
+          "description": "16% faster than target, AI acceleration working"
+        },
+        "targetDuration": 38,
+        "timeSavedDays": 15,
+        "fasterPct": 15.8,
+        "fastestDepartment": {
+          "name": "Water Management",
+          "avgDays": 18
+        },
+        "slowestDepartment": {
+          "name": "Roads & Construction",
+          "avgDays": 32
+        },
+        "bottleneckPhase": {
+          "phase": "evaluation",
+          "avgDays": 12
+        },
+        "tendersOnTime": 128,
+        "activeTenders": 142
+      },
+      "complianceRate": {
+        "value": 94.7,
+        "unit": "%",
+        "subtitle": "134 of 142 tenders compliant",
+        "compliantTenders": 134,
+        "totalTenders": 142,
+        "breakdown": {
+          "policyAdherence": 96.2,
+          "riskMitigation": 93.5,
+          "documentation": 95.8,
+          "timelineCompliance": 94.1
+        },
+        "minorIssues": 8
+      },
+      "criticalAlerts": {
+        "value": 7,
+        "subtitle": "Requires immediate attention",
+        "trend": {
+          "value": "42.3%",
+          "isPositive": true,
+          "description": "42% reduction in integrity alerts, AI detection working"
+        },
+        "totalHighRisk": 12,
+        "resolvedToday": 3,
+        "avgResolutionTime": 2.5,
+        "alertList": [
+          {
+            "id": "alert-001",
+            "riskLevel": "critical",
+            "riskIntegrityScore": 35,
+            "riskAlertMessage": "Vendor financial instability detected in TND-2025-045"
+          },
+          {
+            "id": "alert-002",
+            "riskLevel": "high",
+            "riskIntegrityScore": 42,
+            "riskAlertMessage": "Unusual bidding pattern detected in Infrastructure project"
+          }
+        ]
+      }
+    },
+    "vendorAnalytics": {
+      "activeVendors": 1847,
+      "totalBids": 5234,
+      "tendersParticipated": 142,
+      "avgBidsPerTender": 36.9,
+      "top3Vendors": "Cognizant, Edraky, TechCorp",
+      "categories": {
+        "WORKS": 523,
+        "SERVICES": 892,
+        "SUPPLIES": 312,
+        "CONSULTANCY": 120
+      },
+      "avgBidValue": {
+        "value": 1250000,
+        "totalBidValue": 6542000000,
+        "highestBid": {
+          "vendor": "Cognizant",
+          "amount": 5592848
+        },
+        "lowestBid": {
+          "vendor": "Edraky",
+          "amount": 204780
+        },
+        "bidRangeSpreadPercent": 263.5,
+        "budgetAlignmentPercent": 87.3,
+        "competitiveTenders": 128
+      },
+      "topPerformer": {
+        "vendorName": "TechCorp",
+        "reliabilityScore": 98.5,
+        "totalBids": 45,
+        "avgBidValue": 1250000,
+        "totalBidValue": 56250000,
+        "avgRank": 1.2,
+        "bidErrors": 0
+      },
+      "riskVendors": 23
+    },
+    "integrityHeatmap": [
+      {
+        "departmentId": "dept-001",
+        "departmentName": "Water Management",
+        "tenderId": "TND-2025-001",
+        "tenderTitle": "Water Treatment Plant Upgrade",
+        "phase": "evaluation",
+        "integrityScore": 92
+      },
+      {
+        "departmentId": "dept-002",
+        "departmentName": "Roads & Construction",
+        "tenderId": "TND-2025-002",
+        "tenderTitle": "Highway Expansion Project",
+        "phase": "benchmark",
+        "integrityScore": 78
+      },
+      {
+        "departmentId": "dept-003",
+        "departmentName": "Waste Management",
+        "tenderId": "TND-2025-003",
+        "tenderTitle": "Recycling Facility Development",
+        "phase": "evaluation",
+        "integrityScore": 88
+      }
+    ],
+    "durationTrend": [
+      {
+        "month": "2025-01",
+        "actualDuration": 25,
+        "targetDuration": 38,
+        "fasterVsTarget": 13
+      },
+      {
+        "month": "2025-02",
+        "actualDuration": 22,
+        "targetDuration": 38,
+        "fasterVsTarget": 16
+      },
+      {
+        "month": "2025-03",
+        "actualDuration": 23,
+        "targetDuration": 38,
+        "fasterVsTarget": 15
+      }
+    ],
+    "complianceLeaderboard": [
+      {
+        "departmentId": "dept-001",
+        "departmentName": "Water Management",
+        "tendersFormatted": "27/28",
+        "onTimePercent": 96.4,
+        "policyPercent": 98.2,
+        "riskPercent": 94.5,
+        "deptScore": 96.4
+      },
+      {
+        "departmentId": "dept-002",
+        "departmentName": "Roads & Construction",
+        "tendersFormatted": "24/26",
+        "onTimePercent": 92.3,
+        "policyPercent": 95.8,
+        "riskPercent": 91.2,
+        "deptScore": 93.1
+      },
+      {
+        "departmentId": "dept-003",
+        "departmentName": "Waste Management",
+        "tendersFormatted": "18/19",
+        "onTimePercent": 94.7,
+        "policyPercent": 97.1,
+        "riskPercent": 93.8,
+        "deptScore": 95.2
+      }
+    ],
+    "aiInsights": [
+      {
+        "type": "success",
+        "title": "Procurement Efficiency Improvement",
+        "message": "Average evaluation time reduced by 16% through AI-powered automation",
+        "priority": "high",
+        "date": "2025-11-27",
+        "actionable": true,
+        "recommendation": "Continue AI integration across all departments"
+      },
+      {
+        "type": "warning",
+        "title": "Vendor Concentration Risk",
+        "message": "Top 3 vendors account for 45% of total procurement value",
+        "priority": "medium",
+        "date": "2025-11-27",
+        "actionable": true,
+        "recommendation": "Diversify vendor base to reduce dependency"
+      },
+      {
+        "type": "critical",
+        "title": "Compliance Gap in Documentation",
+        "message": "8 tenders have minor documentation compliance issues",
+        "priority": "high",
+        "date": "2025-11-27",
+        "actionable": true,
+        "recommendation": "Review and update documentation templates"
+      }
+    ],
+    "filters": {
+      "departments": [
+        "all",
+        "Legal Affairs",
+        "HR",
+        "Water Management",
+        "Parking Management",
+        "Waste Management",
+        "Roads & Construction",
+        "Maintenance",
+        "Administration",
+        "Procurement",
+        "City Violation / Enforcement",
+        "Tolls Management",
+        "Citizen-Centric Services",
+        "Landscape & Irrigation",
+        "Healthcare Management"
+      ],
+      "categories": [
+        "all",
+        "WORKS",
+        "SERVICES",
+        "SUPPLIES",
+        "CONSULTANCY"
+      ],
+      "phases": [
+        "all",
+        "intake",
+        "evaluation",
+        "benchmark",
+        "justification",
+        "award"
+      ],
+      "riskLevels": [
+        "all",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "metadata": {
+      "tenderId": "ALL-DEPARTMENTS",
+      "phase": "Executive Overview",
+      "lastUpdated": "2025-11-27T12:00:00Z",
+      "dataSource": "TenderIQ.Agent",
+      "refreshInterval": 300
+    }
+  }
+}
+
