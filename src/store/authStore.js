@@ -161,36 +161,36 @@ const useAuthStore = create(
        * @returns {boolean}
        */
       hasPageAccess: (pageName, accessType = 'read') => {
-        const { user, pagePermissions } = get();
+        const { user, pagePermissions, isAuthenticated } = get();
 
-        if (!user || !user.piref_role) {
+        // Admin Panel is accessible to all authenticated users
+        if (pageName.toLowerCase().includes('admin') || pageName.toLowerCase() === 'admin panel') {
+          if (isAuthenticated && user) {
+            console.log('✅ Admin Panel access granted to authenticated user');
+            return true;
+          }
           return false;
         }
 
-        // Admin Panel requires explicit permissions (no fallback)
-        if (pageName.toLowerCase().includes('admin') || pageName.toLowerCase() === 'admin panel') {
-          // Check directly in roles array first
-          if (user.piref_role && Array.isArray(user.piref_role) && user.piref_role.length > 0) {
-            const roleData = user.piref_role[0];
-            if (roleData.roles && Array.isArray(roleData.roles)) {
-              if (hasPermissionInRoles(roleData.roles, pageName, accessType)) {
-                return true;
-              }
-            }
-          }
-          // Fallback to parsed permissions
-          const normalizedPageName = normalizePageName(pageName);
-          const pagePerms = pagePermissions[normalizedPageName] || [];
-          return pagePerms.includes(accessType.toLowerCase());
+        if (!user || !user.piref_role) {
+          console.log('❌ No user or piref_role:', { hasUser: !!user, hasPirefRole: !!user?.piref_role });
+          return false;
         }
 
-        // For other pages, check permissions first
+        // Check directly in roles array first
         if (user.piref_role && Array.isArray(user.piref_role) && user.piref_role.length > 0) {
           const roleData = user.piref_role[0];
           if (roleData.roles && Array.isArray(roleData.roles)) {
-            if (hasPermissionInRoles(roleData.roles, pageName, accessType)) {
+            const hasPermission = hasPermissionInRoles(roleData.roles, pageName, accessType);
+            if (hasPermission) {
+              console.log('✅ Permission found in roles array:', { pageName, accessType });
               return true;
             }
+            console.log('❌ Permission not found in roles array:', { 
+              pageName, 
+              accessType, 
+              availablePermissions: roleData.roles 
+            });
           }
         }
 
@@ -198,14 +198,19 @@ const useAuthStore = create(
         const normalizedPageName = normalizePageName(pageName);
         const pagePerms = pagePermissions[normalizedPageName] || [];
         if (pagePerms.includes(accessType.toLowerCase())) {
+          console.log('✅ Permission found in parsed permissions:', { pageName, accessType });
           return true;
         }
 
-        // If authenticated but no specific permissions, allow read access for non-admin pages
-        if (accessType === 'read' && get().isAuthenticated) {
-          return true;
-        }
+        console.log('❌ No permission found:', { 
+          pageName, 
+          accessType, 
+          normalizedPageName,
+          availablePagePermissions: Object.keys(pagePermissions),
+          pagePerms 
+        });
 
+        // NO FALLBACK - Users must have explicit permissions to access pages
         return false;
       },
 
@@ -255,6 +260,43 @@ const useAuthStore = create(
       },
 
       /**
+       * Get the first accessible page route for the user
+       * @returns {string|null} - Route path or null if no accessible pages
+       */
+      getFirstAccessibleRoute: () => {
+        const { canReadPage } = get();
+        
+        // Map of page names to routes (in priority order)
+        const pageRoutes = [
+          { pageName: 'Admin panel', route: '/admin' },
+          { pageName: 'Leadership Dashboard', route: '/' },
+          { pageName: 'Tender Intake', route: '/intake' },
+          { pageName: 'Tender Overview', route: '/tender-overview' },
+          { pageName: 'Tender Article', route: '/tender-article' },
+          { pageName: 'Evaluation Matrix', route: '/evaluation' },
+          { pageName: 'Evaluation Breakdown', route: '/evaluation-breakdown' },
+          { pageName: 'Evaluation Recommendation', route: '/evaluation-recommendation' },
+          { pageName: 'Benchmark Dashboard', route: '/benchmark' },
+          { pageName: 'Integrity Analytics', route: '/integrity' },
+          { pageName: 'Justification Composer', route: '/justification' },
+          { pageName: 'Award Simulation', route: '/award' },
+          { pageName: 'Agent Monitoring', route: '/monitoring' },
+          { pageName: 'Integration Management', route: '/integration' },
+        ];
+
+        // Find first accessible page
+        for (const { pageName, route } of pageRoutes) {
+          if (canReadPage(pageName)) {
+            console.log('✅ First accessible route found:', route, 'for page:', pageName);
+            return route;
+          }
+        }
+
+        console.log('❌ No accessible routes found for user');
+        return null;
+      },
+
+      /**
        * Check if user has any Admin panel access
        */
       hasAnyAdminPanelAccess: () => {
@@ -269,6 +311,30 @@ const useAuthStore = create(
               const normalized = perm.toLowerCase();
               return normalized.includes('admin') || normalized.includes('admin panel');
             });
+          }
+        }
+
+        return false;
+      },
+
+      /**
+       * Check if current user is an admin
+       * @returns {boolean}
+       */
+      isAdmin: () => {
+        const { user } = get();
+        if (!user) return false;
+
+        // Check if role is 'Admin'
+        if (user.role === 'Admin') {
+          return true;
+        }
+
+        // Check if rolename in piref_role is 'Admin'
+        if (user.piref_role && Array.isArray(user.piref_role) && user.piref_role.length > 0) {
+          const roleData = user.piref_role[0];
+          if (roleData.rolename === 'Admin') {
+            return true;
           }
         }
 

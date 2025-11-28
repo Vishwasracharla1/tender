@@ -135,7 +135,7 @@ const AdminPanelWrapper = () => {
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <LoginPage />, // Public route - accessible without authentication
   },
   {
     path: '/',

@@ -13,7 +13,25 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(['evaluation']);
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user } = useAuthStore();
+  const { logout, user, canReadPage } = useAuthStore();
+
+  // Map page IDs to page names for permission checking
+  const pageIdToPageName: Record<string, string> = {
+    'admin': 'Admin panel',
+    'leadership': 'Leadership Dashboard',
+    'intake': 'Tender Intake',
+    'tender-overview': 'Tender Overview',
+    'tender-article': 'Tender Article',
+    'evaluation': 'Evaluation Matrix',
+    'evaluation-breakdown': 'Evaluation Breakdown',
+    'evaluation-recommendation': 'Evaluation Recommendation',
+    'benchmark': 'Benchmark Dashboard',
+    'integrity': 'Integrity Analytics',
+    'justification': 'Justification Composer',
+    'award': 'Award Simulation',
+    'monitoring': 'Agent Monitoring',
+    'integration': 'Integration Management',
+  };
 
   // Map routes to page IDs
   const routeToPageId: Record<string, string> = {
@@ -150,6 +168,41 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     },
   ];
 
+  // Filter menu items based on user permissions
+  const filteredMenuItems = menuItems.filter((item) => {
+    const pageName = pageIdToPageName[item.id];
+    if (!pageName) return true; // Show items without page name mapping
+    
+    // Admin Panel is accessible to all authenticated users
+    if (item.id === 'admin') {
+      return true;
+    }
+    
+    // Check if user has read access to this page
+    return canReadPage(pageName);
+  }).map((item) => {
+    // Also filter submenu items
+    if (item.subMenu) {
+      const filteredSubMenu = item.subMenu.filter((subItem) => {
+        const subPageName = pageIdToPageName[subItem.id];
+        if (!subPageName) return true;
+        return canReadPage(subPageName);
+      });
+      
+      return {
+        ...item,
+        subMenu: filteredSubMenu.length > 0 ? filteredSubMenu : undefined,
+      };
+    }
+    return item;
+  }).filter((item) => {
+    // Remove parent items if all submenu items are filtered out
+    if (item.subMenu && item.subMenu.length === 0) {
+      return false;
+    }
+    return true;
+  });
+
   const handleNavigation = (pageId: string, path: string) => {
     navigate(path);
     onNavigate(pageId as any);
@@ -185,7 +238,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           </div>
 
           <nav className="sidebar-scroll flex-1 p-4 space-y-3 overflow-y-auto pr-2">
-            {menuItems.map((item, index) => {
+            {filteredMenuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = activePageId === item.id || (item.subMenu && item.subMenu.some(sub => activePageId === sub.id));
               const isExpanded = expandedItems.includes(item.id);

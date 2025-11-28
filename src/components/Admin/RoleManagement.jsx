@@ -5,7 +5,7 @@ import { useAdminStore } from '../../store/adminStore';
 import { Search, Plus, Edit, Trash2, X, Save, AlertCircle } from 'lucide-react';
 
 export function RoleManagement() {
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, isAdmin } = useAuthStore();
   const { getUsers } = useAdminStore();
   
   const [usersQuery, rolesQuery] = useAdminDashboardData();
@@ -93,19 +93,13 @@ export function RoleManagement() {
     return 0;
   };
 
+  // Only admins can edit/delete roles
   const canEditRole = (targetRole) => {
-    if (!currentUser) return false;
-    const currentRole = currentUser.role || (currentUser.piref_role && currentUser.piref_role[0]?.rolename);
-    const targetRoleName = targetRole.rolename;
-    
-    const currentHierarchy = getRoleHierarchy(currentRole);
-    const targetHierarchy = getRoleHierarchy(targetRoleName);
-    
-    return currentHierarchy > targetHierarchy;
+    return isAdmin();
   };
 
   const canDeleteRole = (targetRole) => {
-    if (!canEditRole(targetRole)) return false;
+    if (!isAdmin()) return false;
     // Prevent deletion if role is assigned to users
     const userCount = getUserCountForRole(targetRole.id, targetRole.rolename);
     return userCount === 0;
@@ -167,19 +161,24 @@ export function RoleManagement() {
     if (!validateForm()) return;
 
     try {
+      // Generate ID for new roles (format: role-timestamp-random)
+      const generateId = () => {
+        return `role-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      };
+
+      // Build payload matching correct curl structure - only rolename, roles, and id
+      // Note: description, updatedAt, createdAt are NOT included in the API payload
       const payload = {
         rolename: formData.rolename.trim(),
         roles: formData.roles,
-        ...(formData.description && { description: formData.description.trim() }),
-        ...(editingRole && { id: editingRole.id }),
-        updatedAt: new Date().toISOString(),
+        id: editingRole ? editingRole.id : generateId(),
       };
+
+      console.log('📤 Role payload (matching curl structure):', payload);
 
       if (editingRole) {
         await updateRoleMutation.mutateAsync({ payload });
       } else {
-        payload.id = `role-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        payload.createdAt = new Date().toISOString();
         await createRoleMutation.mutateAsync({ payload });
       }
 
@@ -239,13 +238,15 @@ export function RoleManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Role Management</h2>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Create Role
-        </button>
+        {isAdmin() && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Create Role
+          </button>
+        )}
       </div>
 
       {/* Search */}

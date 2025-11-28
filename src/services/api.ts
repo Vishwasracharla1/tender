@@ -1874,16 +1874,21 @@ export const postEntityInstances = async (
 ): Promise<EntityInstance> => {
   const token = getAuthToken();
 
+  // Wrap payload in { data: [...] } structure as expected by API
+  const apiPayload = {
+    data: Array.isArray(payload) ? payload : [payload],
+  };
+
   console.log('📤 Creating entity instance:', {
     url: `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
     schemaId,
-    payload,
+    payload: apiPayload,
   });
 
   try {
     const response = await axios.post<EntityInstance>(
       `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
-      payload,
+      apiPayload,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1897,6 +1902,10 @@ export const postEntityInstances = async (
     );
 
     console.log('✅ Entity instance created:', response.data);
+    // Return the first item from data array if response has data array
+    if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+      return response.data.data[0];
+    }
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -1978,15 +1987,24 @@ export const deleteEntityInstances = async (
 ): Promise<any> => {
   const token = getAuthToken();
 
+  // Build request body with dbType and filter (matching curl structure)
+  const requestBody = {
+    dbType: 'TIDB',
+    filter: filter,
+  };
+
+  // Add confirmDelete=true query parameter
+  const url = `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances?confirmDelete=true`;
+
   console.log('🗑️ Deleting entity instances:', {
-    url: `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
+    url,
     schemaId,
-    filter,
+    requestBody,
   });
 
   try {
     const response = await axios.delete(
-      `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
+      url,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1996,7 +2014,7 @@ export const deleteEntityInstances = async (
           'origin': window.location.origin,
           'referer': window.location.href,
         },
-        data: filter,
+        data: requestBody,
       }
     );
 

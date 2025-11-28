@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react';
 import { useAdminDashboardData, usePostEntityInstancesUser, useUpdateInstanceUser, useDeleteEntityInstancesUser } from '../../hooks/useAdminDashboardData';
 import { useAuthStore } from '../../store/authStore';
 import { useAdminStore } from '../../store/adminStore';
-import { Search, Plus, Edit, Trash2, X, Save, AlertCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Save, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function UserManagement() {
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, isAdmin } = useAuthStore();
   const { getRoles, getDepartments } = useAdminStore();
   
   const [usersQuery, rolesQuery, departmentsQuery] = useAdminDashboardData(
@@ -24,6 +24,7 @@ export function UserManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deleteUser, setDeleteUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -81,19 +82,13 @@ export function UserManagement() {
     return 0;
   };
 
+  // Only admins can edit/delete users
   const canEditUser = (targetUser) => {
-    if (!currentUser) return false;
-    const currentRole = currentUser.role || (currentUser.piref_role && currentUser.piref_role[0]?.rolename);
-    const targetRole = targetUser.role || (targetUser.piref_role && targetUser.piref_role[0]?.rolename);
-    
-    const currentHierarchy = getRoleHierarchy(currentRole);
-    const targetHierarchy = getRoleHierarchy(targetRole);
-    
-    return currentHierarchy > targetHierarchy;
+    return isAdmin();
   };
 
   const canDeleteUser = (targetUser) => {
-    return canEditUser(targetUser);
+    return isAdmin();
   };
 
   const handleOpenModal = (user = null) => {
@@ -169,24 +164,42 @@ export function UserManagement() {
         return;
       }
 
+      // Generate UUID format ID: user-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      const generateUUID = () => {
+        const hex = '0123456789abcdef';
+        const generateSegment = (length) => {
+          return Array.from({ length }, () => hex[Math.floor(Math.random() * 16)]).join('');
+        };
+        return `user-${generateSegment(8)}-${generateSegment(4)}-${generateSegment(4)}-${generateSegment(4)}-${generateSegment(12)}`;
+      };
+
+      // Build payload matching curl structure exactly - order must match curl
+      const now = new Date().toISOString();
       const payload = {
-        firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        username: formData.username.trim(),
-        email: formData.email.trim(),
         role: formData.role,
         isActive: formData.isActive,
-        ...(formData.departmentId && { departmentId: formData.departmentId }),
-        ...(formData.password && { password: formData.password }),
-        ...(editingUser && { id: editingUser.id }),
-        updatedAt: new Date().toISOString(),
+        firstName: formData.firstName.trim(),
+        createdAt: editingUser ? undefined : now,
+        password: formData.password || undefined,
+        id: editingUser ? editingUser.id : generateUUID(),
+        email: formData.email.trim(),
+        username: formData.username.trim(),
+        updatedAt: now,
       };
+
+      // Remove undefined fields
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
+      console.log('📤 User payload (matching curl structure):', payload);
 
       if (editingUser) {
         await updateUserMutation.mutateAsync({ payload });
       } else {
-        payload.id = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        payload.createdAt = new Date().toISOString();
         await createUserMutation.mutateAsync({ payload });
       }
 
@@ -489,16 +502,30 @@ export function UserManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.password ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      className={`w-full px-3 py-2 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.password ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                   {formErrors.password && (
                     <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
                   )}
