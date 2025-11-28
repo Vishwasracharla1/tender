@@ -1,21 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Lock, User } from 'lucide-react';
+import { LogIn, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { useAdminStore } from '../store/adminStore';
+import { fetchEntityInstancesWithReferences } from '../services/api';
 
 export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, isAuthenticated, getFirstAccessibleRoute } = useAuthStore();
+  const { validateUserCredentials, setUsers, getUsers } = useAdminStore();
+
+  // Get schema ID from environment
+  const USERS_SCHEMA_ID = import.meta.env.VITE_RAK_USERS_ID;
 
   // Redirect if already authenticated
   useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
     if (isAuthenticated) {
-      navigate('/', { replace: true });
+      const accessibleRoute = getFirstAccessibleRoute();
+      const redirectPath = accessibleRoute || '/monitoring';
+      navigate(redirectPath, { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate, getFirstAccessibleRoute]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,22 +38,49 @@ export function LoginPage() {
 
     setIsLoading(true);
 
-    // Simulate login (replace with actual authentication logic)
-    setTimeout(() => {
-      // For demo purposes, accept any username/password
-      // In production, replace this with actual API call
-      if (username && password) {
-        // Store authentication state
-        sessionStorage.setItem('isAuthenticated', 'true');
-        sessionStorage.setItem('username', username);
-        
-        // Redirect to dashboard
-        navigate('/');
+    try {
+      // Always fetch users from API to ensure we have the latest data
+      if (USERS_SCHEMA_ID) {
+        try {
+          console.log('📥 Fetching users from API...');
+          const users = await fetchEntityInstancesWithReferences(
+            USERS_SCHEMA_ID,
+            3000,
+            'TIDB'
+          );
+          console.log('✅ Users fetched:', users.length, users);
+          setUsers(users);
+        } catch (fetchError) {
+          console.error('❌ Failed to fetch users from API:', fetchError);
+          // Check if we have cached users
+          const cachedUsers = getUsers();
+          if (cachedUsers.length === 0) {
+            throw new Error('Unable to fetch users. Please check your connection and API token.');
+          }
+          console.log('⚠️ Using cached users:', cachedUsers.length);
+        }
       } else {
-        setError('Invalid credentials');
+        throw new Error('Users schema ID not configured');
       }
+
+      await login(
+        { username: username.trim(), password },
+        validateUserCredentials
+      );
+      
+      // Get first accessible page for user
+      const accessibleRoute = getFirstAccessibleRoute();
+      
+      // Redirect to first accessible page, or default to monitoring if none found
+      const redirectPath = accessibleRoute || '/monitoring';
+      console.log('🔄 Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    } catch (err) {
+      console.error('❌ Login error:', err);
+      setError(err.message || 'Invalid credentials');
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -107,13 +144,25 @@ export function LoginPage() {
                 </div>
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full pl-12 pr-4 py-3 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 hover:border-sky-400 shadow-sm"
+                  className="w-full pl-12 pr-12 py-3 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 hover:border-sky-400 shadow-sm"
                   disabled={isLoading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
 
@@ -143,7 +192,7 @@ export function LoginPage() {
           {/* Additional Info */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              For demo purposes, any username and password will work
+              Use your credentials to sign in. Admin: username="admin", password="admin@123"
             </p>
           </div>
         </div>

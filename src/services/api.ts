@@ -2156,4 +2156,291 @@ export const callIntegrityAnalyticsAgent = async (
   }
 };
 
+// ============================================================================
+// RBAC API Functions - Entity Instances Service
+// ============================================================================
+
+const ENTITY_INSTANCES_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+
+export interface EntityInstance {
+  id?: string;
+  [key: string]: any;
+}
+
+export interface EntityInstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: EntityInstance[];
+  content?: EntityInstance[];
+  [key: string]: any;
+}
+
+export interface EntityInstanceListRequest {
+  dbType?: 'TIDB';
+  [key: string]: any;
+}
+
+/**
+ * Fetch entity instances with referenced data
+ * @param schemaId - Schema ID to fetch instances from
+ * @param size - Number of instances to fetch (default: 3000)
+ * @param dbType - Database type (default: 'TIDB')
+ * @param filter - Optional filter object
+ * @returns Promise with list of entity instances
+ */
+export const fetchEntityInstancesWithReferences = async (
+  schemaId: string,
+  size: number = 3000,
+  dbType: 'TIDB' = 'TIDB',
+  filter?: any
+): Promise<EntityInstance[]> => {
+  const token = getAuthToken();
+  
+  const params = new URLSearchParams({
+    size: size.toString(),
+    showDBaaSReservedKeywords: 'true',
+    showReferencedData: 'true',
+    showPageableMetaData: 'true',
+  });
+
+  const requestData: EntityInstanceListRequest = {
+    dbType,
+    ...(filter && { filter }),
+  };
+
+  console.log('📥 Fetching entity instances:', {
+    url: `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances/list?${params}`,
+    schemaId,
+    size,
+  });
+
+  try {
+    const response = await axios.post<EntityInstanceListResponse>(
+      `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances/list?${params}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Entity instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Entity instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        schemaId,
+      });
+      throw new Error(`Failed to fetch entity instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Create new entity instance
+ * @param schemaId - Schema ID to create instance in
+ * @param payload - Instance data to create
+ * @returns Promise with created instance
+ */
+export const postEntityInstances = async (
+  schemaId: string,
+  payload: any
+): Promise<EntityInstance> => {
+  const token = getAuthToken();
+
+  // Wrap payload in { data: [...] } structure as expected by API
+  const apiPayload = {
+    data: Array.isArray(payload) ? payload : [payload],
+  };
+
+  console.log('📤 Creating entity instance:', {
+    url: `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
+    schemaId,
+    payload: apiPayload,
+  });
+
+  try {
+    const response = await axios.post<EntityInstance>(
+      `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`,
+      apiPayload,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Entity instance created:', response.data);
+    // Return the first item from data array if response has data array
+    if (response.data && Array.isArray(response.data.data) && response.data.data.length > 0) {
+      return response.data.data[0];
+    }
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Entity instance creation error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        schemaId,
+      });
+      throw new Error(`Failed to create entity instance: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Update entity instance
+ * @param schemaId - Schema ID
+ * @param payload - Updated instance data (must include id)
+ * @returns Promise with updated instance
+ */
+export const updateKPIDefinition = async (
+  schemaId: string,
+  payload: any
+): Promise<EntityInstance> => {
+  const token = getAuthToken();
+
+  if (!payload.id) {
+    throw new Error('Instance ID is required for update');
+  }
+
+  // Build request body matching correct curl structure
+  // URL should be /instances (not /instances/{id})
+  // Body should have primarykeyEnable and bulkUpdate array
+  const requestBody = {
+    primarykeyEnable: true,
+    bulkUpdate: [payload],
+  };
+
+  const url = `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances`;
+
+  console.log('📝 Updating entity instance:', {
+    url,
+    schemaId,
+    instanceId: payload.id,
+    requestBody,
+  });
+
+  try {
+    const response = await axios.put<EntityInstance>(
+      url,
+      requestBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Entity instance updated:', response.data);
+    // Return the first item from bulkUpdate if response has data array
+    if (response.data && Array.isArray(response.data.bulkUpdate) && response.data.bulkUpdate.length > 0) {
+      return response.data.bulkUpdate[0];
+    }
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Entity instance update error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        schemaId,
+      });
+      throw new Error(`Failed to update entity instance: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Delete entity instances
+ * @param schemaId - Schema ID
+ * @param filter - Filter to identify instances to delete (e.g., { id: "instance-id" })
+ * @returns Promise with deletion result
+ */
+export const deleteEntityInstances = async (
+  schemaId: string,
+  filter: any
+): Promise<any> => {
+  const token = getAuthToken();
+
+  // Build request body with dbType and filter (matching curl structure)
+  const requestBody = {
+    dbType: 'TIDB',
+    filter: filter,
+  };
+
+  // Add confirmDelete=true query parameter
+  const url = `${ENTITY_INSTANCES_API_BASE_URL}/schemas/${schemaId}/instances?confirmDelete=true`;
+
+  console.log('🗑️ Deleting entity instances:', {
+    url,
+    schemaId,
+    requestBody,
+  });
+
+  try {
+    const response = await axios.delete(
+      url,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+        data: requestBody,
+      }
+    );
+
+    console.log('✅ Entity instances deleted:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Entity instance deletion error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        schemaId,
+      });
+      throw new Error(`Failed to delete entity instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 
