@@ -50,13 +50,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   }, [isOpen]);
 
   const menuItems = [
-    {
-      id: 'admin' as const,
-      label: 'Admin Panel',
-      icon: Settings,
-      description: 'User & Role Management',
-      path: '/admin',
-    },
+ 
     {
       id: 'leadership' as const,
       label: 'Leadership Dashboard',
@@ -105,13 +99,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       ],
     },
     {
-    //   id: 'benchmark' as const,
-    //   label: 'Benchmark Dashboard',
-    //   icon: TrendingUp,
-    //   description: 'Market Analysis',
-    //   path: '/benchmark',
-    // },
-    // {
+      id: 'benchmark' as const,
+      label: 'Benchmark Dashboard',
+      icon: TrendingUp,
+      description: 'Market Analysis',
+      path: '/benchmark',
+    },
+    {
       id: 'integrity' as const,
       label: 'Integrity Analytics',
       icon: ShieldAlert,
@@ -145,6 +139,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       icon: Plug,
       description: 'System Integrations',
       path: '/integration',
+    },
+    {
+      id: 'admin' as const,
+      label: 'Admin Panel',
+      icon: Settings,
+      description: 'User & Role Management',
+      path: '/admin',
     },
   ];
 
@@ -188,40 +189,64 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
               const isActive = activePageId === item.id || (item.subMenu && item.subMenu.some(sub => activePageId === sub.id));
               const isExpanded = expandedItems.includes(item.id);
               const hasSubMenu = item.subMenu && item.subMenu.length > 0;
+              const isDisabled = item.id === 'benchmark';
 
               return (
                 <div key={item.id}>
-                  <div className={`
-                    group flex w-full items-start gap-3 p-3 rounded-xl border
-                    transition-all duration-300 transform
-                    ${
-                      isActive && activePageId === item.id
-                        ? 'bg-white text-slate-900 border-sky-100 shadow-lg'
-                        : 'bg-white/60 text-slate-500 border-white/80 hover:bg-white hover:border-sky-100 hover:text-slate-800'
-                    }
-                  `}
-                  style={{ animationDelay: `${index * 60}ms` }}
+                  <div 
+                    className={`
+                      group flex w-full items-start gap-3 p-3 rounded-xl border
+                      transition-all duration-300 transform relative
+                      ${
+                        isDisabled
+                          ? 'bg-gray-100/60 text-gray-400 border-gray-200 cursor-not-allowed'
+                          : isActive && activePageId === item.id
+                          ? 'bg-white text-slate-900 border-sky-100 shadow-lg'
+                          : 'bg-white/60 text-slate-500 border-white/80 hover:bg-white hover:border-sky-100 hover:text-slate-800'
+                      }
+                    `}
+                    style={{ animationDelay: `${index * 60}ms` }}
                   >
                     <button
-                      onClick={() => handleNavigation(item.id, item.path)}
-                      className="flex-1 flex items-start gap-3 text-left"
+                      onClick={() => !isDisabled && handleNavigation(item.id, item.path)}
+                      disabled={isDisabled}
+                      className={`flex-1 flex items-start gap-3 text-left ${isDisabled ? 'cursor-not-allowed' : ''}`}
                     >
                       <Icon
                         className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                          isActive && activePageId === item.id ? 'text-sky-500' : 'text-slate-400 group-hover:text-sky-500 transition-colors'
+                          isDisabled 
+                            ? 'text-gray-400' 
+                            : isActive && activePageId === item.id 
+                            ? 'text-sky-500' 
+                            : 'text-slate-400 group-hover:text-sky-500 transition-colors'
                         }`}
                       />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 relative">
                         <p
                           className={`text-sm font-medium ${
-                            isActive && activePageId === item.id ? 'text-slate-900' : 'text-slate-700'
+                            isDisabled 
+                              ? 'text-gray-400' 
+                              : isActive && activePageId === item.id 
+                              ? 'text-slate-900' 
+                              : 'text-slate-700'
                           }`}
                         >
                           {item.label}
                         </p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {item.description}
-                        </p>
+                        {isDisabled ? (
+                          <>
+                            <p className="text-xs mt-0.5 text-gray-400 group-hover:opacity-0 transition-opacity">
+                              {item.description}
+                            </p>
+                            <p className="text-xs mt-0.5 text-sky-600 font-semibold absolute top-5 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Coming Soon
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-xs mt-0.5 text-slate-500">
+                            {item.description}
+                          </p>
+                        )}
                       </div>
                     </button>
                     {hasSubMenu && (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { Chatbot } from '../components/Chatbot';
+import { TenderCard } from '../components/TenderCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
@@ -1272,6 +1273,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [recommendationsData, setRecommendationsData] = useState<any>(null);
   const [documentClassificationData, setDocumentClassificationData] = useState<any>(null);
   const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
+  const [showTenderCard, setShowTenderCard] = useState(false);
+  const [tenderCardData, setTenderCardData] = useState<any>(null);
 
   // Cache key for sessionStorage
   const CACHE_KEY = 'tenderOverviewCache';
@@ -1470,8 +1473,12 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     }
   };
 
-  const handleSubmit = async () => {
-    if (isSubmitDisabled) return;
+  // Function to trigger 4 agents when TenderCard is clicked
+  const handleCardClick = async () => {
+    if (!selectedDepartment || !selectedDocument) {
+      alert('Please select a department and document first.');
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -1561,11 +1568,58 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         setDocumentClassificationData(null);
       }
       
-      // Show the main content after successful submission
+      // Show the main content after successful agent processing
       setIsDepartmentSelected(true);
     } catch (error) {
       console.error('Error calling agent:', error);
-      setSubmitError(error instanceof Error ? error.message : 'Failed to submit to agent');
+      setSubmitError(error instanceof Error ? error.message : 'Failed to trigger agents');
+      alert(`Failed to trigger agents: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (isSubmitDisabled) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Get tender data from sessionStorage (stored by FileUpload component)
+      const agentResponseStr = sessionStorage.getItem('agent_response');
+      
+      if (!agentResponseStr) {
+        throw new Error('No tender data found. Please upload and process documents first.');
+      }
+
+      // Parse the agent response data
+      let tenderData: any = {};
+      try {
+        const parsedResponse = JSON.parse(agentResponseStr);
+        
+        // Map to tender card data structure
+        tenderData = {
+          metadata: parsedResponse.metadata || {},
+          tender_summary: parsedResponse.tender_summary || {},
+          administration: parsedResponse.administration || {},
+          evaluation: parsedResponse.evaluation || {},
+          requirements: parsedResponse.requirements || {},
+          pricing: parsedResponse.pricing || {},
+          contact_information: parsedResponse.contact_information || {},
+        };
+        
+        // Show the tender card
+        setTenderCardData(tenderData);
+        setShowTenderCard(true);
+        console.log('✅ Tender card data loaded from sessionStorage');
+      } catch (parseError) {
+        console.error('❌ Failed to parse agent response:', parseError);
+        throw new Error('Failed to parse tender data. Please try uploading again.');
+      }
+    } catch (error) {
+      console.error('Error loading tender data:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to load tender data');
     } finally {
       setIsSubmitting(false);
     }
@@ -1581,7 +1635,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         />
         
         <main className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-sky-100 flex items-center justify-center" style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}>
-          <div className="w-full max-w-2xl px-6 py-12">
+          <div className="w-full max-w-6xl px-6 py-12">
             {/* Heading */}
             <div className="text-center mb-12">
               <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">
@@ -1593,10 +1647,11 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
             {/* Department Selection Card */}
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 md:p-10">
               <div className="mb-8">
-                <div className="space-y-6">
+                {/* Department and Document Selection in One Line */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="department-search" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
-                      Select Department
+                      Search Department
                     </label>
                     <div className="flex gap-2">
                       <div className="relative flex-1" ref={departmentDropdownRef}>
@@ -1653,7 +1708,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
 
                   <div>
                     <label htmlFor="document-search" className="block text-lg font-semibold text-gray-800 mb-3 text-center">
-                      Select Document
+                      Search Document
                     </label>
                     <div className="flex gap-2">
                       <div className="relative flex-1" ref={documentDropdownRef}>
@@ -1745,6 +1800,24 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Submit Button - Below Selection Fields, Centered */}
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitDisabled}
+                    className={`
+                      px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 transform
+                      ${!isSubmitDisabled
+                        ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </button>
+                </div>
+
                 {(selectedDepartment || selectedDocument) && (
                   <div className="mt-3 text-sm text-gray-600 text-center space-y-1">
                     {selectedDepartment && (
@@ -1771,24 +1844,16 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                   <p className="text-sm text-red-600 text-center">{submitError}</p>
                 </div>
               )}
-
-              {/* Submit Button */}
-              <div className="flex justify-center">
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitDisabled}
-                  className={`
-                    px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 transform
-                    ${!isSubmitDisabled
-                      ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
-                </button>
-              </div>
             </div>
+
+            {/* Tender Card - Below submit button, on the left, smaller size */}
+            {showTenderCard && tenderCardData && (
+              <div className="mt-8 flex justify-start">
+                <div className="w-96 scale-75 origin-top-left">
+                  <TenderCard tenderData={tenderCardData} onClick={handleCardClick} />
+                </div>
+              </div>
+            )}
 
             {/* Additional Info */}
             <div className="mt-8 text-center">
@@ -1851,6 +1916,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                     setSelectedDocument('');
                     setAgentData(null);
                     setTableAgentData(null);
+                    setShowTenderCard(false);
+                    setTenderCardData(null);
                     // Clear cache when changing department
                     sessionStorage.removeItem(CACHE_KEY);
                   }}
