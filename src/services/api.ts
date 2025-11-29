@@ -1127,6 +1127,8 @@ export const ingestFilesToSchema = async (
 // Schema Instance Bulk Update API - Update instance with agent response
 export interface SchemaInstanceBulkUpdateItem {
   id: string;
+  timestamp?: string;
+  status?: string;
   metadata?: {
     tender_reference_number?: string;
     document_title?: string;
@@ -1296,9 +1298,14 @@ export const updateSchemaInstanceWithAgentResponse = async (
     allKeys: responseData && typeof responseData === 'object' ? Object.keys(responseData) : 'N/A',
   });
 
+  // Generate current timestamp in ISO format (e.g., "2024-04-12T09:30:10Z")
+  const currentTimestamp = new Date().toISOString();
+  
   // Build the bulk update item - start with ID and include ALL agent response data
   const bulkUpdateItem: SchemaInstanceBulkUpdateItem = {
     id: instanceId, // Use the ID from sessionStorage
+    timestamp: currentTimestamp, // Add current timestamp in ISO format
+    status: 'open', // Default status - can be changed based on business logic
   };
 
   // Map ALL fields from agent response to bulk update structure
@@ -1328,6 +1335,15 @@ export const updateSchemaInstanceWithAgentResponse = async (
     }
     if (restData.contact_information) {
       bulkUpdateItem.contact_information = restData.contact_information;
+    }
+    
+    // Include status from agent response if present, otherwise keep default
+    if (restData.status) {
+      bulkUpdateItem.status = restData.status;
+    }
+    // Timestamp is already set above, but allow override from agent response if present
+    if (restData.timestamp) {
+      bulkUpdateItem.timestamp = restData.timestamp;
     }
     
     // Also include any other fields that might be in the response
