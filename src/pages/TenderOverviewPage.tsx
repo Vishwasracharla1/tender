@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
 import { interactWithAgent, fetchSchemaInstances, type SchemaInstanceListItem } from '../services/api';
-import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers, Search } from 'lucide-react';
+import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers, Search, Filter, X, Loader2 } from 'lucide-react';
 import '../styles/TenderEvaluationTable.css';
 
 // Function to aggressively remove Jotform agent elements
@@ -1275,6 +1275,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
   const [showTenderCard, setShowTenderCard] = useState(false);
   const [tenderCardData, setTenderCardData] = useState<any>(null);
+  const [allTenderCardsData, setAllTenderCardsData] = useState<Array<{ instanceId: string | number; tenderData: any; filename: string }>>([]);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [timestampFilter, setTimestampFilter] = useState<string>('all'); // 'all', 'today', 'week', 'month', 'year'
 
   // Cache key for sessionStorage
   const CACHE_KEY = 'tenderOverviewCache';
@@ -1344,6 +1347,62 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     }
   }, [isDepartmentSelected]);
 
+  // Function to extract tender data from a schema instance
+  const extractTenderDataFromInstance = (instance: SchemaInstanceListItem): any => {
+    // Check if the schema instance has tender data stored in it
+    if (instance.metadata || instance.tender_summary || instance.administration) {
+      return {
+        status: instance.status || instance.metadata?.status || instance.administration?.status || undefined,
+        timestamp: instance.timestamp || instance.created_at || instance.updated_at || undefined,
+        created_at: instance.created_at || undefined,
+        updated_at: instance.updated_at || undefined,
+        metadata: instance.metadata || {},
+        tender_summary: instance.tender_summary || {},
+        administration: instance.administration || {},
+        evaluation: instance.evaluation || {},
+        requirements: instance.requirements || {},
+        pricing: instance.pricing || {},
+        contact_information: instance.contact_information || {},
+      };
+    }
+    
+    // Try to get it from sessionStorage using the instance ID as a key
+    const instanceDataKey = `tender_data_${instance.id}`;
+    const instanceDataStr = sessionStorage.getItem(instanceDataKey);
+    
+    if (instanceDataStr) {
+      try {
+        const parsedData = JSON.parse(instanceDataStr);
+        return {
+          status: parsedData.status || parsedData.metadata?.status || parsedData.administration?.status || undefined,
+          timestamp: parsedData.timestamp || parsedData.created_at || parsedData.updated_at || undefined,
+          created_at: parsedData.created_at || undefined,
+          updated_at: parsedData.updated_at || undefined,
+          metadata: parsedData.metadata || {},
+          tender_summary: parsedData.tender_summary || {},
+          administration: parsedData.administration || {},
+          evaluation: parsedData.evaluation || {},
+          requirements: parsedData.requirements || {},
+          pricing: parsedData.pricing || {},
+          contact_information: parsedData.contact_information || {},
+        };
+      } catch (e) {
+        console.warn('⚠️ Failed to parse instance data from sessionStorage for instance:', instance.id);
+      }
+    }
+    
+    // Return minimal data structure with filename as title if no tender data found
+    return {
+      metadata: {
+        document_title: getFileNameWithoutExtension(instance.filename),
+        tender_reference_number: `INST-${instance.id}`,
+      },
+      tender_summary: {
+        project_title: getFileNameWithoutExtension(instance.filename),
+      },
+    };
+  };
+
   // Fetch schema instances on component mount
   useEffect(() => {
     const loadSchemaInstances = async () => {
@@ -1353,6 +1412,18 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         const instances = await fetchSchemaInstances(10);
         setSchemaInstances(instances);
         console.log('✅ Loaded schema instances:', instances);
+        
+        // Extract tender data for all instances
+        const tenderCardsData = instances.map(instance => {
+          const tenderData = extractTenderDataFromInstance(instance);
+          return {
+            instanceId: instance.id,
+            tenderData: tenderData,
+            filename: instance.filename,
+          };
+        });
+        setAllTenderCardsData(tenderCardsData);
+        console.log('✅ Loaded tender cards data for all instances:', tenderCardsData);
       } catch (error) {
         console.error('❌ Error loading schema instances:', error);
         setDocumentsError(error instanceof Error ? error.message : 'Failed to load documents');
@@ -1586,37 +1657,119 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     setSubmitError(null);
 
     try {
-      // Get tender data from sessionStorage (stored by FileUpload component)
-      const agentResponseStr = sessionStorage.getItem('agent_response');
-      
-      if (!agentResponseStr) {
-        throw new Error('No tender data found. Please upload and process documents first.');
+      let tenderData: any = null;
+
+      // First, try to get tender data from selected schema instance
+      if (selectedDocument && schemaInstances.length > 0) {
+        const selectedInstance = schemaInstances.find(instance => 
+          instance.id.toString() === selectedDocument || instance.id === selectedDocument
+        );
+
+        if (selectedInstance) {
+          console.log('📄 Selected schema instance:', selectedInstance);
+          tenderData = extractTenderDataFromInstance(selectedInstance);
+          if (tenderData && (tenderData.metadata || tenderData.tender_summary)) {
+            console.log('✅ Tender data extracted from schema instance');
+          }
+        }
       }
 
-      // Parse the agent response data
-      let tenderData: any = {};
-      try {
-        const parsedResponse = JSON.parse(agentResponseStr);
+      // Fallback: Try to get tender data from sessionStorage (legacy method)
+      if (!tenderData) {
+        const agentResponseStr = sessionStorage.getItem('agent_response');
         
-        // Map to tender card data structure
-        tenderData = {
-          metadata: parsedResponse.metadata || {},
-          tender_summary: parsedResponse.tender_summary || {},
-          administration: parsedResponse.administration || {},
-          evaluation: parsedResponse.evaluation || {},
-          requirements: parsedResponse.requirements || {},
-          pricing: parsedResponse.pricing || {},
-          contact_information: parsedResponse.contact_information || {},
-        };
-        
-        // Show the tender card
-        setTenderCardData(tenderData);
-        setShowTenderCard(true);
-        console.log('✅ Tender card data loaded from sessionStorage');
-      } catch (parseError) {
-        console.error('❌ Failed to parse agent response:', parseError);
-        throw new Error('Failed to parse tender data. Please try uploading again.');
+        if (agentResponseStr) {
+          try {
+            const parsedResponse = JSON.parse(agentResponseStr);
+            tenderData = {
+              metadata: parsedResponse.metadata || {},
+              tender_summary: parsedResponse.tender_summary || {},
+              administration: parsedResponse.administration || {},
+              evaluation: parsedResponse.evaluation || {},
+              requirements: parsedResponse.requirements || {},
+              pricing: parsedResponse.pricing || {},
+              contact_information: parsedResponse.contact_information || {},
+            };
+            console.log('✅ Tender card data loaded from sessionStorage (legacy)');
+          } catch (parseError) {
+            console.error('❌ Failed to parse agent response:', parseError);
+          }
+        }
       }
+
+      // If still no data, check if we can call an agent to process the document
+      if (!tenderData && selectedDocument && selectedDepartment) {
+        const selectedInstance = schemaInstances.find(instance => 
+          instance.id.toString() === selectedDocument || instance.id === selectedDocument
+        );
+
+        if (selectedInstance) {
+          // Get CDN URLs
+          const fileUrls: string[] = [];
+          if (selectedInstance.cdnUrls && Array.isArray(selectedInstance.cdnUrls) && selectedInstance.cdnUrls.length > 0) {
+            fileUrls.push(...selectedInstance.cdnUrls);
+          } else if (selectedInstance.cdnurl) {
+            fileUrls.push(selectedInstance.cdnurl);
+          }
+
+          if (fileUrls.length > 0) {
+            console.log('🔄 Calling agent to process document and extract tender data...');
+            try {
+              const agentResponse = await interactWithAgent(selectedDepartment, fileUrls);
+              
+              // Extract text field which contains the tender data JSON
+              if (agentResponse?.text) {
+                let parsedText: any;
+                try {
+                  // Try to parse the text field (it might be a JSON string)
+                  parsedText = typeof agentResponse.text === 'string' 
+                    ? JSON.parse(agentResponse.text) 
+                    : agentResponse.text;
+                  
+                  // Handle if it's an array (take first item)
+                  if (Array.isArray(parsedText) && parsedText.length > 0) {
+                    parsedText = parsedText[0];
+                  }
+                  
+                  tenderData = {
+                    timestamp: parsedText.timestamp || parsedText.created_at || parsedText.updated_at || selectedInstance.created_at || selectedInstance.updated_at || undefined,
+                    created_at: parsedText.created_at || selectedInstance.created_at || undefined,
+                    updated_at: parsedText.updated_at || selectedInstance.updated_at || undefined,
+                    metadata: parsedText.metadata || {},
+                    tender_summary: parsedText.tender_summary || {},
+                    administration: parsedText.administration || {},
+                    evaluation: parsedText.evaluation || {},
+                    requirements: parsedText.requirements || {},
+                    pricing: parsedText.pricing || {},
+                    contact_information: parsedText.contact_information || {},
+                  };
+                  
+                  // Store in sessionStorage for future use
+                  if (selectedInstance.id) {
+                    sessionStorage.setItem(`tender_data_${selectedInstance.id}`, JSON.stringify(tenderData));
+                  }
+                  
+                  console.log('✅ Tender data extracted from agent response');
+                } catch (parseError) {
+                  console.error('❌ Failed to parse agent response text:', parseError);
+                }
+              }
+            } catch (agentError) {
+              console.error('❌ Error calling agent:', agentError);
+            }
+          }
+        }
+      }
+
+      // If we still don't have tender data, show error
+      if (!tenderData || (!tenderData.metadata && !tenderData.tender_summary)) {
+        throw new Error('No tender data found. The selected document may not have been processed yet. Please try selecting a different document or upload a new one.');
+      }
+
+      // Show the tender card
+      setTenderCardData(tenderData);
+      setShowTenderCard(true);
+      console.log('✅ Tender card data loaded and displayed');
     } catch (error) {
       console.error('Error loading tender data:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to load tender data');
@@ -1846,14 +1999,235 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
               )}
             </div>
 
-            {/* Tender Card - Below submit button, on the left, smaller size */}
+            {/* Selected Tender Section - Below submit button */}
             {showTenderCard && tenderCardData && (
-              <div className="mt-8 flex justify-start">
-                <div className="w-96 scale-75 origin-top-left">
+              <div className="mt-12">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Selected Tender</h2>
+                  <p className="text-sm text-gray-600">
+                    Tender selected for evaluation framework
+                  </p>
+                </div>
+                <div className="flex justify-start">
                   <TenderCard tenderData={tenderCardData} onClick={handleCardClick} />
                 </div>
               </div>
             )}
+
+            {/* Agent Processing Loader Overlay - Shows when card is clicked */}
+            {isSubmitting && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Agent is Analysing the tender
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        The agent is extracting and analyzing your document. This may take a few moments...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Available Tenders Section - Below selected tender */}
+            {allTenderCardsData.length > 0 && (() => {
+              // Filter logic
+              const getStatusFromCard = (cardInfo: { instanceId: string | number; tenderData: any; filename: string }): string => {
+                const status = cardInfo.tenderData?.status || 
+                              cardInfo.tenderData?.metadata?.status || 
+                              cardInfo.tenderData?.administration?.status || 
+                              '';
+                if (!status) return 'unknown';
+                return status.toLowerCase().trim();
+              };
+
+              const getTimestampFromCard = (cardInfo: { instanceId: string | number; tenderData: any; filename: string }): Date | null => {
+                const timestamp = cardInfo.tenderData?.timestamp || 
+                                 cardInfo.tenderData?.created_at || 
+                                 cardInfo.tenderData?.updated_at || 
+                                 null;
+                if (!timestamp) return null;
+                try {
+                  return new Date(timestamp);
+                } catch {
+                  return null;
+                }
+              };
+
+              const isWithinTimeRange = (date: Date | null, range: string): boolean => {
+                if (!date) return false;
+                const now = new Date();
+                const diffTime = now.getTime() - date.getTime();
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+                switch (range) {
+                  case 'today':
+                    return diffDays < 1;
+                  case 'week':
+                    return diffDays < 7;
+                  case 'month':
+                    return diffDays < 30;
+                  case 'year':
+                    return diffDays < 365;
+                  default:
+                    return true;
+                }
+              };
+
+              const filteredCards = allTenderCardsData.filter((cardInfo) => {
+                // Status filter
+                if (statusFilter !== 'all') {
+                  const cardStatus = getStatusFromCard(cardInfo);
+                  const filterStatus = statusFilter.toLowerCase();
+                  // Check if status matches (exact match or contains)
+                  if (cardStatus !== filterStatus && !cardStatus.includes(filterStatus) && !filterStatus.includes(cardStatus)) {
+                    return false;
+                  }
+                }
+
+                // Timestamp filter
+                if (timestampFilter !== 'all') {
+                  const cardTimestamp = getTimestampFromCard(cardInfo);
+                  if (!isWithinTimeRange(cardTimestamp, timestampFilter)) {
+                    return false;
+                  }
+                }
+
+                return true;
+              });
+
+              // Get unique statuses from all cards
+              const uniqueStatuses = Array.from(new Set(
+                allTenderCardsData.map(card => {
+                  const status = getStatusFromCard(card);
+                  return status || 'unknown';
+                })
+              )).filter(s => s && s !== 'unknown');
+
+              return (
+                <div className={`mt-12 ${showTenderCard && tenderCardData ? '' : 'mt-12'}`}>
+                  <div className="flex flex-col lg:flex-row gap-6 mb-6">
+                    <div className="flex-1">
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Available Tenders</h2>
+                      {/* <p className="text-sm text-gray-600">
+                        Showing {filteredCards.length} of {allTenderCardsData.length} tender{allTenderCardsData.length !== 1 ? 's' : ''} 
+                      </p> */}
+                    </div>
+                    
+                    {/* Filter Panel - Right Side - All in One Line */}
+                    <div className="lg:w-auto">
+                      <div className="bg-white rounded-xl shadow-md border border-gray-200 p-4">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          {/* Filter Header */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Filter className="w-4 h-4 text-gray-600" />
+                            <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap">Filters</h3>
+                          </div>
+
+                          {/* Status Filter */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                              Status:
+                            </label>
+                            <select
+                              value={statusFilter}
+                              onChange={(e) => setStatusFilter(e.target.value)}
+                              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent bg-white min-w-[140px]"
+                            >
+                              <option value="all">All Statuses</option>
+                              {uniqueStatuses.map((status) => (
+                                <option key={status} value={status}>
+                                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Timestamp Filter */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                              Time Period:
+                            </label>
+                            <select
+                              value={timestampFilter}
+                              onChange={(e) => setTimestampFilter(e.target.value)}
+                              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent bg-white min-w-[140px]"
+                            >
+                              <option value="all">All Time</option>
+                              <option value="today">Today</option>
+                              <option value="week">Last 7 Days</option>
+                              <option value="month">Last 30 Days</option>
+                              <option value="year">Last Year</option>
+                            </select>
+                          </div>
+
+                          {/* Clear Button */}
+                          {(statusFilter !== 'all' || timestampFilter !== 'all') && (
+                            <button
+                              onClick={() => {
+                                setStatusFilter('all');
+                                setTimestampFilter('all');
+                              }}
+                              className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1 flex-shrink-0 ml-auto"
+                            >
+                              <X className="w-3 h-3" />
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filtered Cards Grid */}
+                  {filteredCards.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                      {filteredCards.map((cardInfo) => {
+                        const tenderName = cardInfo.tenderData?.tender_summary?.project_title || 
+                                         cardInfo.tenderData?.metadata?.document_title || 
+                                         getFileNameWithoutExtension(cardInfo.filename);
+                        return (
+                          <div key={cardInfo.instanceId} className="transform transition-all duration-200 hover:scale-105 h-full">
+                            <TenderCard 
+                              tenderData={cardInfo.tenderData} 
+                              onClick={() => {
+                                // When a card is clicked, select that document and department if available
+                                const instance = schemaInstances.find(inst => inst.id === cardInfo.instanceId);
+                                if (instance) {
+                                  setSelectedDocument(instance.id.toString());
+                                  // Try to extract department from tender data if available
+                                  if (cardInfo.tenderData?.metadata?.issuer) {
+                                    const issuer = cardInfo.tenderData.metadata.issuer;
+                                    const matchingDept = RAK_DEPARTMENTS.find(dept => 
+                                      dept.name.toLowerCase().includes(issuer.toLowerCase()) ||
+                                      issuer.toLowerCase().includes(dept.name.toLowerCase())
+                                    );
+                                    if (matchingDept) {
+                                      setSelectedDepartment(matchingDept.name);
+                                      setIsDepartmentSelected(true);
+                                    }
+                                  }
+                                }
+                              }} 
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+                      <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium">No tenders match the selected filters</p>
+                      <p className="text-sm text-gray-500 mt-2">Try adjusting your filter criteria</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Additional Info */}
             <div className="mt-8 text-center">
