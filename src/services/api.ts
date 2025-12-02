@@ -1746,6 +1746,85 @@ export const fetchSchemaInstancesByDepartment = async (
   }
 };
 
+// Vendor Intake Schema API
+const VENDOR_INTAKE_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+const VENDOR_INTAKE_SCHEMA_ID = '692eadfffd9c66658f22d73e';
+
+export interface VendorIntakeInstanceItem {
+  id?: string | number;
+  department?: string;
+  tenderName?: string;
+  tender?: string;
+  [key: string]: any;
+}
+
+export interface VendorIntakeInstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: VendorIntakeInstanceItem[];
+  content?: VendorIntakeInstanceItem[];
+  [key: string]: any;
+}
+
+/**
+ * Fetch vendor intake schema instances for department and tender filters
+ * @param size - Number of instances to fetch (default: 100)
+ * @returns Promise with list of vendor intake instances
+ */
+export const fetchVendorIntakeInstances = async (
+  size: number = 100
+): Promise<VendorIntakeInstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+  };
+
+  console.log('📥 Fetching vendor intake instances:', {
+    url: `${VENDOR_INTAKE_SCHEMA_API_BASE_URL}/schemas/${VENDOR_INTAKE_SCHEMA_ID}/instances/list?size=${size}`,
+  });
+
+  try {
+    const response = await axios.post<VendorIntakeInstanceListResponse>(
+      `${VENDOR_INTAKE_SCHEMA_API_BASE_URL}/schemas/${VENDOR_INTAKE_SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Vendor intake instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor intake instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch vendor intake instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 // Justification Composer Schema API
 const JUSTIFICATION_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
 const JUSTIFICATION_SCHEMA_ID = '69257e9eed36767f199eb4bf';
