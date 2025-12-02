@@ -2981,4 +2981,415 @@ export const deleteEntityInstances = async (
   }
 };
 
+// Evaluation Matrix Schema API - Using the specific base URL from user's curl
+const EVALUATION_MATRIX_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0'; // List and POST use 'igs' (with 's')
+const EVALUATION_MATRIX_SCHEMA_ID = '692eadfffd9c66658f22d73e';
+
+export interface EvaluationMatrixDepartment {
+  department: string;
+}
+
+export interface EvaluationMatrixTender {
+  tenderName: string;
+  tenderId: string;
+  department: string;
+}
+
+export interface EvaluationMatrixData {
+  agent_output_matrix_structure?: {
+    agentresponse1?: any;
+    agentresponse2?: any;
+  };
+  tenderName?: string;
+  tenderId?: string;
+  department?: string;
+  after_addendum?: boolean;
+  timestamp?: string;
+  [key: string]: any;
+}
+
+/**
+ * Fetch distinct departments from evaluation matrix schema
+ * @returns Promise with list of distinct departments
+ */
+export const fetchEvaluationMatrixDepartments = async (): Promise<EvaluationMatrixDepartment[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {},
+    distinctColumns: ['department'],
+  };
+
+  console.log('📥 Fetching distinct departments from evaluation matrix schema:', {
+    url: `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation matrix departments response:', response.data);
+
+    // Handle different response formats
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    }
+
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix departments fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch departments: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch tenders filtered by department from evaluation matrix schema
+ * @param department - Department name to filter by
+ * @returns Promise with list of tenders for the department
+ */
+export const fetchEvaluationMatrixTenders = async (
+  department: string
+): Promise<EvaluationMatrixTender[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+    },
+    projections: ['tenderId', 'department', 'tenderName'],
+  };
+
+  console.log('📥 Fetching tenders for department:', {
+    url: `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+    department,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation matrix tenders response:', response.data);
+
+    // Handle different response formats and extract unique tenders
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Extract unique tenders by tenderId
+    const tenderMap = new Map<string, EvaluationMatrixTender>();
+    rawData.forEach((item: any) => {
+      const tenderId = item.tenderId || item.tender_id || item.tenderId;
+      const tenderName = item.tenderName || item.tender_name || item.tenderName || '';
+      const dept = item.department || department;
+
+      if (tenderId && !tenderMap.has(tenderId)) {
+        tenderMap.set(tenderId, {
+          tenderId,
+          tenderName,
+          department: dept,
+        });
+      }
+    });
+
+    return Array.from(tenderMap.values());
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix tenders fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+      });
+      throw new Error(`Failed to fetch tenders: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch evaluation matrix data filtered by department and tenderId
+ * @param department - Department name to filter by
+ * @param tenderId - Tender ID to filter by
+ * @returns Promise with evaluation matrix data
+ */
+export const fetchEvaluationMatrixData = async (
+  department: string,
+  tenderId: string
+): Promise<EvaluationMatrixData | null> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+      tenderId: tenderId,
+    },
+  };
+
+  console.log('📥 Fetching evaluation matrix data:', {
+    url: `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+    department,
+    tenderId,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation matrix data response:', response.data);
+
+    // Handle different response formats
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Return the first matching record (or most recent if multiple)
+    if (rawData.length > 0) {
+      // Sort by timestamp if available, most recent first
+      if (rawData[0].timestamp) {
+        rawData.sort((a, b) => {
+          const timeA = new Date(a.timestamp || 0).getTime();
+          const timeB = new Date(b.timestamp || 0).getTime();
+          return timeB - timeA;
+        });
+      }
+      return rawData[0] as EvaluationMatrixData;
+    }
+
+    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix data fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+        tenderId,
+      });
+      throw new Error(`Failed to fetch evaluation data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Check if evaluation matrix data exists for a tenderId
+ * @param tenderId - Tender ID to check
+ * @returns Promise with boolean indicating if data exists
+ */
+export const checkEvaluationMatrixDataExists = async (
+  tenderId: string
+): Promise<boolean> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      tenderId: tenderId,
+    },
+  };
+
+  console.log('🔍 Checking if evaluation matrix data exists:', {
+    url: `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+    tenderId,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${EVALUATION_MATRIX_SCHEMA_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    // Handle different response formats
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    const exists = rawData.length > 0;
+    console.log(`✅ Evaluation matrix data exists check: ${exists} for tenderId ${tenderId}`);
+    return exists;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix data exists check error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        tenderId,
+      });
+      // If error, assume it doesn't exist and proceed with POST
+      return false;
+    }
+    return false;
+  }
+};
+
+/**
+ * Create evaluation matrix data (POST)
+ * @param payload - Evaluation matrix data to create
+ * @returns Promise with created instance
+ */
+export const createEvaluationMatrixData = async (
+  payload: EvaluationMatrixData
+): Promise<any> => {
+  const token = getAuthToken();
+
+  // POST uses 'igs' (with 's') as per user's curl example
+  const POST_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+  const requestBody = {
+    data: [payload],
+  };
+
+  console.log('📤 Creating evaluation matrix data (POST):', {
+    url: `${POST_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances`,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+    payload,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${POST_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances`,
+      requestBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation matrix data created (POST):', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix data creation error (POST):', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to create evaluation matrix data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Update evaluation matrix data (PUT)
+ * @param payload - Evaluation matrix data to update (must include tenderId for matching)
+ * @returns Promise with updated instance
+ */
+export const updateEvaluationMatrixData = async (
+  payload: EvaluationMatrixData
+): Promise<any> => {
+  const token = getAuthToken();
+
+  // PUT uses 'ig' (without 's') as per user's curl example
+  const PUT_API_BASE_URL = 'https://ig.gov-cloud.ai/pi-entity-instances-service/v2.0';
+  const requestBody = {
+    primarykeyEnable: 'true',
+    bulkUpdate: [payload],
+    showPrimaryDBResponse: true,
+  };
+
+  console.log('📝 Updating evaluation matrix data (PUT):', {
+    url: `${PUT_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances`,
+    schemaId: EVALUATION_MATRIX_SCHEMA_ID,
+    payload,
+    requestBody,
+  });
+
+  try {
+    const response = await axios.put<any>(
+      `${PUT_API_BASE_URL}/schemas/${EVALUATION_MATRIX_SCHEMA_ID}/instances`,
+      requestBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Evaluation matrix data updated (PUT):', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Evaluation matrix data update error (PUT):', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to update evaluation matrix data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 

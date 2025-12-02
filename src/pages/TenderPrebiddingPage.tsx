@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
-import { FileText, ListChecks, Filter } from 'lucide-react';
+import { FileText, ListChecks, Filter, Bot, Sparkles, Brain, Loader2 } from 'lucide-react';
 import {
   fetchEntityInstancesWithReferences,
   uploadFileToCDN,
@@ -8,6 +9,9 @@ import {
   callPrebiddingDecisionAgent,
   postEntityInstances,
   updateEntityInstance,
+  checkEvaluationMatrixDataExists,
+  createEvaluationMatrixData,
+  updateEvaluationMatrixData,
   type EntityInstance,
   type FileUploadResponse,
 } from '../services/api';
@@ -61,6 +65,7 @@ interface SavedPrebiddingData {
 }
 
 export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) {
+  const navigate = useNavigate();
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedTenderId, setSelectedTenderId] = useState('all');
   const [activeTab, setActiveTab] = useState<PrebiddingTab>('ADDENDUM');
@@ -78,6 +83,9 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
   const [savedPrebiddingData, setSavedPrebiddingData] = useState<SavedPrebiddingData | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string>('');
   const [availableVendors, setAvailableVendors] = useState<string[]>([]);
+  const [isProcessingAgents, setIsProcessingAgents] = useState(false);
+  const [agentProcessingStep, setAgentProcessingStep] = useState<string>('');
+  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const PREBIDDING_SCHEMA_ID = '692e8c47fd9c66658f22d73a';
@@ -473,6 +481,10 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
 
   const handlePersistSelections = async () => {
     try {
+      // Show dramatic loader immediately
+      setIsProcessingAgents(true);
+      setAgentProcessingStep('🚀 Preparing comprehensive evaluation package for AI processing...');
+      
       const selectedAddendums: any[] = [];
       recommendationGroups.forEach((group) => {
         group.items.forEach((text, index) => {
@@ -519,6 +531,8 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
       // tenderId is the instance identifier (there's no separate instanceId)
       const hasExistingData = savedPrebiddingData && savedPrebiddingData.tenderId === selectedTenderId;
       
+      setAgentProcessingStep('📊 Compiling comprehensive data package: addendums, vendor questionnaires, and tender documents...');
+      
       console.log('🔍 Checking for existing data:', {
         hasSavedData: !!savedPrebiddingData,
         savedTenderId: savedPrebiddingData?.tenderId,
@@ -533,11 +547,9 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
         [questionnaireCompanyName]: vendorAnswers,
       };
 
-      // Merge addendums - preserve existing addendums (they should remain the same)
-      // Only use current selection if there are no existing addendums
-      const mergedAddendums = hasExistingData && savedPrebiddingData?.addendums?.length > 0
-        ? savedPrebiddingData.addendums
-        : (selectedAddendums.length > 0 ? selectedAddendums : []);
+      // Use currently selected addendums (user's current checkbox selections)
+      // This ensures newly ticked/unticked addendums are saved
+      const mergedAddendums = selectedAddendums.length > 0 ? selectedAddendums : [];
 
       const payload: any = {
         department: selectedDepartment !== 'all' ? selectedDepartment : (savedPrebiddingData?.department || ''),
@@ -578,6 +590,8 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
 
       // If we have existing data, use PUT to update
       // tenderId in the payload will be used as the identifier to match the instance (row)
+      setAgentProcessingStep('Saving prebidding selections and vendor questionnaires to database...');
+      
       if (shouldUsePUT) {
         console.log('📤 Updating existing prebidding data with PUT (tenderId is the identifier):', {
           hasExistingData,
@@ -597,9 +611,17 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
         await postEntityInstances('692ec827fd9c66658f22d744', payload);
       }
 
+      // Update progress: First API call completed (33%)
+      setProgress(33);
+
+      // Update loader step before calling agents
+      setAgentProcessingStep('🔬 Initializing advanced AI evaluation engines and quantum processing units...');
+
       // Call both Prebidding Decision Agents in parallel with combined payload and tender CDN URL (if available)
       const tenderCdnUrl = getTenderCdnUrlForSelected();
       const fileUrls = tenderCdnUrl ? [tenderCdnUrl] : [];
+
+      setAgentProcessingStep('🚀 Deploying dual AI agents for comprehensive multi-dimensional evaluation...');
 
       const agentCalls = [
         callPrebiddingDecisionAgent(agentAddedPayload, fileUrls), // primary agent (default id)
@@ -610,7 +632,12 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
         ),
       ];
 
+      setAgentProcessingStep('⚡ AI AGENTS ARE CONDUCTING DEEP EVALUATION OF TENDER DOCUMENTS, ADDENDUMS, AND QUESTIONNAIRES WITH QUANTUM-LEVEL PRECISION...');
+
       const agentResults = await Promise.allSettled(agentCalls);
+      
+      // Update progress: Agent calls completed (66%)
+      setProgress(66);
       
       // Extract successful agent responses (keep both raw and parsed)
       const agentResponses: any[] = [];
@@ -709,21 +736,64 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
             timestamp: new Date().toISOString(),
           };
 
-          console.log('📤 Saving agent responses to matrix structure schema:', matrixPayload);
-          await postEntityInstances('692eadfffd9c66658f22d73e', matrixPayload);
-          console.log('✅ Agent responses saved to schema successfully');
+          setAgentProcessingStep('💾 Saving evaluation results and agent insights to database...');
+          
+          // Check if data already exists for this tenderId
+          const dataExists = await checkEvaluationMatrixDataExists(selectedTenderId);
+          
+          if (dataExists) {
+            console.log('📝 Updating existing evaluation matrix data with PUT:', {
+              tenderId: selectedTenderId,
+              payload: matrixPayload,
+            });
+            await updateEvaluationMatrixData(matrixPayload);
+            console.log('✅ Agent responses updated in schema successfully');
+          } else {
+            console.log('📤 Creating new evaluation matrix data with POST:', {
+              tenderId: selectedTenderId,
+              payload: matrixPayload,
+            });
+            await createEvaluationMatrixData(matrixPayload);
+            console.log('✅ Agent responses saved to schema successfully');
+          }
+          
+          // Update progress: Third API call completed (100%)
+          setProgress(100);
         } catch (schemaError: any) {
           console.error('❌ Failed to save agent responses to schema:', schemaError);
           // Don't block the flow if schema save fails
+          // Still set progress to 100% even if save failed
+          setProgress(100);
         }
+      } else {
+        // If matrix save was skipped, still mark as complete
+        setProgress(100);
       }
 
-      alert('Prebidding selections saved to schema.');
+      setAgentProcessingStep('✨ Finalizing evaluation matrices and preparing comprehensive assessment results...');
       
-      // Redirect to evaluation-gov-tender page after all agents respond
-      onNavigate('evaluation-gov-tender');
+      // Small delay to show final step, then redirect
+      setTimeout(() => {
+        setIsProcessingAgents(false);
+        setProgress(0); // Reset progress for next time
+        // Redirect to evaluation-gov-tender page after all agents respond (no alert)
+        // Pass department and tenderId as URL parameters for auto-fill
+        // Use React Router navigate for client-side navigation (no page refresh)
+        const params = new URLSearchParams();
+        if (selectedDepartment && selectedDepartment !== 'all') {
+          params.set('department', selectedDepartment);
+        }
+        if (selectedTenderId && selectedTenderId !== 'all') {
+          params.set('tenderId', selectedTenderId);
+        }
+        const queryString = params.toString();
+        navigate(`/evaluation-gov-tender${queryString ? `?${queryString}` : ''}`);
+      }, 1000);
     } catch (error: any) {
       console.error('❌ Failed to persist prebidding selections:', error);
+      setIsProcessingAgents(false);
+      setProgress(0); // Reset progress on error
+      // Show error but don't block - user can try again
       alert(error?.message || 'Failed to save selections to schema.');
     }
   };
@@ -948,6 +1018,102 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
   return (
     <>
       <Sidebar currentPage="tender-prebidding" onNavigate={onNavigate} />
+      
+      {/* Professional Agent Processing Loader */}
+      {isProcessingAgents && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-sky-600 to-blue-600 px-6 py-5 border-b border-sky-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">PREBIDDING EVALUATION AGENT</h3>
+                  <p className="text-xs text-sky-100 mt-0.5">Orchestrating Comprehensive Analysis</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Description */}
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Sit tight—our AI agents are conducting deep evaluation of tender documents, processing all addendums, 
+                and analyzing vendor questionnaires. This comprehensive analysis may take a few moments.
+              </p>
+
+              {/* Feature Boxes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-sky-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">DOCUMENT ANALYSIS</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600">Analyzing tender documents</p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <ListChecks className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">ADDENDUM REVIEW</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600">Processing all addendums</p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Brain className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">QUESTIONNAIRE EVAL</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-600">Evaluating vendor responses</p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="space-y-2">
+                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all duration-500 ease-out" 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>COMPREHENSIVE EVALUATION IN PROGRESS</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sky-600">{progress}%</span>
+                    <Loader2 className="w-4 h-4 text-sky-600 animate-spin" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Step */}
+              {agentProcessingStep && (
+                <div className="bg-sky-50 rounded-lg p-4 border border-sky-200">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="w-5 h-5 text-sky-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-slate-700 font-medium leading-relaxed">{agentProcessingStep}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="app-shell min-h-screen bg-gray-50 pb-24">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
