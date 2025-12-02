@@ -5,7 +5,7 @@ import { TenderCard } from '../components/TenderCard';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import * as echarts from 'echarts';
 import { RAK_DEPARTMENTS } from '../data/departments';
-import { interactWithAgent, fetchSchemaInstances, type SchemaInstanceListItem } from '../services/api';
+import { interactWithAgent, fetchSchemaInstances, fetchDistinctDepartments, fetchSchemaInstancesByDepartment, saveTenderOverviewSummary, fetchTenderOverviewSummaryByTender, type SchemaInstanceListItem } from '../services/api';
 import { TrendingUp, FileText, Award, Shield, Clock, CheckCircle2, AlertCircle, FileSearch, AlertTriangle, Target, Lightbulb, FolderTree, BookOpen, List, Layers, Search, Filter, X, Loader2 } from 'lucide-react';
 import '../styles/TenderEvaluationTable.css';
 
@@ -1263,10 +1263,18 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const [documentSearch, setDocumentSearch] = useState<string>('');
   const [showDepartmentDropdown, setShowDepartmentDropdown] = useState<boolean>(false);
   const [showDocumentDropdown, setShowDocumentDropdown] = useState<boolean>(false);
+  const [apiDepartments, setApiDepartments] = useState<string[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [departmentsError, setDepartmentsError] = useState<string | null>(null);
   const departmentDropdownRef = useRef<HTMLDivElement>(null);
   const documentDropdownRef = useRef<HTMLDivElement>(null);
+  // Ref to prevent duplicate API calls (React StrictMode in development)
+  const tenderCardsLoadedRef = useRef<boolean>(false);
+  // Ref to track if we've loaded data from summary schema (skip agent calls)
+  const hasPreloadedSummaryRef = useRef<boolean>(false);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // form submit / initial load
+  const [isAgentProcessing, setIsAgentProcessing] = useState(false); // long-running agent analysis
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [agentData, setAgentData] = useState<AgentTenderOverview | null>(null);
   const [tableAgentData, setTableAgentData] = useState<any>(null);
@@ -1403,36 +1411,95 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     };
   };
 
-  // Fetch schema instances on component mount
-  useEffect(() => {
-    const loadSchemaInstances = async () => {
-      setIsLoadingDocuments(true);
-      setDocumentsError(null);
-      try {
-        const instances = await fetchSchemaInstances(10);
-        setSchemaInstances(instances);
-        console.log('✅ Loaded schema instances:', instances);
-        
-        // Extract tender data for all instances
-        const tenderCardsData = instances.map(instance => {
-          const tenderData = extractTenderDataFromInstance(instance);
-          return {
-            instanceId: instance.id,
-            tenderData: tenderData,
-            filename: instance.filename,
-          };
-        });
-        setAllTenderCardsData(tenderCardsData);
-        console.log('✅ Loaded tender cards data for all instances:', tenderCardsData);
-      } catch (error) {
-        console.error('❌ Error loading schema instances:', error);
-        setDocumentsError(error instanceof Error ? error.message : 'Failed to load documents');
-      } finally {
-        setIsLoadingDocuments(false);
-      }
-    };
+  // Load distinct departments from API when dropdown is opened
+  const loadDepartments = async () => {
+    if (apiDepartments.length > 0) {
+      // Already loaded, no need to reload
+      return;
+    }
 
-    loadSchemaInstances();
+    setIsLoadingDepartments(true);
+    setDepartmentsError(null);
+    try {
+      const instances = await fetchDistinctDepartments(100);
+      // Extract unique department names from instances
+      const departments = new Set<string>();
+      instances.forEach(instance => {
+        if (instance.department && typeof instance.department === 'string') {
+          departments.add(instance.department);
+        }
+      });
+      const uniqueDepartments = Array.from(departments).sort();
+      setApiDepartments(uniqueDepartments);
+      console.log('✅ Loaded distinct departments:', uniqueDepartments);
+    } catch (error) {
+      console.error('❌ Error loading departments:', error);
+      setDepartmentsError(error instanceof Error ? error.message : 'Failed to load departments');
+    } finally {
+      setIsLoadingDepartments(false);
+    }
+  };
+
+  // Load all tender cards on mount (for displaying Available Tenders section)
+  const loadAllTenderCards = async () => {
+    // Prevent duplicate calls in React StrictMode
+    if (tenderCardsLoadedRef.current) {
+      console.log('⏭️ Skipping duplicate tender cards load (already loaded)');
+      return;
+    }
+    
+    tenderCardsLoadedRef.current = true;
+    try {
+      const instances = await fetchSchemaInstances(100);
+      console.log('✅ Loaded all schema instances for tender cards:', instances);
+      
+      // Extract tender data for all instances
+      const tenderCardsData = instances.map(instance => {
+        const tenderData = extractTenderDataFromInstance(instance);
+        return {
+          instanceId: instance.id,
+          tenderData: tenderData,
+          filename: instance.filename,
+        };
+      });
+      setAllTenderCardsData(tenderCardsData);
+      console.log('✅ Loaded all tender cards data:', tenderCardsData);
+    } catch (error) {
+      console.error('❌ Error loading all tender cards:', error);
+      // Reset ref on error so it can be retried
+      tenderCardsLoadedRef.current = false;
+      // Don't show error to user for this - it's just for displaying cards
+    }
+  };
+
+  // Load documents when department is selected (for document dropdown only)
+  const loadDocumentsForDepartment = async (department: string) => {
+    if (!department) {
+      setSchemaInstances([]);
+      setSelectedDocument('');
+      return;
+    }
+
+    setIsLoadingDocuments(true);
+    setDocumentsError(null);
+    try {
+      const instances = await fetchSchemaInstancesByDepartment(department, 100);
+      setSchemaInstances(instances);
+      console.log('✅ Loaded documents for department:', department, instances);
+      
+      // Clear selected document when department changes
+      setSelectedDocument('');
+    } catch (error) {
+      console.error('❌ Error loading documents for department:', error);
+      setDocumentsError(error instanceof Error ? error.message : 'Failed to load documents');
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
+
+  // Load all tender cards on mount
+  useEffect(() => {
+    loadAllTenderCards();
   }, []);
 
   // Aggressively remove Jotform agent on this page
@@ -1457,6 +1524,41 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     };
   }, []);
 
+  // Log and store tender info when both department and document are selected
+  useEffect(() => {
+    if (selectedDepartment && selectedDocument && schemaInstances.length > 0) {
+      // Find the selected instance
+      const selectedInstance = schemaInstances.find(instance => 
+        instance.id.toString() === selectedDocument || instance.id === selectedDocument
+      );
+      
+      if (selectedInstance) {
+        // Extract tender data
+        const tenderData = extractTenderDataFromInstance(selectedInstance);
+        
+        // Get the id and project_title
+        const tenderId = selectedInstance.id;
+        const projectTitle = tenderData?.tender_summary?.project_title || 
+                            tenderData?.metadata?.document_title || 
+                            getFileNameWithoutExtension(selectedInstance.filename);
+        
+        // Console log the values
+        console.log('📋 Selected Tender Information:');
+        console.log('  ID:', tenderId);
+        console.log('  Project Title:', projectTitle);
+        
+        // Store in sessionStorage for persistence
+        try {
+          sessionStorage.setItem('selectedTenderId', String(tenderId));
+          sessionStorage.setItem('selectedTenderProjectTitle', projectTitle);
+          console.log('✅ Stored tender ID and project title in sessionStorage');
+        } catch (error) {
+          console.error('❌ Error storing tender info:', error);
+        }
+      }
+    }
+  }, [selectedDepartment, selectedDocument, schemaInstances]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1477,12 +1579,16 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
   const hasDocuments = schemaInstances.length > 0;
   const isSubmitDisabled = !selectedDepartment || (hasDocuments && !selectedDocument) || isSubmitting;
 
-  // Filter departments based on search input
+  // Filter departments based on search input (use API departments if available, fallback to RAK_DEPARTMENTS)
+  const availableDepartments = apiDepartments.length > 0 
+    ? apiDepartments.map(dept => ({ id: dept, name: dept }))
+    : RAK_DEPARTMENTS;
+  
   const filteredDepartments = departmentSearch.trim()
-    ? RAK_DEPARTMENTS.filter(dept =>
+    ? availableDepartments.filter(dept =>
         dept.name.toLowerCase().includes(departmentSearch.toLowerCase().trim())
       )
-    : RAK_DEPARTMENTS;
+    : availableDepartments;
 
   // Filter documents based on search input
   const filteredDocuments = documentSearch.trim() && hasDocuments
@@ -1496,15 +1602,57 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
     setSelectedDepartment(departmentName);
     setDepartmentSearch('');
     setShowDepartmentDropdown(false);
+    // Load documents for the selected department
+    loadDocumentsForDepartment(departmentName);
   };
 
   const handleDocumentSelect = (documentId: string) => {
     setSelectedDocument(documentId);
     setDocumentSearch('');
     setShowDocumentDropdown(false);
+    
+    // When both department and document are selected, log and store the tender info
+    if (selectedDepartment && documentId) {
+      // Find the selected instance
+      const selectedInstance = schemaInstances.find(instance => 
+        instance.id.toString() === documentId || instance.id === documentId
+      );
+      
+      if (selectedInstance) {
+        // Extract tender data
+        const tenderData = extractTenderDataFromInstance(selectedInstance);
+        
+        // Get the id and project_title
+        const tenderId = selectedInstance.id;
+        const projectTitle = tenderData?.tender_summary?.project_title || 
+                            tenderData?.metadata?.document_title || 
+                            getFileNameWithoutExtension(selectedInstance.filename);
+        
+        // Console log the values
+        console.log('📋 Selected Tender Information:');
+        console.log('  ID:', tenderId);
+        console.log('  Project Title:', projectTitle);
+        
+        // Store in sessionStorage for persistence
+        try {
+          sessionStorage.setItem('selectedTenderId', String(tenderId));
+          sessionStorage.setItem('selectedTenderProjectTitle', projectTitle);
+          console.log('✅ Stored tender ID and project title in sessionStorage');
+        } catch (error) {
+          console.error('❌ Error storing tender info:', error);
+        }
+      } else {
+        console.warn('⚠️ Selected instance not found in schemaInstances');
+      }
+    }
   };
 
-  const handleDepartmentSearch = () => {
+  const handleDepartmentSearch = async () => {
+    // Load departments if not already loaded
+    if (apiDepartments.length === 0) {
+      await loadDepartments();
+    }
+
     if (!departmentSearch.trim()) {
       setShowDepartmentDropdown(true);
       return;
@@ -1551,7 +1699,13 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
       return;
     }
 
-    setIsSubmitting(true);
+     // If we've already loaded data from the summary schema, skip agent calls
+    if (hasPreloadedSummaryRef.current) {
+      console.log('ℹ️ Skipping agent calls because tender overview summary is already loaded from schema');
+      return;
+    }
+
+    setIsAgentProcessing(true);
     setSubmitError(null);
 
     try {
@@ -1638,7 +1792,48 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
         console.warn('⚠️ Could not parse document classification agent response');
         setDocumentClassificationData(null);
       }
-      
+
+      // Build a single combined JSON object with all agent outputs
+      const combinedAgentResult = {
+        meta: {
+          selectedDepartment,
+          selectedDocument,
+          fileUrls,
+        },
+        overviewAgent: parsedData,                 // from first agent (TenderExtractionAgent_v1)
+        tableAgent: parsedTableData,              // from second agent (TenderExtractionTableAgent_v1)
+        gapAnalysisAgent: parsedRecommendationsData, // from third agent (TenderIntakeAndGapAnalysisAgent_v1)
+        documentClassificationAgent: parsedDocumentClassificationData, // from fourth agent (TenderDocumentClassificationAgent_v1)
+      };
+
+      // Console the combined JSON so it can be inspected / reused
+      console.log('📦 Combined agent result JSON:', combinedAgentResult);
+
+      // Persist combined agent result to schema service
+      try {
+        // Determine tender name (project title)
+        const projectTitle =
+          combinedAgentResult.overviewAgent?.tenderOverview?.header?.title ||
+          combinedAgentResult.overviewAgent?.tenderOverview?.overview?.evaluationWeighting?.title ||
+          'Unknown Tender';
+
+        // Use selectedDocument as tenderId (schema instance id)
+        const tenderId = selectedDocument;
+
+        if (tenderId) {
+          await saveTenderOverviewSummary({
+            tenderId,
+            tenderName: projectTitle,
+            department: selectedDepartment,
+            ai_response_output: combinedAgentResult,
+          });
+        } else {
+          console.warn('⚠️ Could not determine tenderId for saving overview summary');
+        }
+      } catch (saveError) {
+        console.error('❌ Failed to save tender overview summary:', saveError);
+      }
+
       // Show the main content after successful agent processing
       setIsDepartmentSelected(true);
     } catch (error) {
@@ -1646,7 +1841,7 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to trigger agents');
       alert(`Failed to trigger agents: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      setIsSubmitting(false);
+      setIsAgentProcessing(false);
     }
   };
 
@@ -1695,6 +1890,67 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
             console.error('❌ Failed to parse agent response:', parseError);
           }
         }
+      }
+
+      // -------------------------------------------------------------------
+      // Check if this tender already has a saved overview summary in schema
+      // -------------------------------------------------------------------
+      try {
+        const tenderIdForSummary = selectedDocument;
+        let tenderNameForSummary = '';
+
+        if (tenderData?.tender_summary?.project_title) {
+          tenderNameForSummary = tenderData.tender_summary.project_title;
+        } else if (tenderData?.metadata?.document_title) {
+          tenderNameForSummary = tenderData.metadata.document_title;
+        } else if (selectedDocument && schemaInstances.length > 0) {
+          const selectedInstanceForName = schemaInstances.find(instance =>
+            instance.id.toString() === selectedDocument || instance.id === selectedDocument
+          );
+          if (selectedInstanceForName) {
+            tenderNameForSummary = getFileNameWithoutExtension(selectedInstanceForName.filename);
+          }
+        }
+
+        if (tenderIdForSummary && tenderNameForSummary) {
+          const existingSummary = await fetchTenderOverviewSummaryByTender(
+            tenderIdForSummary,
+            tenderNameForSummary
+          );
+
+          if (existingSummary && existingSummary.ai_response_output) {
+            const output = existingSummary.ai_response_output;
+
+            // Restore all agent-driven state from saved summary
+            setAgentData(output.overviewAgent || null);
+            setTableAgentData(output.tableAgent || null);
+            setRecommendationsData(output.gapAnalysisAgent || null);
+            setDocumentClassificationData(output.documentClassificationAgent || null);
+
+            // Show main overview UI immediately
+            setIsDepartmentSelected(true);
+            hasPreloadedSummaryRef.current = true;
+
+            // Show the tender card
+            setTenderCardData(
+              tenderData || {
+                metadata: { document_title: tenderNameForSummary },
+                tender_summary: { project_title: tenderNameForSummary },
+              }
+            );
+            setShowTenderCard(true);
+
+            console.log(
+              '✅ Loaded tender overview from existing summary schema. Agents will not be called.'
+            );
+            return;
+          }
+        }
+      } catch (summaryError) {
+        console.error(
+          '⚠️ Failed to fetch tender overview summary from schema. Will fall back to agent processing if needed.',
+          summaryError
+        );
       }
 
       // If still no data, check if we can call an agent to process the document
@@ -1815,17 +2071,28 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                           onChange={(e) => {
                             setDepartmentSearch(e.target.value);
                             setShowDepartmentDropdown(true);
+                            if (apiDepartments.length === 0) {
+                              loadDepartments();
+                            }
                           }}
-                          onFocus={() => setShowDepartmentDropdown(true)}
+                          onFocus={() => {
+                            setShowDepartmentDropdown(true);
+                            loadDepartments();
+                          }}
                           onKeyPress={(e) => {
                             if (e.key === 'Enter') {
                               handleDepartmentSearch();
                             }
                           }}
-                          placeholder="Type to search department..."
-                          className="w-full px-4 py-4 pl-12 text-base border-2 border-sky-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all duration-200 bg-white text-gray-900 hover:border-sky-400 shadow-sm"
+                          placeholder={isLoadingDepartments ? 'Loading departments...' : 'Type to search department...'}
+                          disabled={isLoadingDepartments}
+                          className={`w-full px-4 py-4 pl-12 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white ${isLoadingDepartments ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed' : 'border-sky-300 text-gray-900 focus:ring-2 focus:ring-sky-400 focus:border-transparent hover:border-sky-400 shadow-sm'}`}
                         />
-                        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        {isLoadingDepartments ? (
+                          <Loader2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
+                        ) : (
+                          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        )}
                         
                         {/* Dropdown List */}
                         {showDepartmentDropdown && filteredDepartments.length > 0 && (
@@ -1844,9 +2111,18 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       </div>
                       <button
                         onClick={handleDepartmentSearch}
-                        className="px-6 py-4 bg-gradient-to-r from-sky-400 to-blue-400 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2"
+                        disabled={isLoadingDepartments}
+                        className={`px-6 py-4 font-semibold rounded-xl transition-all duration-200 transform flex items-center gap-2 ${
+                          isLoadingDepartments
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-sky-400 to-blue-400 text-white hover:shadow-lg hover:scale-105 active:scale-95'
+                        }`}
                       >
-                        <Search className="w-5 h-5" />
+                        {isLoadingDepartments ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Search className="w-5 h-5" />
+                        )}
                         Search
                       </button>
                     </div>
@@ -1883,8 +2159,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                               handleDocumentSearch();
                             }
                           }}
-                          placeholder={isLoadingDocuments ? 'Loading documents...' : hasDocuments ? 'Type to search document...' : 'No documents available'}
-                          disabled={!hasDocuments || isLoadingDocuments}
+                          placeholder={!selectedDepartment ? 'Select a department first' : isLoadingDocuments ? 'Loading documents...' : hasDocuments ? 'Type to search document...' : 'No documents available'}
+                          disabled={!selectedDepartment || !hasDocuments || isLoadingDocuments}
                           className={`w-full px-4 py-4 pl-12 text-base border-2 rounded-xl focus:outline-none transition-all duration-200 bg-white ${hasDocuments && !isLoadingDocuments ? 'border-sky-300 text-gray-900 focus:ring-2 focus:ring-sky-400 focus:border-transparent hover:border-sky-400 shadow-sm' : 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'}`}
                         />
                         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1909,9 +2185,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                       </div>
                       <button
                         onClick={handleDocumentSearch}
-                        disabled={!hasDocuments || isLoadingDocuments}
+                        disabled={!selectedDepartment || !hasDocuments || isLoadingDocuments}
                         className={`px-6 py-4 font-semibold rounded-xl transition-all duration-200 transform flex items-center gap-2 ${
-                          hasDocuments && !isLoadingDocuments
+                          selectedDepartment && hasDocuments && !isLoadingDocuments
                             ? 'bg-gradient-to-r from-sky-400 to-blue-400 text-white hover:shadow-lg hover:scale-105 active:scale-95'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
@@ -1941,14 +2217,24 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
                         </p>
                       </div>
                     )}
-                    {hasDocuments && !selectedDocument && !isLoadingDocuments && (
+                    {!selectedDepartment && (
+                      <p className="mt-2 text-xs text-gray-500 text-center">
+                        Please select a department first to load documents.
+                      </p>
+                    )}
+                    {selectedDepartment && hasDocuments && !selectedDocument && !isLoadingDocuments && (
                       <p className="mt-2 text-xs text-gray-500 text-center">
                         Search and select a document to continue.
                       </p>
                     )}
-                    {!hasDocuments && !isLoadingDocuments && !documentsError && (
+                    {selectedDepartment && !hasDocuments && !isLoadingDocuments && !documentsError && (
                       <p className="mt-2 text-xs text-gray-500 text-center">
-                        No documents found. Upload files in Tender Intake to see them here.
+                        No documents found for this department. Upload files in Tender Intake to see them here.
+                      </p>
+                    )}
+                    {selectedDepartment && isLoadingDocuments && (
+                      <p className="mt-2 text-xs text-gray-500 text-center">
+                        Loading documents...
                       </p>
                     )}
                   </div>
@@ -2014,8 +2300,8 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
               </div>
             )}
 
-            {/* Agent Processing Loader Overlay - Shows when card is clicked */}
-            {isSubmitting && (
+            {/* Agent Processing Loader Overlay - Only when running multi-agent analysis */}
+            {isAgentProcessing && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4">
                   <div className="flex flex-col items-center gap-4">
