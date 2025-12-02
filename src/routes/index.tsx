@@ -15,6 +15,7 @@ import { EvaluationRecommendationPage } from '../pages/EvaluationRecommendationP
 import { CompanyDetailPage } from '../pages/CompanyDetailPage';
 import { LoginPage } from '../pages/LoginPage';
 import { AdminPanelPage } from '../pages/AdminPanelPage';
+import { VendorIntakePage } from '../pages/VendorIntakePage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
   // Helper function to create navigation handler
@@ -25,6 +26,7 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
         'intake': '/intake',
         'tender-overview': '/tender-overview',
         'tender-article': '/tender-article',
+        'vendor-intake': '/vendor-intake',
         'evaluation': '/evaluation',
         'evaluation-breakdown': '/evaluation-breakdown',
         'evaluation-recommendation': '/evaluation-recommendation',
@@ -130,6 +132,12 @@ const AdminPanelWrapper = () => {
   const navigate = useNavigate();
   const handleNavigate = createNavigateHandler(navigate);
   return <AdminPanelPage onNavigate={handleNavigate} />;
+};
+
+const VendorIntakeWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <VendorIntakePage onNavigate={handleNavigate} />;
 };
 
 export const router = createBrowserRouter([
@@ -254,6 +262,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <AdminPanelWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/vendor-intake',
+    element: (
+      <ProtectedRoute>
+        <VendorIntakeWrapper />
       </ProtectedRoute>
     ),
   },

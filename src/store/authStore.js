@@ -145,7 +145,7 @@ const useAuthStore = create(
           throw new Error('Username and password are required');
         }
 
-        // Validate credentials using adminStore function
+        // Validate credentials using adminStore function (already includes hardcoded admin)
         const user = validateUser(username, password);
 
         if (!user) {
@@ -155,7 +155,8 @@ const useAuthStore = create(
 
         console.log('✅ AuthStore: User validated:', { id: user.id, username: user.username, email: user.email });
 
-        // Extract permissions from piref_role
+        // Extract permissions from piref_role for non-super-admin users.
+        // Super admin ('admin' / 'admin@123') will bypass permission checks in hasPageAccess.
         let permissions = [];
         let pagePermissions = {};
 
@@ -195,6 +196,13 @@ const useAuthStore = create(
        */
       hasPageAccess: (pageName, accessType = 'read') => {
         const { user, pagePermissions, isAuthenticated } = get();
+
+        // Super Admin: hardcoded "admin" user has full access to all pages,
+        // regardless of permissions configuration.
+        if (user && (user.username === 'admin' || user.id === 'admin-hardcoded')) {
+          console.log('✅ Super admin access granted for page:', pageName);
+          return true;
+        }
 
         // Admin Panel is accessible to all authenticated users
         if (pageName.toLowerCase().includes('admin') || pageName.toLowerCase() === 'admin panel') {
@@ -257,6 +265,11 @@ const useAuthStore = create(
 
         if (!user) return false;
 
+        // Super Admin can access all departments
+        if (user.username === 'admin' || user.id === 'admin-hardcoded') {
+          return true;
+        }
+
         // Admin users can access all departments
         if (user.role === 'Admin' || (user.piref_role && user.piref_role[0]?.rolename === 'Admin')) {
           return true;
@@ -306,6 +319,7 @@ const useAuthStore = create(
           { pageName: 'Tender Intake', route: '/intake' },
           { pageName: 'Tender Overview', route: '/tender-overview' },
           { pageName: 'Tender Article', route: '/tender-article' },
+          { pageName: 'Vendor Intake', route: '/vendor-intake' },
           { pageName: 'Evaluation Matrix', route: '/evaluation' },
           { pageName: 'Evaluation Breakdown', route: '/evaluation-breakdown' },
           { pageName: 'Evaluation Recommendation', route: '/evaluation-recommendation' },
