@@ -332,16 +332,117 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
       ];
 
       const agentResults = await Promise.allSettled(agentCalls);
+      
+      // Extract successful agent responses (keep both raw and parsed)
+      const agentResponses: any[] = [];
+      const rawAgentResponses: any[] = [];
+      
       agentResults.forEach((result, index) => {
         const label = index === 0 ? 'primary' : 'secondary';
         if (result.status === 'fulfilled') {
           console.log(`🤖 Prebidding decision agent (${label}) response:`, result.value);
+          
+          // Store raw response for schema
+          rawAgentResponses.push(result.value);
+          
+          // Extract the actual response data - handle different response formats
+          let responseData = result.value;
+          if ((result.value as any)?.text) {
+            try {
+              responseData = typeof (result.value as any).text === 'string' 
+                ? JSON.parse((result.value as any).text) 
+                : (result.value as any).text;
+            } catch (e) {
+              // If parsing fails, try to extract JSON from text
+              const textVal = (result.value as any).text as string;
+              const jsonMatch = textVal.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                responseData = JSON.parse(jsonMatch[0]);
+              }
+            }
+          } else if ((result.value as any)?.data) {
+            responseData = (result.value as any).data;
+          }
+          agentResponses.push(responseData);
         } else {
           console.error(`❌ Failed to call ${label} Prebidding Decision Agent:`, result.reason);
         }
       });
 
+      // Store agent responses in localStorage for the evaluation page
+      if (agentResponses.length > 0) {
+        localStorage.setItem('agentResponses', JSON.stringify(agentResponses));
+        localStorage.setItem('agentResponsesTimestamp', Date.now().toString());
+      }
+
+      // Save agent responses to schema with agent_output_matrix_structure
+      if (rawAgentResponses.length > 0 && selectedDepartment !== 'all' && selectedTenderId !== 'all') {
+        try {
+          const agentOutputMatrixStructure: any = {};
+          
+          // Helper function to extract content from text field
+          const extractTextContent = (response: any): any => {
+            // If response has a text field, extract and parse it
+            if (response?.text) {
+              try {
+                // Try to parse as JSON if it's a string
+                if (typeof response.text === 'string') {
+                  return JSON.parse(response.text);
+                }
+                // If it's already an object, return it directly
+                return response.text;
+              } catch (e) {
+                // If parsing fails, try to extract JSON from text
+                const textVal = response.text as string;
+                const jsonMatch = textVal.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                  try {
+                    return JSON.parse(jsonMatch[0]);
+                  } catch (e2) {
+                    // If still fails, return the text as-is
+                    return response.text;
+                  }
+                }
+                // Return text as-is if no JSON found
+                return response.text;
+              }
+            }
+            // If no text field, return the response as-is
+            return response;
+          };
+          
+          // Add first agent response (extract from text field)
+          if (rawAgentResponses[0]) {
+            agentOutputMatrixStructure.agentresponse1 = extractTextContent(rawAgentResponses[0]);
+          }
+          
+          // Add second agent response if available (extract from text field)
+          if (rawAgentResponses[1]) {
+            agentOutputMatrixStructure.agentresponse2 = extractTextContent(rawAgentResponses[1]);
+          }
+
+          const matrixPayload = {
+            agent_output_matrix_structure: agentOutputMatrixStructure,
+            tenderName: selectedTenderName,
+            tenderId: selectedTenderId,
+            after_addendum: true,
+            department: selectedDepartment,
+            timestamp: new Date().toISOString(),
+          };
+
+          console.log('📤 Saving agent responses to matrix structure schema:', matrixPayload);
+          await postEntityInstances('692eadfffd9c66658f22d73e', matrixPayload);
+          console.log('✅ Agent responses saved to schema successfully');
+        } catch (schemaError: any) {
+          console.error('❌ Failed to save agent responses to schema:', schemaError);
+          // Don't block the flow if schema save fails
+        }
+      }
+
       alert('Prebidding selections saved to schema.');
+      
+      // Redirect to evaluation-gov-tender page after all agents respond
+      onNavigate('evaluation-gov-tender');
     } catch (error: any) {
       console.error('❌ Failed to persist prebidding selections:', error);
       alert(error?.message || 'Failed to save selections to schema.');
