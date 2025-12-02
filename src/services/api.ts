@@ -1022,6 +1022,9 @@ export interface SchemaInstanceResponse {
 const SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
 const SCHEMA_ID = '691d9ee2e7db832feb59b79f';
 
+// Schema ID for storing tender overview + agent output summary
+const TENDER_OVERVIEW_SUMMARY_SCHEMA_ID = '692e8c47fd9c66658f22d73a';
+
 // Ingest single file to schema
 // Stores the instance ID in sessionStorage after ingestion
 export const ingestFileToSchema = async (
@@ -1438,6 +1441,10 @@ export interface SchemaInstanceListResponse {
 
 export interface SchemaInstanceListRequest {
   dbType: 'TIDB';
+  distinctColumns?: string[];
+  filter?: {
+    [key: string]: string;
+  };
 }
 
 /**
@@ -1494,6 +1501,131 @@ export const fetchSchemaInstances = async (
         data: error.response?.data,
       });
       throw new Error(`Failed to fetch schema instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch distinct departments from schema instances
+ * @param size - Number of instances to fetch (default: 100)
+ * @returns Promise with list of schema instances containing distinct departments
+ */
+export const fetchDistinctDepartments = async (
+  size: number = 100
+): Promise<SchemaInstanceListItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+    distinctColumns: ['department'],
+  };
+
+  console.log('📥 Fetching distinct departments:', {
+    url: `${SCHEMA_API_BASE_URL}/schemas/${SCHEMA_ID}/instances/list?size=${size}`,
+  });
+
+  try {
+    const response = await axios.post<SchemaInstanceListResponse>(
+      `${SCHEMA_API_BASE_URL}/schemas/${SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Distinct departments response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Distinct departments fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch distinct departments: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch schema instances filtered by department
+ * @param department - Department name to filter by
+ * @param size - Number of instances to fetch (default: 100)
+ * @returns Promise with list of schema instances filtered by department
+ */
+export const fetchSchemaInstancesByDepartment = async (
+  department: string,
+  size: number = 100
+): Promise<SchemaInstanceListItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+    },
+  };
+
+  console.log('📥 Fetching schema instances by department:', {
+    url: `${SCHEMA_API_BASE_URL}/schemas/${SCHEMA_ID}/instances/list?size=${size}`,
+    department,
+  });
+
+  try {
+    const response = await axios.post<SchemaInstanceListResponse>(
+      `${SCHEMA_API_BASE_URL}/schemas/${SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Schema instances by department response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Schema instances by department fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch schema instances by department: ${error.response?.data?.msg || error.message}`);
     }
     throw error;
   }
@@ -2181,6 +2313,132 @@ export const callIntegrityAnalyticsAgent = async (
     }
     throw error;
   }
+};
+
+// ============================================================================
+// Tender Overview Summary Schema - Store combined agent outputs
+// ============================================================================
+
+export interface TenderOverviewSummaryItem {
+  tenderId: string;
+  tenderName: string;
+  department: string;
+  ai_response_output: any;
+  [key: string]: any;
+}
+
+export interface TenderOverviewSummaryResponse {
+  status?: string;
+  msg?: string;
+  data?: TenderOverviewSummaryItem[];
+  [key: string]: any;
+}
+
+/**
+ * Save tender overview + agent output summary into schema 692e8c47fd9c66658f22d73a
+ * Mirrors:
+ * POST /schemas/{schemaId}/instances
+ * {
+ *   "data": [{
+ *     "tenderId": "...",
+ *     "tenderName": "...",
+ *     "department": "...",
+ *     "ai_response_output": { ... }
+ *   }]
+ * }
+ */
+export const saveTenderOverviewSummary = async (
+  item: TenderOverviewSummaryItem
+): Promise<TenderOverviewSummaryResponse> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    data: [
+      {
+        tenderId: item.tenderId,
+        tenderName: item.tenderName,
+        department: item.department,
+        ai_response_output: item.ai_response_output,
+      },
+    ],
+  };
+
+  console.log('📤 Saving tender overview summary to schema:', {
+    url: `${SCHEMA_API_BASE_URL}/schemas/${TENDER_OVERVIEW_SUMMARY_SCHEMA_ID}/instances`,
+    tenderId: item.tenderId,
+    tenderName: item.tenderName,
+    department: item.department,
+  });
+
+  try {
+    const response = await axios.post<TenderOverviewSummaryResponse>(
+      `${SCHEMA_API_BASE_URL}/schemas/${TENDER_OVERVIEW_SUMMARY_SCHEMA_ID}/instances`,
+      requestData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          accept: 'application/json, text/plain, */*',
+        },
+      }
+    );
+
+    console.log('✅ Tender overview summary saved:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Error saving tender overview summary:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(
+        `Failed to save tender overview summary: ${error.response?.data?.msg || error.message}`
+      );
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch existing tender overview summary for a given tenderId + tenderName
+ * Mirrors:
+ * POST /schemas/{schemaId}/instances/list
+ * {
+ *   "dbType": "TIDB",
+ *   "filter": { "tenderId": "...", "tenderName": "..." }
+ * }
+ */
+export const fetchTenderOverviewSummaryByTender = async (
+  tenderId: string,
+  // tenderName: string
+): Promise<TenderOverviewSummaryItem | null> => {
+  if (!tenderId) {
+    return null;
+  }
+
+  const instances = await fetchEntityInstancesWithReferences(
+    TENDER_OVERVIEW_SUMMARY_SCHEMA_ID,
+    10,
+    'TIDB',
+    {
+      tenderId,
+      // tenderName,
+    }
+  );
+
+  if (!instances || instances.length === 0) {
+    return null;
+  }
+
+  const item = instances[0] as TenderOverviewSummaryItem;
+  console.log('✅ Found existing tender overview summary for tender:', {
+    tenderId,
+    // tenderName,
+    schemaId: TENDER_OVERVIEW_SUMMARY_SCHEMA_ID,
+    instanceId: item.id,
+  });
+  return item;
 };
 
 // ============================================================================
