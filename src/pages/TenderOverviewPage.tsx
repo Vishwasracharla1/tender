@@ -1586,9 +1586,9 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
 
       // Call all four agents in parallel
       console.log('🤖 Calling all four agents in parallel...');
-      const secondAgentId = 'f47e4077-61c3-40e3-8c62-0613da775370';
-      const recommendationsAgentId = '8f0afca7-8388-4ce3-900c-ad6cbb552217';
-      const documentClassificationAgentId = 'ab028399-ce39-47ac-a003-68a4c2d30407';
+      const secondAgentId = '019add7f-b4e6-79a7-9f16-0add69a66612';
+      const recommendationsAgentId = '019abebc-aef1-70a5-bf3a-c2d65367edec';
+      const documentClassificationAgentId = '019abec3-dbb8-7564-8b6d-9a1f5a6f7a06';
       
       const [response1, response2, response3, response4] = await Promise.all([
         interactWithAgent(selectedDepartment, fileUrls),
