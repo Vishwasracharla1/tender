@@ -13,6 +13,7 @@ const routeToPageName: Record<string, string> = {
   '/intake': 'Tender Intake',
   '/tender-overview': 'Tender Overview',
   '/tender-article': 'Tender Article',
+  '/vendor-intake': 'Vendor Intake',
   '/evaluation': 'Evaluation Matrix',
   '/evaluation-breakdown': 'Evaluation Breakdown',
   '/evaluation-recommendation': 'Evaluation Recommendation',

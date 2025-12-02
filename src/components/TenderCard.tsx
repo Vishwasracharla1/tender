@@ -162,7 +162,7 @@ export function TenderCard({ tenderData, onClick }: TenderCardProps) {
             status 
               ? (status.toLowerCase().includes('active') || status.toLowerCase().includes('open') || status.toLowerCase().includes('valid')
                   ? 'bg-green-100 text-green-700'
-                  : status.toLowerCase().includes('expired') || status.toLowerCase().includes('closed') || status.toLowerCase().includes('completed')
+                  : status.toLowerCase().includes('expired') || status.toLowerCase().includes('closed') || status.toLowerCase().includes('completed') || status.toLowerCase().includes('rejected')
                   ? 'bg-red-100 text-red-700'
                   : status.toLowerCase().includes('pending') || status.toLowerCase().includes('draft')
                   ? 'bg-yellow-100 text-yellow-700'

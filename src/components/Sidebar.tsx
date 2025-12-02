@@ -1,11 +1,11 @@
-import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings } from 'lucide-react';
+import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings, Building2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin') => void;
+  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin' | 'vendor-intake';
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin' | 'vendor-intake') => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
@@ -31,6 +31,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     'award': 'Award Simulation',
     'monitoring': 'Agent Monitoring',
     'integration': 'Integration Management',
+    'vendor-intake': 'Vendor Intake',
   };
 
   // Map routes to page IDs
@@ -49,6 +50,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/monitoring': 'monitoring',
     '/integration': 'integration',
     '/admin': 'admin',
+    '/vendor-intake': 'vendor-intake',
   };
 
   // Get current page from route
@@ -98,6 +100,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       icon: ClipboardList,
       description: 'Procurement Dashboard',
       path: '/tender-article',
+    },
+    {
+      id: 'vendor-intake' as const,
+      label: 'Vendor Intake',
+      icon: Building2,
+      description: 'Upload Vendor Documents',
+      path: '/vendor-intake',
     },
     {
       id: 'evaluation' as const,
