@@ -4,7 +4,7 @@ import { KPIWidget } from '../components/KPIWidget';
 import { CheckCircle, XCircle, AlertCircle, Settings, RefreshCw, Database, FileText, Globe, Users, Plug2, ArrowLeftRight, ArrowDown, ArrowUp, Info } from 'lucide-react';
 
 interface IntegrationManagementPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-prebidding') => void;
 }
 
 interface Integration {

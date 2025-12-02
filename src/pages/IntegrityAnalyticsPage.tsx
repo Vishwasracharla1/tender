@@ -93,7 +93,7 @@ const buildNetworkDataFromAgent = (networkGraph: any): Record<string, Department
 };
 
 interface IntegrityAnalyticsPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-prebidding') => void;
 }
 
 interface Tender {

@@ -10,6 +10,8 @@ import { AgentMonitoringPage } from '../pages/AgentMonitoringPage';
 import { IntegrationManagementPage } from '../pages/IntegrationManagementPage';
 import { TenderArticlePage } from '../pages/TenderArticlePage';
 import { TenderOverviewPage } from '../pages/TenderOverviewPage';
+import { TenderPrebiddingPage } from '../pages/TenderPrebiddingPage';
+import { EvaluationMatrixGovTenderPage } from '../pages/EvaluationMatrixGovTenderPage';
 import { EvaluationBreakdownPage } from '../pages/EvaluationBreakdownPage';
 import { EvaluationRecommendationPage } from '../pages/EvaluationRecommendationPage';
 import { CompanyDetailPage } from '../pages/CompanyDetailPage';
@@ -25,11 +27,13 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
         'leadership': '/',
         'intake': '/intake',
         'tender-overview': '/tender-overview',
+        'tender-prebidding': '/tender-prebidding',
         'tender-article': '/tender-article',
         'vendor-intake': '/vendor-intake',
         'evaluation': '/evaluation',
         'evaluation-breakdown': '/evaluation-breakdown',
         'evaluation-recommendation': '/evaluation-recommendation',
+        'evaluation-gov-tender': '/evaluation-gov-tender',
         'benchmark': '/benchmark',
         'integrity': '/integrity',
         'justification': '/justification',
@@ -60,6 +64,18 @@ const TenderOverviewWrapper = () => {
   const navigate = useNavigate();
   const handleNavigate = createNavigateHandler(navigate);
   return <TenderOverviewPage onNavigate={handleNavigate} />;
+};
+
+const TenderPrebiddingWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <TenderPrebiddingPage onNavigate={handleNavigate} />;
+};
+
+const EvaluationMatrixGovTenderWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <EvaluationMatrixGovTenderPage onNavigate={handleNavigate} />;
 };
 
 const TenderArticleWrapper = () => {
@@ -170,6 +186,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/tender-prebidding',
+    element: (
+      <ProtectedRoute>
+        <TenderPrebiddingWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/tender-article',
     element: (
       <ProtectedRoute>
@@ -198,6 +222,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <EvaluationRecommendationWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/evaluation-gov-tender',
+    element: (
+      <ProtectedRoute>
+        <EvaluationMatrixGovTenderWrapper />
       </ProtectedRoute>
     ),
   },

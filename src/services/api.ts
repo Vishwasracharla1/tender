@@ -813,11 +813,11 @@ export const interactWithAgent = async (
   agentId?: string
 ): Promise<AgentInteractionResponse> => {
   const token = getAuthToken();
-  const token = getAuthToken();
+  
   
   // Default agent ID for tender overview
   const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
-  const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
+  // const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
   const targetAgentId = agentId || defaultAgentId;
   
   const requestData: AgentInteractionRequest = {
@@ -859,6 +859,120 @@ export const interactWithAgent = async (
         agentId: targetAgentId,
       });
       throw new Error(`Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Questionnaire Agent with uploaded documents
+ * @param companyName - Company name to include in the query
+ * @param fileUrls - Array of CDN URLs for uploaded documents
+ * @param agentId - Agent ID (default: questionnaire agent)
+ */
+export const callQuestionnaireAgent = async (
+  companyName: string,
+  fileUrls: string[],
+  agentId: string = '019adeb7-9926-7d59-94f4-6a607b6a28e2'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+
+  const requestData: AgentInteractionRequest = {
+    agentId,
+    query: `Company Name: ${companyName}`,
+    referenceId: '',
+    sessionId: '',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Questionnaire Agent API:', {
+    url: `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+    agentId,
+    companyName,
+    fileCount: fileUrls.length,
+    fileUrls,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Questionnaire Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Questionnaire Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId,
+      });
+      throw new Error(`Questionnaire Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Prebidding Decision Agent with combined addendum + questionnaire selections
+ * @param addedPayload - Object of shape { added: [...] } to send in query
+ * @param fileUrls - Array of CDN URLs for related documents (e.g. RFP)
+ * @param agentId - Agent ID (default: prebidding decision agent)
+ */
+export const callPrebiddingDecisionAgent = async (
+  addedPayload: any,
+  fileUrls: string[],
+  agentId: string = '019adddb-a776-7ce7-9623-6227bf8c6f9c'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+
+  const requestData: AgentInteractionRequest = {
+    agentId,
+    query: JSON.stringify(addedPayload),
+    referenceId: '',
+    sessionId: '',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Prebidding Decision Agent API:', {
+    url: `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+    agentId,
+    fileCount: fileUrls.length,
+    fileUrls,
+    querySample: requestData.query,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Prebidding Decision Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Prebidding Decision Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId,
+      });
+      throw new Error(`Prebidding Decision Agent API error: ${error.response?.data?.msg || error.message}`);
     }
     throw error;
   }

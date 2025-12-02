@@ -42,7 +42,7 @@ interface Tender {
 }
 
 interface EvaluationMatrixPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'evaluation-breakdown' | 'tender-article' | 'tender-overview') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'evaluation-breakdown' | 'tender-article' | 'tender-overview' | 'tender-prebidding') => void;
 }
 
 export function EvaluationMatrixPage({ onNavigate }: EvaluationMatrixPageProps) {

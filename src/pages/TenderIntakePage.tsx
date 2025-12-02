@@ -14,7 +14,7 @@ import { CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
 import type { TenderDocument } from '../lib/supabase';
 
 interface TenderIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-overview' | 'monitoring' | 'integration' | 'tender-article') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-overview' | 'tender-prebidding' | 'monitoring' | 'integration' | 'tender-article') => void;
 }
 
 export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {

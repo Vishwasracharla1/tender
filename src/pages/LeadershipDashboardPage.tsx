@@ -11,7 +11,7 @@ import { MOCK_TENDERS, VendorData } from '../data/mockTenderData';
 import { getActiveTendersData, ActiveTendersData, getAvgEvalDurationData, AvgEvalDurationData, getComplianceRateData, ComplianceRateData, getCriticalAlertsData, CriticalAlertsData, getIntegrityHeatmapData, HeatmapDataItem, getEvaluationDurationTrendData, EvaluationDurationTrendItem, getComplianceLeaderboardData, ComplianceLeaderboardItem, getVendorAnalyticsData, VendorAnalyticsData, getAvgBidValueData, AvgBidValueData, getTopPerformerData, TopPerformerData } from '../services/api';
 
 interface LeadershipDashboardPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding') => void;
 }
 
 export function LeadershipDashboardPage({ onNavigate }: LeadershipDashboardPageProps) {

@@ -11,7 +11,7 @@ import {
 } from '../services/api';
 
 interface EvaluationRecommendationPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown' | 'evaluation-recommendation') => void;
 }
 
 // Helper to extract table rows from markdown-like tables
