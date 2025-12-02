@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { Filter, Upload, X, FileText } from 'lucide-react';
-import { RAK_DEPARTMENTS } from '../data/departments';
+import { Filter, Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Send } from 'lucide-react';
+import { fetchVendorIntakeInstances, type VendorIntakeInstanceItem, uploadFileToCDN, interactWithVendorEvaluationAgent } from '../services/api';
 
 interface VendorIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'vendor-intake') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'evaluation-gov-tender' | 'evaluation-matrix-vendor' | 'admin' | 'vendor-intake') => void;
 }
 
 interface Tender {
@@ -21,29 +21,169 @@ interface UploadedFile {
   file: File;
   status: 'pending' | 'uploading' | 'completed' | 'error';
   progress: number;
+  cdn_url?: string;
 }
 
 export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [selectedTender, setSelectedTender] = useState('TND-2025-001');
+  const [selectedTender, setSelectedTender] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [schemaInstances, setSchemaInstances] = useState<VendorIntakeInstanceItem[]>([]);
+  const [isLoadingSchema, setIsLoadingSchema] = useState(true);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
+  
+  // Store all CDN URLs in one variable for agent payload
+  const [cdnUrls, setCdnUrls] = useState<string[]>([]);
+  
+  // Agent submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const tenders: Tender[] = [
-    { id: 'TND-2025-001', title: 'Municipal Building Renovation', department: 'Roads & Construction', category: 'WORKS', dateCreated: '2025-01-15', status: 'evaluation' },
-    { id: 'TND-2025-002', title: 'Solar Panel Installation', department: 'Water Management', category: 'WORKS', dateCreated: '2025-02-01', status: 'evaluation' },
-    { id: 'TND-2025-003', title: 'IT Equipment Procurement', department: 'Administration', category: 'SUPPLIES', dateCreated: '2025-02-10', status: 'evaluation' },
-    { id: 'TND-2025-004', title: 'Healthcare Cleaning Services', department: 'Maintenance', category: 'SERVICES', dateCreated: '2025-02-15', status: 'completed' },
-    { id: 'TND-2025-005', title: 'Legal Advisory Services', department: 'Legal', category: 'CONSULTANCY', dateCreated: '2025-03-01', status: 'evaluation' },
-    { id: 'TND-2025-006', title: 'Waste Collection Services', department: 'Waste Management', category: 'SERVICES', dateCreated: '2025-03-05', status: 'locked' },
-    { id: 'TND-2025-007', title: 'Parking System Upgrade', department: 'Parking Management', category: 'WORKS', dateCreated: '2025-03-10', status: 'evaluation' },
-  ];
+  // Extract unique departments from schema instances
+  const departmentsFromSchema = useMemo(() => {
+    const deptSet = new Set<string>();
+    schemaInstances.forEach((instance) => {
+      // Try multiple possible field name variations
+      const dept = (instance as any).department || (instance as any).Department || (instance as any).departmentName || 
+                   (instance as any)['//department'] || (instance as any)['department'];
+      if (dept && typeof dept === 'string' && dept.trim()) {
+        deptSet.add(dept.trim());
+      }
+    });
+    const departments = Array.from(deptSet).sort();
+    console.log('📋 Extracted departments:', departments);
+    return departments;
+  }, [schemaInstances]);
+
+  // Extract unique tenders from schema instances
+  const tendersFromSchema = useMemo(() => {
+    const tenderMap = new Map<string, Tender>();
+    schemaInstances.forEach((instance, index) => {
+      const inst = instance as any;
+      // Try multiple possible field name variations for tender name - check lowercase first
+      const tenderName = inst.tenderName || inst['tenderName'] || inst.tender || inst.Tender || 
+                         inst.TenderName || inst.tender_name || inst['Tender Name'];
+      // Try multiple possible field name variations for department - check lowercase first
+      const department = inst.department || inst['department'] || inst.Department || 
+                         inst.departmentName || inst['//department'] || inst['Department'];
+      
+      // Debug log for first few instances
+      if (index < 3) {
+        console.log(`🔍 Instance ${index}:`, {
+          hasTenderName: !!tenderName,
+          tenderNameValue: tenderName,
+          hasDepartment: !!department,
+          departmentValue: department,
+          allKeys: Object.keys(inst)
+        });
+      }
+      
+      if (tenderName && typeof tenderName === 'string' && tenderName.trim()) {
+        // Create a unique ID - use tenderId if available, otherwise generate from tenderName
+        const tenderId = inst.tenderId ? String(inst.tenderId) : 
+                         (instance.id ? String(instance.id) : 
+                         tenderName.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toUpperCase());
+        
+        const tenderKey = tenderId || `TND-${tenderName.trim().replace(/\s+/g, '-').substring(0, 20)}`;
+        
+        if (!tenderMap.has(tenderKey)) {
+          tenderMap.set(tenderKey, {
+            id: tenderKey,
+            title: tenderName.trim(),
+            department: (department && typeof department === 'string') ? department.trim() : '',
+            category: '',
+            dateCreated: inst.timestamp ? new Date(inst.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            status: 'evaluation',
+          });
+        }
+      }
+    });
+    const tenders = Array.from(tenderMap.values());
+    console.log('📋 Extracted tenders:', tenders);
+    console.log('📋 Total tenders extracted:', tenders.length);
+    console.log('📋 Tenders by department:', tenders.reduce((acc, t) => {
+      const dept = t.department || '(no department)';
+      acc[dept] = (acc[dept] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
+    return tenders;
+  }, [schemaInstances]);
+
+  // Fetch schema instances on mount
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    const fetchSchemaData = async () => {
+      try {
+        setIsLoadingSchema(true);
+        setSchemaError(null);
+        console.log('Fetching vendor intake schema instances...');
+        const instances = await fetchVendorIntakeInstances(100);
+        setSchemaInstances(instances);
+        console.log('✅ Vendor intake schema instances loaded:', instances);
+        console.log('📊 Total instances:', instances.length);
+        if (instances.length > 0) {
+          console.log('📊 Sample instance structure:', instances[0]);
+          console.log('📊 All field keys in first instance:', Object.keys(instances[0]));
+          // Check for department and tenderName fields
+          const sample = instances[0] as any;
+          console.log('📊 Department value:', sample.department || sample.Department || sample['//department']);
+          console.log('📊 TenderName value:', sample.tenderName || sample.tender || sample.Tender);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching vendor intake schema:', error);
+        setSchemaError(error instanceof Error ? error.message : 'Failed to load schema data');
+      } finally {
+        setIsLoadingSchema(false);
+      }
+    };
+
+    fetchSchemaData();
+  }, []);
+
+  // Update default selected tender when tenders are loaded
+  useEffect(() => {
+    if (tendersFromSchema.length > 0 && !selectedTender) {
+      setSelectedTender(tendersFromSchema[0].id);
+    }
+  }, [tendersFromSchema, selectedTender]);
+  
+  // Sync CDN URLs array with uploaded files that have CDN URLs
+  useEffect(() => {
+    const urls = uploadedFiles
+      .filter(file => file.cdn_url && file.status === 'completed')
+      .map(file => file.cdn_url!);
+    
+    setCdnUrls(urls);
+    
+    // Console log all CDN URLs whenever they change
+    if (urls.length > 0) {
+      console.log('📋 All CDN URLs stored:', urls);
+      console.log('📋 Total CDN URLs:', urls.length);
+      urls.forEach((url, index) => {
+        console.log(`  ${index + 1}. ${url}`);
+      });
+    }
+  }, [uploadedFiles]);
 
   const filteredTenders = useMemo(() => {
-    return tenders.filter(tender => {
-      if (selectedDepartment !== 'all' && tender.department !== selectedDepartment) return false;
-      return true;
+    const filtered = tendersFromSchema.filter(tender => {
+      if (selectedDepartment === 'all') return true;
+      // Case-insensitive and trimmed comparison
+      const tenderDept = (tender.department || '').trim();
+      const selectedDept = selectedDepartment.trim();
+      return tenderDept === selectedDept || tenderDept.toLowerCase() === selectedDept.toLowerCase();
     });
-  }, [selectedDepartment]);
+    console.log('🔍 Filtered tenders:', {
+      selectedDepartment,
+      totalTenders: tendersFromSchema.length,
+      filteredCount: filtered.length,
+      filteredTenders: filtered
+    });
+    return filtered;
+  }, [selectedDepartment, tendersFromSchema]);
 
   const currentTender = filteredTenders.find(t => t.id === selectedTender) || filteredTenders[0];
 
@@ -52,15 +192,77 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
       const files = Array.from(e.target.files);
       const remainingSlots = 9 - uploadedFiles.length;
       const filesToAdd = files.slice(0, remainingSlots);
-      
-      const newFiles: UploadedFile[] = filesToAdd.map((file) => ({
-        id: crypto.randomUUID(),
+      handleFiles(filesToAdd);
+    }
+  };
+  
+  const handleFiles = async (files: File[]) => {
+    const uploadPromises = files.map(async (file) => {
+      const fileId = crypto.randomUUID();
+      const tempFile: UploadedFile = {
+        id: fileId,
         file,
-        status: 'pending',
+        status: 'uploading',
         progress: 0,
-      }));
+      };
       
-      setUploadedFiles(prev => [...prev, ...newFiles]);
+      // Add temporary file to show upload in progress
+      setUploadedFiles(prev => [...prev, tempFile]);
+      
+      try {
+        // Upload file to CDN
+        console.log(`📤 Uploading file to CDN: ${file.name} (${file.size} bytes)`);
+        const uploadResponse = await uploadFileToCDN(file, 'CMS');
+        
+        // Ensure CDN URL starts with https://cdn.gov-cloud.ai/_
+        let cdnUrl = uploadResponse.cdn_url || '';
+        if (cdnUrl && !cdnUrl.startsWith('https://cdn.gov-cloud.ai/_')) {
+          console.warn(`⚠️ CDN URL doesn't start with expected prefix: ${cdnUrl}`);
+        }
+        
+        console.log(`✅ File uploaded to CDN:`, {
+          filename: file.name,
+          cdn_url: cdnUrl,
+        });
+        
+        // Update file with CDN URL and completed status
+        const finalFile: UploadedFile = {
+          ...tempFile,
+          status: 'completed',
+          cdn_url: cdnUrl,
+        };
+        
+        // Update the file in the list
+        setUploadedFiles(prev => prev.map(f => f.id === fileId ? finalFile : f));
+        
+        return finalFile;
+      } catch (error) {
+        console.error(`❌ Error uploading ${file.name}:`, error);
+        
+        // Update file with error status
+        const errorFile: UploadedFile = {
+          ...tempFile,
+          status: 'error',
+        };
+        
+        // Update the file in the list
+        setUploadedFiles(prev => prev.map(f => f.id === fileId ? errorFile : f));
+        
+        return errorFile;
+      }
+    });
+    
+    // Wait for all uploads to complete
+    const uploadedResults = await Promise.all(uploadPromises);
+    
+    // Extract and log all successful CDN URLs after all uploads complete
+    const successfulCdnUrls = uploadedResults
+      .filter(file => file.cdn_url && file.status === 'completed')
+      .map(file => file.cdn_url!);
+    
+    if (successfulCdnUrls.length > 0) {
+      console.log('📋 All CDN URLs after uploads complete:', successfulCdnUrls);
+      console.log('📋 Total CDN URLs:', successfulCdnUrls.length);
     }
   };
 
@@ -73,19 +275,21 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
     const files = Array.from(e.dataTransfer.files);
     const remainingSlots = 9 - uploadedFiles.length;
     const filesToAdd = files.slice(0, remainingSlots);
-    
-    const newFiles: UploadedFile[] = filesToAdd.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      status: 'pending',
-      progress: 0,
-    }));
-    
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    handleFiles(filesToAdd);
   };
 
   const removeFile = (id: string) => {
+    const fileToRemove = uploadedFiles.find(f => f.id === id);
     setUploadedFiles(prev => prev.filter(f => f.id !== id));
+    
+    // Remove CDN URL from array if it exists
+    if (fileToRemove?.cdn_url) {
+      setCdnUrls(prev => {
+        const updated = prev.filter(url => url !== fileToRemove.cdn_url);
+        console.log('📋 CDN URLs after removal:', updated);
+        return updated;
+      });
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -94,6 +298,106 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  // Get agent_output_matrix_structure from localStorage or construct from tender data
+  const getAgentOutputMatrixStructure = (): string => {
+    try {
+      // Try to get from localStorage (set by tender prebidding page)
+      const storedAgentResponses = localStorage.getItem('agentResponses');
+      if (storedAgentResponses) {
+        const agentResponses = JSON.parse(storedAgentResponses);
+        if (Array.isArray(agentResponses) && agentResponses.length > 0) {
+          // Construct the query structure from agent responses
+          const agentOutputMatrixStructure = {
+            agentresponse1: agentResponses[0]?.evaluation_matrix || agentResponses[0],
+            agentresponse2: agentResponses[1] || agentResponses[0],
+          };
+          return JSON.stringify(agentOutputMatrixStructure);
+        }
+      }
+      
+      // If not found, return empty structure (will be populated by agent)
+      return JSON.stringify({
+        agentresponse1: {},
+        agentresponse2: {},
+      });
+    } catch (error) {
+      console.error('Error getting agent output matrix structure:', error);
+      return JSON.stringify({
+        agentresponse1: {},
+        agentresponse2: {},
+      });
+    }
+  };
+
+  const handleSubmitDocuments = async () => {
+    // Validate that files are uploaded
+    if (cdnUrls.length === 0) {
+      setSubmitError('Please upload at least one document before submitting.');
+      return;
+    }
+
+    // Validate that all files are uploaded successfully
+    const incompleteFiles = uploadedFiles.filter(f => f.status !== 'completed' || !f.cdn_url);
+    if (incompleteFiles.length > 0) {
+      setSubmitError('Please wait for all files to finish uploading before submitting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Get agent output matrix structure
+      const agentOutputMatrixStructure = getAgentOutputMatrixStructure();
+      
+      console.log('📤 Submitting documents to vendor evaluation agent:', {
+        fileCount: cdnUrls.length,
+        fileUrls: cdnUrls,
+        queryLength: agentOutputMatrixStructure.length,
+      });
+
+      // Call the vendor evaluation agent
+      const response = await interactWithVendorEvaluationAgent(
+        agentOutputMatrixStructure,
+        cdnUrls
+      );
+
+      console.log('✅ Vendor evaluation agent response:', response);
+
+      // Store the response in localStorage for the evaluation matrix vendor page
+      const vendorEvaluationResponse = {
+        ...response,
+        timestamp: new Date().toISOString(),
+        fileUrls: cdnUrls,
+      };
+      localStorage.setItem('vendorEvaluationResponse', JSON.stringify(vendorEvaluationResponse));
+
+      // Store tender and department info from Vendor Intake selections (not from agent response)
+      const vendorIntakeMetadata = {
+        tenderId: selectedTender || currentTender?.id || '',
+        tenderName: currentTender?.title || '',
+        department: selectedDepartment !== 'all' ? selectedDepartment : (currentTender?.department || ''),
+      };
+      localStorage.setItem('vendorIntakeMetadata', JSON.stringify(vendorIntakeMetadata));
+      console.log('📋 Stored vendor intake metadata for ingestion:', {
+        tenderId: vendorIntakeMetadata.tenderId,
+        tenderName: vendorIntakeMetadata.tenderName,
+        department: vendorIntakeMetadata.department,
+        selectedTender,
+        selectedDepartment,
+        currentTender: currentTender?.id,
+      });
+
+      // Navigate to evaluation matrix vendor page
+      onNavigate('evaluation-matrix-vendor');
+    } catch (error) {
+      console.error('❌ Error submitting documents to agent:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit documents. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -128,47 +432,80 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
-                  Department
-                </label>
-                <select
-                  value={selectedDepartment}
-                  onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
-                >
-                  <option value="all">All Departments</option>
-                  {RAK_DEPARTMENTS.map((dept) => (
-                    <option key={dept.id} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+            {isLoadingSchema ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin mr-2" />
+                <span className="text-sm text-blue-600">Loading schema data...</span>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
-                  Tender
-                </label>
-                <select
-                  value={selectedTender}
-                  onChange={(e) => setSelectedTender(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
-                >
-                  {filteredTenders.map((tender) => (
-                    <option key={tender.id} value={tender.id}>
-                      {tender.id} - {tender.title}
-                    </option>
-                  ))}
-                </select>
+            ) : schemaError ? (
+              <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-700">Error loading schema data</p>
+                  <p className="text-xs text-red-600 mt-1">{schemaError}</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
+                    Department
+                  </label>
+                  <select
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
+                    disabled={isLoadingSchema}
+                  >
+                    <option value="all">All Departments</option>
+                    {departmentsFromSchema.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {(selectedDepartment !== 'all' || selectedTender) && (
+                <div>
+                  <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
+                    Tender
+                  </label>
+                  <select
+                    value={selectedTender}
+                    onChange={(e) => setSelectedTender(e.target.value)}
+                    className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300"
+                    disabled={isLoadingSchema}
+                  >
+                    {isLoadingSchema ? (
+                      <option value="">Loading tenders...</option>
+                    ) : filteredTenders.length === 0 ? (
+                      <option value="">
+                        {selectedDepartment === 'all' 
+                          ? 'No tenders available' 
+                          : `No tenders found for ${selectedDepartment}`}
+                      </option>
+                    ) : (
+                      filteredTenders.map((tender) => (
+                        <option key={tender.id} value={tender.id}>
+                          {tender.title}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {/* Debug info - remove in production */}
+                  {process.env.NODE_ENV === 'development' && filteredTenders.length === 0 && tendersFromSchema.length > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">
+                      Debug: Found {tendersFromSchema.length} total tenders, but none match "{selectedDepartment}"
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(selectedDepartment !== 'all' || selectedTender) && !isLoadingSchema && !schemaError && (
               <div className="mt-5 pt-5 border-t border-blue-200/50 flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-medium text-blue-700">
-                  Selected: {currentTender?.title}
+                  Selected: {currentTender?.title || 'No tender selected'}
                 </span>
                 {selectedDepartment !== 'all' && (
                   <span className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-300 shadow-sm">
@@ -178,7 +515,11 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
                 <button
                   onClick={() => {
                     setSelectedDepartment('all');
-                    setSelectedTender('TND-2025-001');
+                    if (filteredTenders.length > 0) {
+                      setSelectedTender(filteredTenders[0].id);
+                    } else {
+                      setSelectedTender('');
+                    }
                   }}
                   className="ml-auto px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                 >
@@ -267,17 +608,68 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
                         {formatFileSize(file.file.size)} • {file.file.type || 'Unknown type'}
                       </p>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      {file.status === 'uploading' && (
+                        <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      )}
+                      {file.status === 'completed' && file.cdn_url && (
+                        <span title={`CDN URL: ${file.cdn_url}`}>
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        </span>
+                      )}
+                      {file.status === 'error' && (
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      )}
+                      {file.cdn_url && (
+                        <span className="text-xs text-blue-600 font-mono" title={file.cdn_url}>
+                          CDN✓
+                        </span>
+                      )}
                       <button
                         onClick={() => removeFile(file.id)}
                         className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         title="Remove file"
+                        disabled={file.status === 'uploading'}
                       >
                         <X className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                {submitError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                      <p className="text-sm text-red-700">{submitError}</p>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleSubmitDocuments}
+                  disabled={isSubmitting || cdnUrls.length === 0 || uploadedFiles.some(f => f.status === 'uploading')}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Submitting to Agent...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      <span>Submit Documents for Evaluation</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  This will send your documents to the vendor evaluation agent for analysis
+                </p>
               </div>
             )}
           </div>

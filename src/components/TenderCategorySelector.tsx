@@ -22,7 +22,7 @@ interface EvaluationCriteria {
 }
 
 interface TenderCategorySelectorProps {
-  onCategorySelect: (categoryId: string, subcategoryId: string, criteria: EvaluationCriteria[]) => void;
+  onCategorySelect: (categoryId: string, subcategoryId: string, categoryName: string, subcategoryName: string, criteria: EvaluationCriteria[]) => void;
   allowedCategories?: string[];
 }
 
@@ -135,7 +135,11 @@ export function TenderCategorySelector({ onCategorySelect, allowedCategories }: 
 
   const handleComplete = () => {
     if (selectedCategory && selectedSubcategory && capturedCriteria.length > 0) {
-      onCategorySelect(selectedCategory, selectedSubcategory, capturedCriteria);
+      const category = categories.find(c => c.id === selectedCategory);
+      const subcategory = subcategories[selectedCategory]?.find(s => s.id === selectedSubcategory);
+      const categoryName = category?.name || '';
+      const subcategoryName = subcategory?.name || '';
+      onCategorySelect(selectedCategory, selectedSubcategory, categoryName, subcategoryName, capturedCriteria);
     }
   };
 

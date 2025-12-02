@@ -11,7 +11,7 @@ import { getTenderById, MOCK_TENDERS } from '../data/mockTenderData';
 import { fetchJustificationInstances, JustificationInstanceItem, callJustificationAgent } from '../services/api';
 
 interface JustificationComposerPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-prebidding') => void;
 }
 
 export function JustificationComposerPage({ onNavigate }: JustificationComposerPageProps) {

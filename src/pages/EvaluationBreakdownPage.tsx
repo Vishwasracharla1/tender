@@ -2,7 +2,7 @@ import { Sidebar } from '../components/Sidebar';
 import { EvaluationBreakdown } from '../components/EvaluationBreakdown';
 
 interface EvaluationBreakdownPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown') => void;
 }
 
 export function EvaluationBreakdownPage({ onNavigate }: EvaluationBreakdownPageProps) {

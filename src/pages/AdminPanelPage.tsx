@@ -5,7 +5,7 @@ import { UserManagement } from '../components/Admin/UserManagement';
 import { RoleManagement } from '../components/Admin/RoleManagement';
 
 interface AdminPanelPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'admin') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'admin') => void;
 }
 
 export function AdminPanelPage({ onNavigate }: AdminPanelPageProps) {

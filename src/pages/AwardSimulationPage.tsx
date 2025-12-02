@@ -11,7 +11,7 @@ import { RAK_DEPARTMENTS } from '../data/departments';
 import { getTenderById, MOCK_TENDERS } from '../data/mockTenderData';
 
 interface AwardSimulationPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-prebidding') => void;
 }
 
 export function AwardSimulationPage({ onNavigate }: AwardSimulationPageProps) {
