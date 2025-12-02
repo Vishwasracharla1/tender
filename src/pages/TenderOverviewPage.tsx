@@ -1811,8 +1811,10 @@ export function TenderOverviewPage({ onNavigate }: TenderOverviewPageProps) {
 
       // Persist combined agent result to schema service
       try {
-        // Determine tender name (project title)
+        // Determine tender name (project title) - prefer tender_summary.project_title
         const projectTitle =
+          tenderCardData?.tender_summary?.project_title ||
+          tenderCardData?.metadata?.document_title ||
           combinedAgentResult.overviewAgent?.tenderOverview?.header?.title ||
           combinedAgentResult.overviewAgent?.tenderOverview?.overview?.evaluationWeighting?.title ||
           'Unknown Tender';
