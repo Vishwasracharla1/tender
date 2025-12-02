@@ -84,6 +84,12 @@ export const RAK_DEPARTMENTS: Department[] = [
     allowedCategories: ['WORKS', 'SERVICES', 'SUPPLIES'],
     description: 'Landscaping, irrigation, and green spaces',
   },
+  {
+    id: 'd14',
+    name: 'other departments',
+    allowedCategories: ['WORKS', 'SERVICES', 'SUPPLIES', 'CONSULTANCY'],
+    description: 'Other departments not listed here',
+  }
 ];
 
 export function getDepartmentById(id: string): Department | undefined {

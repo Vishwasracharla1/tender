@@ -19,7 +19,7 @@ interface Tender {
 }
 
 interface BenchmarkDashboardPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'tender-prebidding') => void;
 }
 
 export function BenchmarkDashboardPage({ onNavigate }: BenchmarkDashboardPageProps) {

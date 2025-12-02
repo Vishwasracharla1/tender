@@ -3,7 +3,7 @@ import { Sidebar } from '../components/Sidebar';
 import ProcurementDashboard from '../components/ProcurementDashboard';
 
 interface TenderArticlePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding') => void;
 }
 
 export function TenderArticlePage({ onNavigate }: TenderArticlePageProps) {

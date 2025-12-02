@@ -4,7 +4,7 @@ import { KPIWidget } from '../components/KPIWidget';
 import { Activity, Zap, AlertCircle, TrendingUp, Cpu, Clock, ListTodo, CheckCircle2, XCircle, AlertTriangle, X, BarChart3 } from 'lucide-react';
 
 interface AgentMonitoringPageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'tender-prebidding') => void;
 }
 
 interface Agent {

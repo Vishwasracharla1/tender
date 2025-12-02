@@ -4,7 +4,7 @@ import { Filter, Upload, X, FileText } from 'lucide-react';
 import { RAK_DEPARTMENTS } from '../data/departments';
 
 interface VendorIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'vendor-intake') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'vendor-intake') => void;
 }
 
 interface Tender {

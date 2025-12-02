@@ -9,12 +9,12 @@ import { StickyFooter } from '../components/StickyFooter';
 import { Sidebar } from '../components/Sidebar';
 import { DepartmentSelector } from '../components/DepartmentSelector';
 import { TenderCategorySelector } from '../components/TenderCategorySelector';
-import { getDepartmentAllowedCategories } from '../data/departments';
+import { getDepartmentAllowedCategories, getDepartmentById } from '../data/departments';
 import { CheckCircle, Clock, AlertTriangle, FileText } from 'lucide-react';
 import type { TenderDocument } from '../lib/supabase';
 
 interface TenderIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-overview' | 'monitoring' | 'integration' | 'tender-article') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'tender-overview' | 'tender-prebidding' | 'monitoring' | 'integration' | 'tender-article') => void;
 }
 
 export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
@@ -22,6 +22,8 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
   const [phase] = useState('Intake & Validation');
   const [uploadedFiles, setUploadedFiles] = useState<TenderDocument[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [categoryConfigured, setCategoryConfigured] = useState(false);
   const [evaluationCriteria, setEvaluationCriteria] = useState<any[]>([]);
 
@@ -92,7 +94,9 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
     setUploadedFiles(prev => [...prev, ...files]);
   };
 
-  const handleCategorySelect = (categoryId: string, subcategoryId: string, criteria: any[]) => {
+  const handleCategorySelect = (categoryId: string, subcategoryId: string, categoryName: string, subcategoryName: string, criteria: any[]) => {
+    setSelectedCategory(categoryName);
+    setSelectedSubcategory(subcategoryName);
     setEvaluationCriteria(criteria);
     setCategoryConfigured(true);
     alert(`Tender configured with ${criteria.length} evaluation criteria!\n\nAuto-captured criteria:\n${criteria.map(c => `• ${c.name}`).join('\n')}`);
@@ -201,6 +205,9 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
                   tenderId={tenderId}
                   onFilesUploaded={handleFilesUploaded}
                   onSubmitToOverview={handleSubmitToOverview}
+                  department={getDepartmentById(selectedDepartment)?.name || selectedDepartment}
+                  category={selectedCategory}
+                  subcategory={selectedSubcategory}
                 />
               </div>
 

@@ -804,7 +804,6 @@ export interface AgentInteractionResponse {
   [key: string]: any;
 }
 
-// const AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/agent-orchestration-framework-fastapi';
 const AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0/agent/interact';
 const TENDER_INTAKE_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
 
@@ -815,8 +814,10 @@ export const interactWithAgent = async (
 ): Promise<AgentInteractionResponse> => {
   const token = getAuthToken();
   
+  
   // Default agent ID for tender overview
   const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
+  // const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
   const targetAgentId = agentId || defaultAgentId;
   
   const requestData: AgentInteractionRequest = {
@@ -828,7 +829,7 @@ export const interactWithAgent = async (
   };
 
   console.log('🤖 Calling Agent API:', {
-    url: `${AGENT_API_BASE_URL}`,
+    url: AGENT_API_BASE_URL,
     agentId: targetAgentId,
     department: departmentName,
     fileCount: fileUrls.length,
@@ -837,7 +838,7 @@ export const interactWithAgent = async (
 
   try {
     const response = await axios.post<AgentInteractionResponse>(
-      `${AGENT_API_BASE_URL}`,
+      AGENT_API_BASE_URL,
       requestData,
       {
         headers: {
@@ -858,6 +859,120 @@ export const interactWithAgent = async (
         agentId: targetAgentId,
       });
       throw new Error(`Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Questionnaire Agent with uploaded documents
+ * @param companyName - Company name to include in the query
+ * @param fileUrls - Array of CDN URLs for uploaded documents
+ * @param agentId - Agent ID (default: questionnaire agent)
+ */
+export const callQuestionnaireAgent = async (
+  companyName: string,
+  fileUrls: string[],
+  agentId: string = '019adeb7-9926-7d59-94f4-6a607b6a28e2'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+
+  const requestData: AgentInteractionRequest = {
+    agentId,
+    query: `Company Name: ${companyName}`,
+    referenceId: '',
+    sessionId: '',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Questionnaire Agent API:', {
+    url: `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+    agentId,
+    companyName,
+    fileCount: fileUrls.length,
+    fileUrls,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Questionnaire Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Questionnaire Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId,
+      });
+      throw new Error(`Questionnaire Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Prebidding Decision Agent with combined addendum + questionnaire selections
+ * @param addedPayload - Object of shape { added: [...] } to send in query
+ * @param fileUrls - Array of CDN URLs for related documents (e.g. RFP)
+ * @param agentId - Agent ID (default: prebidding decision agent)
+ */
+export const callPrebiddingDecisionAgent = async (
+  addedPayload: any,
+  fileUrls: string[],
+  agentId: string = '019adddb-a776-7ce7-9623-6227bf8c6f9c'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+
+  const requestData: AgentInteractionRequest = {
+    agentId,
+    query: JSON.stringify(addedPayload),
+    referenceId: '',
+    sessionId: '',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Prebidding Decision Agent API:', {
+    url: `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+    agentId,
+    fileCount: fileUrls.length,
+    fileUrls,
+    querySample: requestData.query,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      `${TENDER_INTAKE_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Prebidding Decision Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Prebidding Decision Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId,
+      });
+      throw new Error(`Prebidding Decision Agent API error: ${error.response?.data?.msg || error.message}`);
     }
     throw error;
   }
@@ -1002,6 +1117,9 @@ export interface SchemaInstanceData {
   id?: string | number | null;
   filename: string;
   cdnUrls?: string | string[];
+  department?: string;
+  category?: string;
+  sub_category?: string;
 }
 
 export interface SchemaInstanceRequest {
@@ -1068,7 +1186,10 @@ export const ingestFileToSchema = async (
 
 // Ingest multiple files to schema
 export const ingestFilesToSchema = async (
-  files: Array<{ filename: string; cdnUrl: string }>
+  files: Array<{ filename: string; cdnUrl: string }>,
+  department?: string,
+  category?: string,
+  subcategory?: string
 ): Promise<SchemaInstanceResponse> => {
   const token = getAuthToken();
   
@@ -1091,6 +1212,9 @@ export const ingestFilesToSchema = async (
       id: file.id,
       filename: file.filename,
       cdnUrls: [file.cdnUrl], // Array of CDN URLs (single file = array with one URL)
+      department: department,
+      category: category,
+      sub_category: subcategory,
     })),
   };
 

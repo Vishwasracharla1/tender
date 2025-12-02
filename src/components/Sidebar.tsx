@@ -1,11 +1,47 @@
-import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings, Building2 } from 'lucide-react';
+import { FileText, BarChart3, TrendingUp, ShieldAlert, FileEdit, Award, LayoutDashboard, Activity, Plug, Menu, X, ClipboardList, FileSearch, LogOut, Settings, Building2, MessagesSquare } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 interface SidebarProps {
-  currentPage: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin' | 'vendor-intake';
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'admin' | 'vendor-intake') => void;
+  currentPage:
+    | 'intake'
+    | 'evaluation'
+    | 'benchmark'
+    | 'integrity'
+    | 'justification'
+    | 'award'
+    | 'leadership'
+    | 'monitoring'
+    | 'integration'
+    | 'tender-article'
+    | 'tender-overview'
+    | 'tender-prebidding'
+    | 'evaluation-breakdown'
+    | 'evaluation-recommendation'
+    | 'evaluation-gov-tender'
+    | 'admin'
+    | 'vendor-intake';
+  onNavigate: (
+    page:
+      | 'intake'
+      | 'evaluation'
+      | 'benchmark'
+      | 'integrity'
+      | 'justification'
+      | 'award'
+      | 'leadership'
+      | 'monitoring'
+      | 'integration'
+      | 'tender-article'
+      | 'tender-overview'
+      | 'tender-prebidding'
+      | 'evaluation-breakdown'
+      | 'evaluation-recommendation'
+      | 'evaluation-gov-tender'
+      | 'admin'
+      | 'vendor-intake'
+  ) => void;
 }
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
@@ -21,10 +57,12 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     'leadership': 'Leadership Dashboard',
     'intake': 'Tender Intake',
     'tender-overview': 'Tender Overview',
+    'tender-prebidding': 'Tender Prebidding',
     'tender-article': 'Tender Article',
     'evaluation': 'Evaluation Matrix',
     'evaluation-breakdown': 'Evaluation Breakdown',
     'evaluation-recommendation': 'Evaluation Recommendation',
+    'evaluation-gov-tender': 'Evaluation Matrix Government Tender',
     'benchmark': 'Benchmark Dashboard',
     'integrity': 'Integrity Analytics',
     'justification': 'Justification Composer',
@@ -39,10 +77,12 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/': 'leadership',
     '/intake': 'intake',
     '/tender-overview': 'tender-overview',
+    '/tender-prebidding': 'tender-prebidding',
     '/tender-article': 'tender-article',
     '/evaluation': 'evaluation',
     '/evaluation-breakdown': 'evaluation-breakdown',
     '/evaluation-recommendation': 'evaluation-recommendation',
+    '/evaluation-gov-tender': 'evaluation-gov-tender',
     '/benchmark': 'benchmark',
     '/integrity': 'integrity',
     '/justification': 'justification',
@@ -95,6 +135,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       path: '/tender-overview',
     },
     {
+      id: 'tender-prebidding' as const,
+      label: 'Tender Prebidding',
+      icon: MessagesSquare,
+      description: 'Addendums & Q&A',
+      path: '/tender-prebidding',
+    },
+    {
       id: 'tender-article' as const,
       label: 'Tender Article',
       icon: ClipboardList,
@@ -124,6 +171,11 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           id: 'evaluation-recommendation' as const,
           label: 'Evaluation Recommendation',
           path: '/evaluation-recommendation',
+        },
+        {
+          id: 'evaluation-gov-tender' as const,
+          label: 'Gov Tender Evaluation',
+          path: '/evaluation-gov-tender',
         },
       ],
     },
