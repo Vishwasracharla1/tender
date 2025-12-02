@@ -879,7 +879,8 @@ export const callQuestionnaireAgent = async (
 
   const requestData: AgentInteractionRequest = {
     agentId,
-    query: `Company Name: ${companyName}`,
+    // query: `Company Name: ${companyName}`,
+    query: ``,
     referenceId: '',
     sessionId: '',
     fileUrl: fileUrls,
@@ -2772,6 +2773,65 @@ export const updateKPIDefinition = async (
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error('❌ Entity instance update error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        schemaId,
+      });
+      throw new Error(`Failed to update entity instance: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Update entity instance with bulk update format
+ * @param schemaId - Schema ID
+ * @param payload - Updated instance data (must include id or tenderId for matching)
+ * @returns Promise with updated instance
+ */
+export const updateEntityInstance = async (
+  schemaId: string,
+  payload: any
+): Promise<any> => {
+  const token = getAuthToken();
+
+  // Build request body matching curl structure with showPrimaryDBResponse
+  const requestBody = {
+    primarykeyEnable: 'true',
+    bulkUpdate: [payload],
+    showPrimaryDBResponse: true,
+  };
+
+  // Use 'ig' (without 's') for PUT requests as per curl example
+  const PUT_API_BASE_URL = 'https://ig.gov-cloud.ai/pi-entity-instances-service/v2.0';
+  const url = `${PUT_API_BASE_URL}/schemas/${schemaId}/instances`;
+
+  console.log('📝 Updating entity instance (bulk update):', {
+    url,
+    schemaId,
+    payload,
+    requestBody,
+  });
+
+  try {
+    const response = await axios.put<any>(
+      url,
+      requestBody,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Entity instance updated (bulk update):', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Entity instance update error (bulk update):', {
         message: error.message,
         status: error.response?.status,
         data: error.response?.data,

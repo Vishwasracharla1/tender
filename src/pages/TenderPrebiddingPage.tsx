@@ -7,6 +7,7 @@ import {
   callQuestionnaireAgent,
   callPrebiddingDecisionAgent,
   postEntityInstances,
+  updateEntityInstance,
   type EntityInstance,
   type FileUploadResponse,
 } from '../services/api';
@@ -35,6 +36,30 @@ interface QuestionnaireResult {
   sections: QuestionnaireSection[];
 }
 
+interface SavedAddendum {
+  sectionTitle: string;
+  selected: boolean;
+  text: string;
+}
+
+interface SavedVendorQuestion {
+  questionId: number;
+  sectionTitle: string;
+  selected: boolean;
+  suggestedGovernmentAnswer: string;
+  vendorQuestion: string;
+}
+
+interface SavedPrebiddingData {
+  tenderName: string;
+  tenderId: string;
+  department: string;
+  addendums: SavedAddendum[];
+  vendor_details: {
+    [vendorName: string]: SavedVendorQuestion[];
+  };
+}
+
 export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedTenderId, setSelectedTenderId] = useState('all');
@@ -50,9 +75,13 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
   const [questionnaireResult, setQuestionnaireResult] = useState<QuestionnaireResult | null>(null);
   const [questionnaireCompanyName, setQuestionnaireCompanyName] = useState<string>('Cognizant');
   const [questionnaireDocumentName, setQuestionnaireDocumentName] = useState<string | null>(null);
+  const [savedPrebiddingData, setSavedPrebiddingData] = useState<SavedPrebiddingData | null>(null);
+  const [selectedVendor, setSelectedVendor] = useState<string>('');
+  const [availableVendors, setAvailableVendors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const PREBIDDING_SCHEMA_ID = '692e8c47fd9c66658f22d73a';
+  const SAVED_PREBIDDING_SCHEMA_ID = '692ec827fd9c66658f22d744';
 
   // Load prebidding tenders on mount
   useEffect(() => {
@@ -67,6 +96,83 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
 
     loadTenders();
   }, []);
+
+  // Fetch saved prebidding data when tender is selected
+  useEffect(() => {
+    const fetchSavedData = async () => {
+      if (selectedTenderId === 'all') {
+        setSavedPrebiddingData(null);
+        setAvailableVendors([]);
+        setSelectedVendor('');
+        setCheckedRecommendations({});
+        setCheckedAnswers({});
+        return;
+      }
+
+      try {
+        console.log('📥 Fetching saved prebidding data for tender:', selectedTenderId);
+        
+        // Try both tenderId and id as filter keys
+        let data: any[] = [];
+        try {
+          data = await fetchEntityInstancesWithReferences(
+            SAVED_PREBIDDING_SCHEMA_ID,
+            3000,
+            'TIDB',
+            { tenderId: selectedTenderId }
+          );
+        } catch (err) {
+          // If tenderId filter fails, try with id
+          console.log('⚠️ Trying with id filter instead of tenderId');
+          data = await fetchEntityInstancesWithReferences(
+            SAVED_PREBIDDING_SCHEMA_ID,
+            3000,
+            'TIDB',
+            { id: selectedTenderId }
+          );
+        }
+
+        // Find the matching tender data
+        const savedData = data.find((item: any) => {
+          const tenderId = item.tenderId || item.data?.tenderId || item.data?.tender_id || item.id || item.data?.id;
+          return tenderId === selectedTenderId;
+        });
+
+        if (savedData) {
+          const parsedData: SavedPrebiddingData = {
+            tenderName: savedData.tenderName || savedData.data?.tenderName || '',
+            tenderId: savedData.tenderId || savedData.data?.tenderId || selectedTenderId,
+            department: savedData.department || savedData.data?.department || selectedDepartment,
+            addendums: savedData.addendums || savedData.data?.addendums || [],
+            vendor_details: savedData.vendor_details || savedData.data?.vendor_details || {},
+          };
+
+          setSavedPrebiddingData(parsedData);
+          
+          // Extract available vendors
+          const vendors = Object.keys(parsedData.vendor_details || {});
+          setAvailableVendors(vendors);
+          
+          // Auto-select first vendor if available
+          if (vendors.length > 0 && !selectedVendor) {
+            setSelectedVendor(vendors[0]);
+          }
+        } else {
+          setSavedPrebiddingData(null);
+          setAvailableVendors([]);
+          setSelectedVendor('');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching saved prebidding data:', error);
+        setSavedPrebiddingData(null);
+        setAvailableVendors([]);
+        setSelectedVendor('');
+      }
+    };
+
+    fetchSavedData();
+  }, [selectedTenderId, selectedDepartment]);
+
 
   // Compute available departments from loaded instances
   const departmentOptions = useMemo(() => {
@@ -207,6 +313,32 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
     }));
   }, [selectedTenderInstance]);
 
+  // Update addendum checkboxes when saved data or recommendations change
+  useEffect(() => {
+    if (!savedPrebiddingData || !selectedTenderInstance || recommendationGroups.length === 0) {
+      return;
+    }
+
+    const newCheckedRecommendations: Record<string, boolean> = {};
+    savedPrebiddingData.addendums.forEach((addendum) => {
+      if (addendum.selected) {
+        // Find matching recommendation by section and text
+        recommendationGroups.forEach((group) => {
+          if (group.category === addendum.sectionTitle) {
+            group.items.forEach((item, index) => {
+              // Try exact match first, then partial match
+              if (item === addendum.text || item.includes(addendum.text) || addendum.text.includes(item)) {
+                const key = `${group.category}-${index}`;
+                newCheckedRecommendations[key] = true;
+              }
+            });
+          }
+        });
+      }
+    });
+    setCheckedRecommendations((prev) => ({ ...prev, ...newCheckedRecommendations }));
+  }, [savedPrebiddingData, recommendationGroups, selectedTenderInstance]);
+
   const toggleRecommendation = (key: string) => {
     setCheckedRecommendations((prev) => ({
       ...prev,
@@ -261,6 +393,84 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
 
   const canOpenQuestionnaire = selectedDepartment !== 'all' && selectedTenderId !== 'all';
 
+  // Load vendor questionnaire from saved data
+  const loadVendorQuestionnaire = (vendorName: string) => {
+    if (!savedPrebiddingData || !savedPrebiddingData.vendor_details[vendorName]) {
+      setQuestionnaireResult(null);
+      setCheckedAnswers({});
+      return;
+    }
+
+    const vendorQuestions = savedPrebiddingData.vendor_details[vendorName];
+    
+    // Group questions by section
+    const sectionsMap = new Map<string, QuestionnaireRow[]>();
+    
+    vendorQuestions.forEach((question) => {
+      const sectionTitle = question.sectionTitle || 'General';
+      if (!sectionsMap.has(sectionTitle)) {
+        sectionsMap.set(sectionTitle, []);
+      }
+      sectionsMap.get(sectionTitle)!.push({
+        id: question.questionId,
+        vendorQuestion: question.vendorQuestion,
+        suggestedGovernmentAnswer: question.suggestedGovernmentAnswer,
+      });
+    });
+
+    // Convert to QuestionnaireResult format
+    const sections: QuestionnaireSection[] = Array.from(sectionsMap.entries()).map(([sectionTitle, rows]) => ({
+      sectionTitle,
+      rows,
+    }));
+
+    const result: QuestionnaireResult = {
+      title: `Questionnaire for ${vendorName}`,
+      description: `Saved questionnaire responses for ${vendorName}`,
+      sections,
+    };
+
+    setQuestionnaireResult(result);
+    setQuestionnaireCompanyName(vendorName);
+    setQuestionnaireDocumentName(null);
+
+    // Update checkboxes based on saved data
+    const newCheckedAnswers: Record<string, boolean> = {};
+    vendorQuestions.forEach((question) => {
+      if (question.selected) {
+        const key = `ans-${question.sectionTitle}-${question.questionId}`;
+        newCheckedAnswers[key] = true;
+      }
+    });
+    setCheckedAnswers(newCheckedAnswers);
+  };
+
+  // Load vendor questionnaire when vendor is selected from saved data (only from dropdown, not from new upload)
+  useEffect(() => {
+    // Skip if this is from a fresh upload - when vendor matches current questionnaire company and we have a result
+    if (selectedVendor && selectedVendor === questionnaireCompanyName && questionnaireResult) {
+      console.log('⏭️ Skipping useEffect - questionnaire already set for fresh upload:', selectedVendor);
+      return; // Don't interfere with fresh uploads
+    }
+    
+    // Only proceed if vendor is selected
+    if (!selectedVendor) return;
+    
+    if (savedPrebiddingData && savedPrebiddingData.vendor_details[selectedVendor]) {
+      // Load saved questionnaire for this vendor
+      console.log('📥 Loading saved questionnaire for vendor:', selectedVendor);
+      loadVendorQuestionnaire(selectedVendor);
+    } else {
+      // If vendor is selected but no saved data, clear questionnaire only if it's a different vendor
+      if (questionnaireCompanyName !== selectedVendor && questionnaireResult) {
+        console.log('🧹 Clearing questionnaire - different vendor selected:', selectedVendor);
+        setQuestionnaireResult(null);
+        setCheckedAnswers({});
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVendor, savedPrebiddingData]);
+
   const handlePersistSelections = async () => {
     try {
       const selectedAddendums: any[] = [];
@@ -305,18 +515,87 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
 
       console.log('🧩 Agent added payload (for agent call):', agentAddedPayload);
 
-      const payload = {
-        department: selectedDepartment,
-        tenderId: selectedTenderId,
-        tenderName: selectedTenderName,
-        addendums: selectedAddendums,
-        vendor_details: {
-          [questionnaireCompanyName]: vendorAnswers,
-        },
+      // Check if we have existing data for this tenderId
+      // tenderId is the instance identifier (there's no separate instanceId)
+      const hasExistingData = savedPrebiddingData && savedPrebiddingData.tenderId === selectedTenderId;
+      
+      console.log('🔍 Checking for existing data:', {
+        hasSavedData: !!savedPrebiddingData,
+        savedTenderId: savedPrebiddingData?.tenderId,
+        selectedTenderId,
+        hasExistingData,
+      });
+      
+      // Merge with existing vendor_details if available
+      const existingVendorDetails = savedPrebiddingData?.vendor_details || {};
+      const updatedVendorDetails = {
+        ...existingVendorDetails,
+        [questionnaireCompanyName]: vendorAnswers,
       };
 
-      console.log('📤 Persisting prebidding selections to schema:', payload);
-      await postEntityInstances('692ec827fd9c66658f22d744', payload);
+      // Merge addendums - preserve existing addendums (they should remain the same)
+      // Only use current selection if there are no existing addendums
+      const mergedAddendums = hasExistingData && savedPrebiddingData?.addendums?.length > 0
+        ? savedPrebiddingData.addendums
+        : (selectedAddendums.length > 0 ? selectedAddendums : []);
+
+      const payload: any = {
+        department: selectedDepartment !== 'all' ? selectedDepartment : (savedPrebiddingData?.department || ''),
+        tenderId: selectedTenderId,
+        tenderName: selectedTenderName || savedPrebiddingData?.tenderName || '',
+        addendums: mergedAddendums,
+        vendor_details: updatedVendorDetails,
+      };
+
+      // Before saving, check if data already exists for this tenderId by fetching
+      // This ensures we use PUT if data exists, even if it wasn't loaded in state
+      // tenderId IS the instance identifier (row identifier)
+      let shouldUsePUT = hasExistingData;
+      
+      if (!hasExistingData && selectedTenderId !== 'all') {
+        // Quick check: fetch to see if data exists for this tenderId
+        try {
+          const existingData = await fetchEntityInstancesWithReferences(
+            SAVED_PREBIDDING_SCHEMA_ID,
+            10,
+            'TIDB',
+            { tenderId: selectedTenderId }
+          );
+          
+          const foundData = existingData.find((item: any) => {
+            const tenderId = item.tenderId || item.data?.tenderId || item.data?.tender_id;
+            return tenderId === selectedTenderId;
+          });
+          
+          if (foundData) {
+            shouldUsePUT = true;
+            console.log('✅ Found existing data for tenderId, will use PUT:', { tenderId: selectedTenderId });
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not check for existing data, proceeding with save:', error);
+        }
+      }
+
+      // If we have existing data, use PUT to update
+      // tenderId in the payload will be used as the identifier to match the instance (row)
+      if (shouldUsePUT) {
+        console.log('📤 Updating existing prebidding data with PUT (tenderId is the identifier):', {
+          hasExistingData,
+          shouldUsePUT,
+          tenderId: selectedTenderId,
+          payload,
+        });
+        await updateEntityInstance('692ec827fd9c66658f22d744', payload);
+      } else {
+        // Otherwise, use POST to create new
+        console.log('📤 Creating new prebidding data with POST:', {
+          hasExistingData,
+          shouldUsePUT,
+          selectedTenderId,
+          payload,
+        });
+        await postEntityInstances('692ec827fd9c66658f22d744', payload);
+      }
 
       // Call both Prebidding Decision Agents in parallel with combined payload and tender CDN URL (if available)
       const tenderCdnUrl = getTenderCdnUrlForSelected();
@@ -368,13 +647,14 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
         (response as any).url;
 
       // store basic meta for display
-      setQuestionnaireCompanyName('Cognizant');
       setQuestionnaireDocumentName(selectedFile.name);
 
       // 2) Call questionnaire agent with CDN URL
+      // Note: Company name will be extracted from the API response description
+      // For now, we pass a placeholder - the actual company name will be extracted from response
       try {
-        const companyName = 'Cognizant'; // TODO: make this dynamic if needed
-        const agentResponse = await callQuestionnaireAgent(companyName, [cdnUrl]);
+        const placeholderCompanyName = 'Company'; // Placeholder, will be replaced by extracted name
+        const agentResponse = await callQuestionnaireAgent(placeholderCompanyName, [cdnUrl]);
         console.log('Questionnaire agent response:', agentResponse);
 
         // Parse structured text from agent response (similar to FileUpload.tsx)
@@ -400,8 +680,149 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
           null;
 
         if (responseData) {
+          // Extract company name from description
+          // Description format: "This document contains vendor queries submitted by {Company Name}, along with..."
+          let extractedCompanyName = 'Cognizant'; // Default fallback
+          
+          // Helper function to extract company name from description text
+          const extractCompanyFromDescription = (desc: string): string | null => {
+            // Pattern: "submitted by Company Name, along with..."
+            // Example: "submitted by Tyconz Technology Solutions, along with suggested..."
+            // We want to extract just "Tyconz Technology Solutions"
+            
+            // Split by "submitted by" and take the part after it
+            const parts = desc.split(/submitted by\s+/i);
+            if (parts.length < 2) return null;
+            
+            const afterSubmitted = parts[1];
+            
+            // Now split by comma to get just the company name
+            const companyPart = afterSubmitted.split(',')[0];
+            
+            // Also check for "along with" in case there's no comma
+            const finalCompany = companyPart.split(/\s+along with/i)[0];
+            
+            const companyName = finalCompany.trim();
+            
+            // Validate: should not be empty and should not contain common sentence words
+            if (companyName && 
+                !companyName.toLowerCase().includes('along with') &&
+                !companyName.toLowerCase().includes('suggested') &&
+                companyName.length > 0 &&
+                companyName.length < 100) { // Reasonable company name length
+              return companyName;
+            }
+            
+            return null;
+          };
+          
+          // First try to extract from responseData.description
+          if (responseData.description) {
+            const companyName = extractCompanyFromDescription(responseData.description);
+            if (companyName) {
+              extractedCompanyName = companyName;
+              console.log('📝 Extracted company name from responseData.description:', extractedCompanyName);
+            }
+          }
+          
+          // Also try to extract from parsed text description
+          if (extractedCompanyName === 'Cognizant' && parsedText?.description) {
+            const descText = typeof parsedText.description === 'string' 
+              ? parsedText.description 
+              : JSON.stringify(parsedText.description);
+            const companyName = extractCompanyFromDescription(descText);
+            if (companyName) {
+              extractedCompanyName = companyName;
+              console.log('📝 Extracted company name from parsedText.description:', extractedCompanyName);
+            }
+          }
+          
+          // Last resort: try to extract from the raw text response (in case description is nested)
+          if (extractedCompanyName === 'Cognizant' && (agentResponse as any)?.text) {
+            const textResponse = typeof (agentResponse as any).text === 'string'
+              ? (agentResponse as any).text
+              : JSON.stringify((agentResponse as any).text);
+            
+            // Try to find description in the text (could be JSON string)
+            try {
+              const jsonText = JSON.parse(textResponse);
+              if (jsonText.description && typeof jsonText.description === 'string') {
+                const companyName = extractCompanyFromDescription(jsonText.description);
+                if (companyName) {
+                  extractedCompanyName = companyName;
+                  console.log('📝 Extracted company name from text response JSON description:', extractedCompanyName);
+                }
+              }
+            } catch (e) {
+              // If not JSON, try direct match on the text
+              const companyName = extractCompanyFromDescription(textResponse);
+              if (companyName) {
+                extractedCompanyName = companyName;
+                console.log('📝 Extracted company name from text response:', extractedCompanyName);
+              }
+            }
+          }
+
+          // Update company name state with extracted value FIRST
+          setQuestionnaireCompanyName(extractedCompanyName);
+          
+          // Set questionnaire result BEFORE updating vendor selection to prevent useEffect from clearing it
           setQuestionnaireResult(responseData);
           setAgentStatus(null);
+          
+          // Auto-tick checkboxes for questions that were previously selected
+          const newCheckedAnswers: Record<string, boolean> = {};
+          
+          // Check if there's saved data for this vendor
+          if (savedPrebiddingData && savedPrebiddingData.vendor_details[extractedCompanyName]) {
+            const savedQuestions = savedPrebiddingData.vendor_details[extractedCompanyName];
+            
+            // Match questions from new response with saved questions
+            responseData.sections?.forEach((section) => {
+              section.rows?.forEach((row) => {
+                // Try to find matching saved question
+                const savedQuestion = savedQuestions.find((sq) => {
+                  // Match by questionId if available
+                  if (sq.questionId && row.id && sq.questionId === row.id) {
+                    return true;
+                  }
+                  // Match by question text (case-insensitive, trimmed)
+                  const savedText = (sq.vendorQuestion || '').trim().toLowerCase();
+                  const newText = (row.vendorQuestion || '').trim().toLowerCase();
+                  if (savedText && newText && savedText === newText) {
+                    return true;
+                  }
+                  // Partial match if question text contains key phrases
+                  if (savedText && newText && (
+                    savedText.includes(newText.substring(0, 20)) ||
+                    newText.includes(savedText.substring(0, 20))
+                  )) {
+                    return true;
+                  }
+                  return false;
+                });
+                
+                // If found and was selected, tick the checkbox
+                if (savedQuestion && savedQuestion.selected) {
+                  const key = `ans-${section.sectionTitle}-${row.id}`;
+                  newCheckedAnswers[key] = true;
+                }
+              });
+            });
+          }
+          
+          setCheckedAnswers(newCheckedAnswers);
+          
+          // Update vendor list and selection AFTER questionnaire is set
+          // Add vendor to available vendors if not already present
+          if (extractedCompanyName && !availableVendors.includes(extractedCompanyName)) {
+            setAvailableVendors((prev) => [...prev, extractedCompanyName]);
+          }
+          
+          // Set selected vendor AFTER questionnaire result is set
+          // This ensures the questionnaire displays for new vendors
+          console.log('✅ Setting questionnaire for new vendor:', extractedCompanyName);
+          setSelectedVendor(extractedCompanyName);
         } else {
           setAgentStatus('Agent responded but no structured questionnaire data was found.');
         }
@@ -650,6 +1071,31 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
                     </button>
                   </div>
 
+                  {/* Vendor Dropdown */}
+                  {availableVendors.length > 0 && (
+                    <div className="max-w-2xl mx-auto">
+                      <label className="block text-xs font-semibold text-slate-700 mb-2">
+                        Select Vendor
+                      </label>
+                      <select
+                        value={selectedVendor}
+                        onChange={(e) => {
+                          const vendor = e.target.value;
+                          setSelectedVendor(vendor);
+                          loadVendorQuestionnaire(vendor);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm bg-white border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-colors"
+                      >
+                        <option value="">-- Select a vendor --</option>
+                        {availableVendors.map((vendor) => (
+                          <option key={vendor} value={vendor}>
+                            {vendor}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {isQuestionnaireOpen && (
                     <div className="max-w-2xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
                       <div className="flex items-center justify-between">
@@ -803,7 +1249,7 @@ export function TenderPrebiddingPage({ onNavigate }: TenderPrebiddingPageProps) 
                                         Suggested Answer
                                       </p>
                                       <p className="text-sm text-slate-800">
-                                        {questionnaireCompanyName}
+                                        {row.suggestedGovernmentAnswer}
                                       </p>
                                     </div>
                                   </div>
