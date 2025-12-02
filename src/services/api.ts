@@ -804,7 +804,7 @@ export interface AgentInteractionResponse {
   [key: string]: any;
 }
 
-const AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/agent-orchestration-framework-fastapi';
+const AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0/agent/interact';
 const TENDER_INTAKE_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
 
 export const interactWithAgent = async (
@@ -812,10 +812,10 @@ export const interactWithAgent = async (
   fileUrls: string[],
   agentId?: string
 ): Promise<AgentInteractionResponse> => {
-  const token = getAgentAuthToken();
+  const token = getAuthToken();
   
   // Default agent ID for tender overview
-  const defaultAgentId = 'a1faf585-78de-454f-9fea-7a39ec55e52f';
+  const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
   const targetAgentId = agentId || defaultAgentId;
   
   const requestData: AgentInteractionRequest = {
@@ -827,7 +827,7 @@ export const interactWithAgent = async (
   };
 
   console.log('🤖 Calling Agent API:', {
-    url: `${AGENT_API_BASE_URL}/agent/interact`,
+    url: AGENT_API_BASE_URL,
     agentId: targetAgentId,
     department: departmentName,
     fileCount: fileUrls.length,
@@ -836,7 +836,7 @@ export const interactWithAgent = async (
 
   try {
     const response = await axios.post<AgentInteractionResponse>(
-      `${AGENT_API_BASE_URL}/agent/interact`,
+      AGENT_API_BASE_URL,
       requestData,
       {
         headers: {
@@ -1001,6 +1001,9 @@ export interface SchemaInstanceData {
   id?: string | number | null;
   filename: string;
   cdnUrls?: string | string[];
+  department?: string;
+  category?: string;
+  sub_category?: string;
 }
 
 export interface SchemaInstanceRequest {
@@ -1064,7 +1067,10 @@ export const ingestFileToSchema = async (
 
 // Ingest multiple files to schema
 export const ingestFilesToSchema = async (
-  files: Array<{ filename: string; cdnUrl: string }>
+  files: Array<{ filename: string; cdnUrl: string }>,
+  department?: string,
+  category?: string,
+  subcategory?: string
 ): Promise<SchemaInstanceResponse> => {
   const token = getAuthToken();
   
@@ -1087,6 +1093,9 @@ export const ingestFilesToSchema = async (
       id: file.id,
       filename: file.filename,
       cdnUrls: [file.cdnUrl], // Array of CDN URLs (single file = array with one URL)
+      department: department,
+      category: category,
+      sub_category: subcategory,
     })),
   };
 

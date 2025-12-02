@@ -7,9 +7,12 @@ interface FileUploadProps {
   tenderId: string;
   onFilesUploaded: (files: TenderDocument[]) => void;
   onSubmitToOverview?: () => void;
+  department?: string;
+  category?: string;
+  subcategory?: string;
 }
 
-export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: FileUploadProps) {
+export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview, department, category, subcategory }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<TenderDocument[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
@@ -128,8 +131,8 @@ export function FileUpload({ tenderId, onFilesUploaded, onSubmitToOverview }: Fi
           }));
         
         if (filesToIngest.length > 0) {
-          await ingestFilesToSchema(filesToIngest);
-          console.log(`✅ Successfully ingested ${filesToIngest.length} file(s) to schema`);
+          await ingestFilesToSchema(filesToIngest, department, category, subcategory);
+          console.log(`✅ Successfully ingested ${filesToIngest.length} file(s) to schema with department: ${department}, category: ${category}, subcategory: ${subcategory}`);
         }
       } catch (schemaError) {
         console.error(`⚠️ Failed to ingest files to schema:`, schemaError);
