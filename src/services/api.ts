@@ -813,8 +813,10 @@ export const interactWithAgent = async (
   agentId?: string
 ): Promise<AgentInteractionResponse> => {
   const token = getAuthToken();
+  const token = getAuthToken();
   
   // Default agent ID for tender overview
+  const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
   const defaultAgentId = '019abeaa-956b-724d-9f7f-6458a84de3e0';
   const targetAgentId = agentId || defaultAgentId;
   
