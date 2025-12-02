@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { Filter, Upload, X, FileText, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { fetchVendorIntakeInstances, type VendorIntakeInstanceItem, uploadFileToCDN } from '../services/api';
+import { Filter, Upload, X, FileText, Loader2, AlertCircle, CheckCircle, Send } from 'lucide-react';
+import { fetchVendorIntakeInstances, type VendorIntakeInstanceItem, uploadFileToCDN, interactWithVendorEvaluationAgent } from '../services/api';
 
 interface VendorIntakePageProps {
-  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'evaluation-gov-tender' | 'admin' | 'vendor-intake') => void;
+  onNavigate: (page: 'intake' | 'evaluation' | 'benchmark' | 'integrity' | 'justification' | 'award' | 'leadership' | 'monitoring' | 'integration' | 'tender-article' | 'tender-overview' | 'tender-prebidding' | 'evaluation-breakdown' | 'evaluation-recommendation' | 'evaluation-gov-tender' | 'evaluation-matrix-vendor' | 'admin' | 'vendor-intake') => void;
 }
 
 interface Tender {
@@ -35,6 +35,10 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
   
   // Store all CDN URLs in one variable for agent payload
   const [cdnUrls, setCdnUrls] = useState<string[]>([]);
+  
+  // Agent submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Extract unique departments from schema instances
   const departmentsFromSchema = useMemo(() => {
@@ -296,6 +300,106 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  // Get agent_output_matrix_structure from localStorage or construct from tender data
+  const getAgentOutputMatrixStructure = (): string => {
+    try {
+      // Try to get from localStorage (set by tender prebidding page)
+      const storedAgentResponses = localStorage.getItem('agentResponses');
+      if (storedAgentResponses) {
+        const agentResponses = JSON.parse(storedAgentResponses);
+        if (Array.isArray(agentResponses) && agentResponses.length > 0) {
+          // Construct the query structure from agent responses
+          const agentOutputMatrixStructure = {
+            agentresponse1: agentResponses[0]?.evaluation_matrix || agentResponses[0],
+            agentresponse2: agentResponses[1] || agentResponses[0],
+          };
+          return JSON.stringify(agentOutputMatrixStructure);
+        }
+      }
+      
+      // If not found, return empty structure (will be populated by agent)
+      return JSON.stringify({
+        agentresponse1: {},
+        agentresponse2: {},
+      });
+    } catch (error) {
+      console.error('Error getting agent output matrix structure:', error);
+      return JSON.stringify({
+        agentresponse1: {},
+        agentresponse2: {},
+      });
+    }
+  };
+
+  const handleSubmitDocuments = async () => {
+    // Validate that files are uploaded
+    if (cdnUrls.length === 0) {
+      setSubmitError('Please upload at least one document before submitting.');
+      return;
+    }
+
+    // Validate that all files are uploaded successfully
+    const incompleteFiles = uploadedFiles.filter(f => f.status !== 'completed' || !f.cdn_url);
+    if (incompleteFiles.length > 0) {
+      setSubmitError('Please wait for all files to finish uploading before submitting.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Get agent output matrix structure
+      const agentOutputMatrixStructure = getAgentOutputMatrixStructure();
+      
+      console.log('📤 Submitting documents to vendor evaluation agent:', {
+        fileCount: cdnUrls.length,
+        fileUrls: cdnUrls,
+        queryLength: agentOutputMatrixStructure.length,
+      });
+
+      // Call the vendor evaluation agent
+      const response = await interactWithVendorEvaluationAgent(
+        agentOutputMatrixStructure,
+        cdnUrls
+      );
+
+      console.log('✅ Vendor evaluation agent response:', response);
+
+      // Store the response in localStorage for the evaluation matrix vendor page
+      const vendorEvaluationResponse = {
+        ...response,
+        timestamp: new Date().toISOString(),
+        fileUrls: cdnUrls,
+      };
+      localStorage.setItem('vendorEvaluationResponse', JSON.stringify(vendorEvaluationResponse));
+
+      // Store tender and department info from Vendor Intake selections (not from agent response)
+      const vendorIntakeMetadata = {
+        tenderId: selectedTender || currentTender?.id || '',
+        tenderName: currentTender?.title || '',
+        department: selectedDepartment !== 'all' ? selectedDepartment : (currentTender?.department || ''),
+      };
+      localStorage.setItem('vendorIntakeMetadata', JSON.stringify(vendorIntakeMetadata));
+      console.log('📋 Stored vendor intake metadata for ingestion:', {
+        tenderId: vendorIntakeMetadata.tenderId,
+        tenderName: vendorIntakeMetadata.tenderName,
+        department: vendorIntakeMetadata.department,
+        selectedTender,
+        selectedDepartment,
+        currentTender: currentTender?.id,
+      });
+
+      // Navigate to evaluation matrix vendor page
+      onNavigate('evaluation-matrix-vendor');
+    } catch (error) {
+      console.error('❌ Error submitting documents to agent:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit documents. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
       <Sidebar currentPage="vendor-intake" onNavigate={onNavigate} />
@@ -532,6 +636,40 @@ export function VendorIntakePage({ onNavigate }: VendorIntakePageProps) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Submit Button */}
+            {uploadedFiles.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                {submitError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                      <p className="text-sm text-red-700">{submitError}</p>
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleSubmitDocuments}
+                  disabled={isSubmitting || cdnUrls.length === 0 || uploadedFiles.some(f => f.status === 'uploading')}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Submitting to Agent...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      <span>Submit Documents for Evaluation</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  This will send your documents to the vendor evaluation agent for analysis
+                </p>
               </div>
             )}
           </div>

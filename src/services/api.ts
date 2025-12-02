@@ -1043,6 +1043,71 @@ export const callTenderIntakeAgent = async (
   }
 };
 
+// Vendor Evaluation Agent Interaction API
+export const interactWithVendorEvaluationAgent = async (
+  agentOutputMatrixStructure: string, // JSON string containing agent_output_matrix_structure
+  fileUrls: string[],
+  agentId: string = '019ade83-adf9-7051-acaf-568c915c6684'
+): Promise<AgentInteractionResponse> => {
+  const token = getAuthToken();
+  
+  const requestData: AgentInteractionRequest = {
+    agentId: agentId,
+    query: agentOutputMatrixStructure,
+    referenceId: '',
+    sessionId: '',
+    fileUrl: fileUrls,
+  };
+
+  console.log('🤖 Calling Vendor Evaluation Agent API:', {
+    url: AGENT_API_BASE_URL,
+    agentId: agentId,
+    queryLength: agentOutputMatrixStructure.length,
+    fileCount: fileUrls.length,
+    fileUrls: fileUrls,
+  });
+
+  try {
+    const response = await axios.post<AgentInteractionResponse>(
+      AGENT_API_BASE_URL,
+      requestData,
+      {
+        headers: {
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'authorization': `Bearer ${token}`,
+          'content-type': 'application/json',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+          'sec-ch-ua': '"Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'sec-fetch-dest': 'empty',
+          'sec-fetch-mode': 'cors',
+          'sec-fetch-site': 'cross-site',
+          'user-agent': navigator.userAgent,
+        },
+      }
+    );
+
+    console.log('✅ Vendor Evaluation Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor Evaluation Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        agentId: agentId,
+        requestUrl: AGENT_API_BASE_URL,
+        requestData: requestData,
+      });
+      throw new Error(`Vendor Evaluation Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 // Chatbot Agent Interaction API
 export interface ChatbotAgentRequest {
   agentId: string;
@@ -1828,6 +1893,7 @@ export const fetchVendorIntakeInstances = async (
 const JUSTIFICATION_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
 const JUSTIFICATION_SCHEMA_ID = '69257e9eed36767f199eb4bf';
 const EVALUATION_RECOMMENDATION_SCHEMA_ID = '6926a42db9bad705b353b1cd';
+const JUSTIFICATION_COMPOSER_V1_SCHEMA_ID = '692eaecffd9c66658f22d73f';
 
 export interface JustificationInstanceItem {
   id?: string | number;
@@ -1968,11 +2034,164 @@ export const fetchEvaluationRecommendationInstances = async (
   }
 };
 
+/**
+ * Fetch justification composer V1 instances with filters
+ * @param size - Number of instances to fetch (default: 100)
+ * @param filters - Optional filters for department and tenderId
+ * @returns Promise with list of justification composer V1 instances
+ */
+export interface JustificationComposerV1InstanceItem {
+  id?: string | number;
+  department?: string;
+  tenderId?: string;
+  tenderName?: string;
+  tender?: string;
+  text?: string;
+  [key: string]: any;
+}
+
+export interface JustificationComposerV1InstanceListResponse {
+  status?: string;
+  msg?: string;
+  data?: JustificationComposerV1InstanceItem[];
+  content?: JustificationComposerV1InstanceItem[];
+  [key: string]: any;
+}
+
+export const fetchJustificationComposerV1Instances = async (
+  size: number = 100,
+  filters?: {
+    department?: string;
+    tenderId?: string;
+  }
+): Promise<JustificationComposerV1InstanceItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData: SchemaInstanceListRequest = {
+    dbType: 'TIDB',
+    filter: filters ? {} : undefined,
+  };
+
+  // Add filters if provided
+  if (filters) {
+    if (filters.department) {
+      requestData.filter = requestData.filter || {};
+      requestData.filter['department'] = filters.department;
+    }
+    if (filters.tenderId) {
+      requestData.filter = requestData.filter || {};
+      requestData.filter['tenderId'] = filters.tenderId;
+    }
+  }
+
+  console.log('📥 Fetching justification composer V1 instances:', {
+    url: `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${JUSTIFICATION_COMPOSER_V1_SCHEMA_ID}/instances/list?size=${size}`,
+    filters,
+  });
+
+  try {
+    const response = await axios.post<JustificationComposerV1InstanceListResponse>(
+      `${JUSTIFICATION_SCHEMA_API_BASE_URL}/schemas/${JUSTIFICATION_COMPOSER_V1_SCHEMA_ID}/instances/list?size=${size}`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'en-US,en;q=0.9',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Justification composer V1 instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Justification composer V1 instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch justification composer V1 instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Call Justification Composer V1 Agent API
+ * @param tenderId - The tender ID to pass to the agent
+ * @returns Promise with agent response
+ */
+export const callJustificationComposerV1Agent = async (
+  tenderId: string
+): Promise<JustificationAgentResponse> => {
+  const token = getAuthToken();
+  
+  // Query is a JSON string containing the tenderId
+  const query = JSON.stringify({ tenderId });
+  
+  const requestData = {
+    agentId: JUSTIFICATION_COMPOSER_V1_AGENT_ID,
+    query: query,
+    referenceId: '',
+    sessionId: '',
+  };
+
+  console.log('🤖 Calling Justification Composer V1 Agent API:', {
+    url: `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+    agentId: JUSTIFICATION_COMPOSER_V1_AGENT_ID,
+    tenderId: tenderId,
+    query: query,
+  });
+
+  try {
+    const response = await axios.post<JustificationAgentResponse>(
+      `${JUSTIFICATION_AGENT_API_BASE_URL}/agent/interact`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Justification Composer V1 Agent API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Justification Composer V1 Agent API Error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        tenderId: tenderId,
+      });
+      throw new Error(`Justification Composer V1 Agent API error: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 // Justification Agent API
 const JUSTIFICATION_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
 const JUSTIFICATION_AGENT_ID = '019ab58b-dada-7c07-9545-1b32701a089d';
 const EVALUATION_RECOMMENDATION_AGENT_ID = '019ab61a-06b2-7c74-868d-a9782699d979';
 const GOVERNMENT_QUERIES_AGENT_ID = '019abeef-0ef0-721c-aad6-79f474b42b7e';
+const JUSTIFICATION_COMPOSER_V1_AGENT_ID = '019adf74-6b20-70fb-b384-98874df0535d';
 
 export interface JustificationAgentRequest {
   agentId: string;
@@ -2632,6 +2851,112 @@ export const fetchTenderOverviewSummaryByTender = async (
     instanceId: item.id,
   });
   return item;
+};
+
+// ============================================================================
+// Vendor Evaluation Summary Schema - Store vendor evaluation data
+// ============================================================================
+
+const VENDOR_EVALUATION_SCHEMA_ID = '692eaecffd9c66658f22d73f';
+
+export interface VendorEvaluationSummaryItem {
+  vendorId: string; // Generated unique ID
+  tenderName: string;
+  vendorName: string;
+  tenderId: string;
+  department: string;
+  timestamp: string;
+  points_followed_to_score: string[];
+  approvedBy: string;
+  evaluation_scores: string | number;
+  evm_response: any; // Complete JSON object from agent response
+  [key: string]: any;
+}
+
+export interface VendorEvaluationSummaryResponse {
+  status?: string;
+  msg?: string;
+  data?: VendorEvaluationSummaryItem[];
+  [key: string]: any;
+}
+
+/**
+ * Save vendor evaluation summary into schema 692eaecffd9c66658f22d73f
+ * Mirrors:
+ * POST /schemas/{schemaId}/instances
+ * {
+ *   "data": [{
+ *     "vendorId": "...", // Generated unique ID
+ *     "tenderName": "...",
+ *     "vendorName": "...",
+ *     "tenderId": "...",
+ *     "department": "...",
+ *     "timestamp": "...",
+ *     "points_followed_to_score": [...],
+ *     "approvedBy": "...",
+ *     "evaluation_scores": "...",
+ *     "evm_response": "{...}"
+ *   }]
+ * }
+ */
+export const saveVendorEvaluationSummary = async (
+  item: VendorEvaluationSummaryItem
+): Promise<VendorEvaluationSummaryResponse> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    data: [
+      {
+        vendorId: item.vendorId,
+        tenderName: item.tenderName,
+        vendorName: item.vendorName,
+        tenderId: item.tenderId,
+        department: item.department,
+        timestamp: item.timestamp,
+        points_followed_to_score: item.points_followed_to_score,
+        approvedBy: item.approvedBy,
+        evaluation_scores: item.evaluation_scores,
+        evm_response: item.evm_response,
+      },
+    ],
+  };
+
+  console.log('📤 Saving vendor evaluation summary to schema:', {
+    url: `${SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances`,
+    vendorId: item.vendorId,
+    vendorName: item.vendorName,
+    tenderId: item.tenderId,
+    tenderName: item.tenderName,
+  });
+
+  try {
+    const response = await axios.post<VendorEvaluationSummaryResponse>(
+      `${SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances`,
+      requestData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          accept: 'application/json, text/plain, */*',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation summary saved:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Error saving vendor evaluation summary:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(
+        `Failed to save vendor evaluation summary: ${error.response?.data?.msg || error.message}`
+      );
+    }
+    throw error;
+  }
 };
 
 // ============================================================================

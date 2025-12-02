@@ -4,6 +4,7 @@ import { EvaluationMatrixPage } from '../pages/EvaluationMatrixPage';
 import { BenchmarkDashboardPage } from '../pages/BenchmarkDashboardPage';
 import { IntegrityAnalyticsPage } from '../pages/IntegrityAnalyticsPage';
 import { JustificationComposerPage } from '../pages/JustificationComposerPage';
+import { JustificationComposerV1Page } from '../pages/JustificationComposerV1Page';
 import { AwardSimulationPage } from '../pages/AwardSimulationPage';
 import { LeadershipDashboardPage } from '../pages/LeadershipDashboardPage';
 import { AgentMonitoringPage } from '../pages/AgentMonitoringPage';
@@ -18,6 +19,7 @@ import { CompanyDetailPage } from '../pages/CompanyDetailPage';
 import { LoginPage } from '../pages/LoginPage';
 import { AdminPanelPage } from '../pages/AdminPanelPage';
 import { VendorIntakePage } from '../pages/VendorIntakePage';
+import { EvaluationMatrixVendorPage } from '../pages/EvaluationMatrixVendorPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
   // Helper function to create navigation handler
@@ -34,9 +36,11 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
         'evaluation-breakdown': '/evaluation-breakdown',
         'evaluation-recommendation': '/evaluation-recommendation',
         'evaluation-gov-tender': '/evaluation-gov-tender',
+        'evaluation-matrix-vendor': '/evaluation-matrix-vendor',
         'benchmark': '/benchmark',
         'integrity': '/integrity',
         'justification': '/justification',
+        'justification-composer-v1': '/justification-composer-v1',
         'award': '/award',
         'monitoring': '/monitoring',
         'integration': '/integration',
@@ -108,6 +112,12 @@ const JustificationComposerWrapper = () => {
   return <JustificationComposerPage onNavigate={handleNavigate} />;
 };
 
+const JustificationComposerV1Wrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <JustificationComposerV1Page onNavigate={handleNavigate} />;
+};
+
 const AwardSimulationWrapper = () => {
   const navigate = useNavigate();
   const handleNavigate = createNavigateHandler(navigate);
@@ -154,6 +164,12 @@ const VendorIntakeWrapper = () => {
   const navigate = useNavigate();
   const handleNavigate = createNavigateHandler(navigate);
   return <VendorIntakePage onNavigate={handleNavigate} />;
+};
+
+const EvaluationMatrixVendorWrapper = () => {
+  const navigate = useNavigate();
+  const handleNavigate = createNavigateHandler(navigate);
+  return <EvaluationMatrixVendorPage onNavigate={handleNavigate} />;
 };
 
 export const router = createBrowserRouter([
@@ -266,6 +282,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/justification-composer-v1',
+    element: (
+      <ProtectedRoute>
+        <JustificationComposerV1Wrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/award',
     element: (
       <ProtectedRoute>
@@ -302,6 +326,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <VendorIntakeWrapper />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/evaluation-matrix-vendor',
+    element: (
+      <ProtectedRoute>
+        <EvaluationMatrixVendorWrapper />
       </ProtectedRoute>
     ),
   },

@@ -20,8 +20,10 @@ interface SidebarProps {
     | 'evaluation-breakdown'
     | 'evaluation-recommendation'
     | 'evaluation-gov-tender'
+    | 'evaluation-matrix-vendor'
     | 'admin'
-    | 'vendor-intake';
+    | 'vendor-intake'
+    | 'justification-composer-v1';
   onNavigate: (
     page:
       | 'intake'
@@ -39,8 +41,10 @@ interface SidebarProps {
       | 'evaluation-breakdown'
       | 'evaluation-recommendation'
       | 'evaluation-gov-tender'
+      | 'evaluation-matrix-vendor'
       | 'admin'
       | 'vendor-intake'
+      | 'justification-composer-v1'
   ) => void;
 }
 
@@ -63,9 +67,11 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     'evaluation-breakdown': 'Evaluation Breakdown',
     'evaluation-recommendation': 'Evaluation Recommendation',
     'evaluation-gov-tender': 'Evaluation Matrix Government Tender',
+    'evaluation-matrix-vendor': 'Evaluation Matrix Vendor',
     'benchmark': 'Benchmark Dashboard',
     'integrity': 'Integrity Analytics',
     'justification': 'Justification Composer',
+    'justification-composer-v1': 'Justification Composer V1',
     'award': 'Award Simulation',
     'monitoring': 'Agent Monitoring',
     'integration': 'Integration Management',
@@ -83,9 +89,11 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     '/evaluation-breakdown': 'evaluation-breakdown',
     '/evaluation-recommendation': 'evaluation-recommendation',
     '/evaluation-gov-tender': 'evaluation-gov-tender',
+    '/evaluation-matrix-vendor': 'evaluation-matrix-vendor',
     '/benchmark': 'benchmark',
     '/integrity': 'integrity',
     '/justification': 'justification',
+    '/justification-composer-v1': 'justification-composer-v1',
     '/award': 'award',
     '/monitoring': 'monitoring',
     '/integration': 'integration',
@@ -177,6 +185,11 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           label: 'Gov Tender Evaluation',
           path: '/evaluation-gov-tender',
         },
+        {
+          id: 'evaluation-matrix-vendor' as const,
+          label: 'Vendor Evaluation',
+          path: '/evaluation-matrix-vendor',
+        },
       ],
     },
     {
@@ -193,12 +206,19 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       description: 'Fraud Detection',
       path: '/integrity',
     },
+    // {
+    //   id: 'justification' as const,
+    //   label: 'Justification Composer',
+    //   icon: FileEdit,
+    //   description: 'Report Writing',
+    //   path: '/justification',
+    // },
     {
-      id: 'justification' as const,
-      label: 'Justification Composer',
+      id: 'justification-composer-v1' as const,
+      label: 'Justification Composer V1',
       icon: FileEdit,
-      description: 'Report Writing',
-      path: '/justification',
+      description: 'Vendor Evaluation Report',
+      path: '/justification-composer-v1',
     },
     {
       id: 'award' as const,
