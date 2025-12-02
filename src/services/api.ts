@@ -1894,7 +1894,7 @@ export const fetchVendorIntakeInstances = async (
 const JUSTIFICATION_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
 const JUSTIFICATION_SCHEMA_ID = '69257e9eed36767f199eb4bf';
 const EVALUATION_RECOMMENDATION_SCHEMA_ID = '6926a42db9bad705b353b1cd';
-const JUSTIFICATION_COMPOSER_V1_SCHEMA_ID = '692eaecffd9c66658f22d73f';
+const JUSTIFICATION_COMPOSER_V1_SCHEMA_ID = '692f5045fd9c66658f22d75b';
 
 export interface JustificationInstanceItem {
   id?: string | number;
@@ -2858,10 +2858,10 @@ export const fetchTenderOverviewSummaryByTender = async (
 // Vendor Evaluation Summary Schema - Store vendor evaluation data
 // ============================================================================
 
-const VENDOR_EVALUATION_SCHEMA_ID = '692eaecffd9c66658f22d73f';
+const VENDOR_EVALUATION_SCHEMA_ID = '692f5045fd9c66658f22d75b';
 
 export interface VendorEvaluationSummaryItem {
-  vendorId: string; // Generated unique ID
+ 
   tenderName: string;
   vendorName: string;
   tenderId: string;
@@ -2882,7 +2882,7 @@ export interface VendorEvaluationSummaryResponse {
 }
 
 /**
- * Save vendor evaluation summary into schema 692eaecffd9c66658f22d73f
+ * Save vendor evaluation summary into schema 692f5045fd9c66658f22d75b
  * Mirrors:
  * POST /schemas/{schemaId}/instances
  * {
@@ -2908,7 +2908,6 @@ export const saveVendorEvaluationSummary = async (
   const requestData = {
     data: [
       {
-        vendorId: item.vendorId,
         tenderName: item.tenderName,
         vendorName: item.vendorName,
         tenderId: item.tenderId,
@@ -2924,7 +2923,6 @@ export const saveVendorEvaluationSummary = async (
 
   console.log('📤 Saving vendor evaluation summary to schema:', {
     url: `${SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances`,
-    vendorId: item.vendorId,
     vendorName: item.vendorName,
     tenderId: item.tenderId,
     tenderName: item.tenderName,

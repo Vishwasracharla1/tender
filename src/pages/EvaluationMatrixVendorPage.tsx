@@ -272,6 +272,7 @@ export function EvaluationMatrixVendorPage({
                 let vendorIntakeTenderId = '';
                 let vendorIntakeDepartment = '';
                 let vendorIntakeTenderName = '';
+                let vendorIntakeVendorName = '';
                 
                 try {
                   const vendorIntakeMetadataStr = localStorage.getItem('vendorIntakeMetadata');
@@ -280,14 +281,80 @@ export function EvaluationMatrixVendorPage({
                     vendorIntakeTenderId = vendorIntakeMetadata.tenderId || '';
                     vendorIntakeDepartment = vendorIntakeMetadata.department || '';
                     vendorIntakeTenderName = vendorIntakeMetadata.tenderName || '';
+                    vendorIntakeVendorName = vendorIntakeMetadata.vendorName || '';
                     console.log('📋 Using vendor intake metadata:', vendorIntakeMetadata);
                   }
                 } catch (e) {
                   console.warn('⚠️ Could not read vendor intake metadata:', e);
                 }
                 
-                // Generate a unique vendorId
-                const vendorId = crypto.randomUUID();
+                // Extract vendorName from multiple possible sources with fallbacks
+                const extractVendorName = (): string => {
+                  if (!parsedData) return '';
+                  
+                  // Priority 1: From parsedData.vendorName
+                  if (parsedData.vendorName && parsedData.vendorName.trim()) {
+                    return parsedData.vendorName.trim();
+                  }
+                  
+                  // Priority 2: From vendorIntakeMetadata
+                  if (vendorIntakeVendorName && vendorIntakeVendorName.trim()) {
+                    return vendorIntakeVendorName.trim();
+                  }
+                  
+                  // Priority 3: From evm_response if it's an object
+                  if (evmResponseObj && typeof evmResponseObj === 'object') {
+                    if (evmResponseObj.vendorName && typeof evmResponseObj.vendorName === 'string' && evmResponseObj.vendorName.trim()) {
+                      return evmResponseObj.vendorName.trim();
+                    }
+                    if (evmResponseObj.vendor_name && typeof evmResponseObj.vendor_name === 'string' && evmResponseObj.vendor_name.trim()) {
+                      return evmResponseObj.vendor_name.trim();
+                    }
+                    if (evmResponseObj.companyName && typeof evmResponseObj.companyName === 'string' && evmResponseObj.companyName.trim()) {
+                      return evmResponseObj.companyName.trim();
+                    }
+                  }
+                  
+                  // Priority 4: Try to extract from sourceFileName (remove extension and clean up)
+                  if (parsedData.tenderMeta?.sourceFileName) {
+                    const fileName = parsedData.tenderMeta.sourceFileName;
+                    // Remove file extension and common prefixes
+                    let extractedName = fileName
+                      .replace(/\.[^/.]+$/, '') // Remove extension
+                      .replace(/^V\d+_/, '') // Remove version prefix like "V1_"
+                      .replace(/^\d+[-_]/, '') // Remove leading numbers
+                      .trim();
+                    
+                    if (extractedName && extractedName.length > 0) {
+                      return extractedName;
+                    }
+                  }
+                  
+                  // Priority 5: Check parsedData for alternative field names
+                  if ((parsedData as any).vendor_name && typeof (parsedData as any).vendor_name === 'string' && (parsedData as any).vendor_name.trim()) {
+                    return (parsedData as any).vendor_name.trim();
+                  }
+                  if ((parsedData as any).companyName && typeof (parsedData as any).companyName === 'string' && (parsedData as any).companyName.trim()) {
+                    return (parsedData as any).companyName.trim();
+                  }
+                  
+                  // If still not found, log warning and return empty string
+                  console.warn('⚠️ Could not extract vendorName from any source. Available fields:', {
+                    parsedDataVendorName: parsedData.vendorName,
+                    vendorIntakeVendorName: vendorIntakeVendorName,
+                    sourceFileName: parsedData.tenderMeta?.sourceFileName,
+                    evmResponseKeys: evmResponseObj ? Object.keys(evmResponseObj) : null,
+                  });
+                  
+                  return '';
+                };
+                
+                const vendorName = extractVendorName();
+                
+                if (!vendorName) {
+                  console.error('❌ Vendor name is required but could not be extracted from any source');
+                  throw new Error('Vendor name is required for ingestion but was not found in the response data');
+                }
                 
                 // Get logged-in user's name for approvedBy
                 const approvedBy = getApprovedBy();
@@ -295,9 +362,8 @@ export function EvaluationMatrixVendorPage({
                 // Prepare data for ingestion
                 // Use tenderId and department from Vendor Intake, not from agent response
                 const ingestionData = {
-                  vendorId: vendorId, // Generated unique ID
                   tenderName: vendorIntakeTenderName || parsedData.tenderName || parsedData.tenderMeta?.tenderTitle || '',
-                  vendorName: parsedData.vendorName || '',
+                  vendorName: vendorName, // Extracted with multiple fallbacks
                   tenderId: vendorIntakeTenderId || parsedData.tenderId || parsedData.tenderMeta?.tenderId || '',
                   department: vendorIntakeDepartment || parsedData.department || parsedData.tenderMeta?.departmentName || '',
                   timestamp: new Date().toISOString(),
