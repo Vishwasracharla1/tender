@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { FileUpload } from '../components/FileUpload';
-import { ValidationPanel } from '../components/ValidationPanel';
-import { NormalizationSummary } from '../components/NormalizationSummary';
-import { UnitHarmonizationLog } from '../components/UnitHarmonizationLog';
+// import { ValidationPanel } from '../components/ValidationPanel';
+// import { NormalizationSummary } from '../components/NormalizationSummary';
+// import { UnitHarmonizationLog } from '../components/UnitHarmonizationLog';
 import { KPIWidget } from '../components/KPIWidget';
-import { VendorErrorHeatmap } from '../components/VendorErrorHeatmap';
+// import { VendorErrorHeatmap } from '../components/VendorErrorHeatmap';
 import { StickyFooter } from '../components/StickyFooter';
 import { Sidebar } from '../components/Sidebar';
 import { DepartmentSelector } from '../components/DepartmentSelector';
@@ -211,15 +211,15 @@ export function TenderIntakePage({ onNavigate }: TenderIntakePageProps) {
                 />
               </div>
 
-              <ValidationPanel items={validationItems} />
+              {/* <ValidationPanel items={validationItems} /> */}
             </div>
 
             <div className="space-y-6">
-              <NormalizationSummary entries={normalizationEntries} />
+              {/* <NormalizationSummary entries={normalizationEntries} /> */}
 
-              <VendorErrorHeatmap data={vendorErrors} />
+              {/* <VendorErrorHeatmap data={vendorErrors} /> */}
 
-              <UnitHarmonizationLog entries={harmonizationLogs} />
+              {/* <UnitHarmonizationLog entries={harmonizationLogs} /> */}
             </div>
           </div>
         )}
