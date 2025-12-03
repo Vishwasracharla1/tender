@@ -202,7 +202,8 @@ export function EvaluationMatrixGovTenderPage({
         } else if (tenderList.length > 0) {
           // Default to first tender if no URL param
           setSelectedTenderId(tenderList[0].tenderId);
-          setIsUserInitiatedTenderSelection(false); // Mark as auto-selected
+          // Don't auto-fetch - wait for user to select or URL params
+          setIsUserInitiatedTenderSelection(false);
         } else {
           setSelectedTenderId('');
           setData(null);
@@ -229,15 +230,9 @@ export function EvaluationMatrixGovTenderPage({
         return;
       }
       
-      // Check if we have URL params (came from redirect)
-      const urlDepartment = searchParams.get('department');
-      const urlTenderId = searchParams.get('tenderId');
-      const hasUrlParamsForFetch = !!(urlDepartment || urlTenderId);
-      
-      // Auto-fetch if we came from redirect (has URL params), otherwise only fetch on user selection
-      if (!hasUrlParamsForFetch && !isUserInitiatedTenderSelection) {
-        return;
-      }
+      // Always fetch when both department and tender are selected
+      // The isUserInitiatedTenderSelection flag is just for tracking, not blocking
+      // This ensures data loads when filters change
 
       try {
         setIsLoadingData(true);
@@ -440,6 +435,7 @@ export function EvaluationMatrixGovTenderPage({
                     setSelectedTenderId(''); // Reset tender when department changes
                     setData(null); // Clear data when department changes
                     setIsUserInitiatedTenderSelection(false); // Reset flag when department changes
+                    setError(null); // Clear any errors
                   }}
                   disabled={isLoadingDepartments}
                   className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { AlertTriangle, CheckCircle2, FileText, Target, ShieldAlert, Building2, TrendingUp } from 'lucide-react';
-import { saveVendorEvaluationSummary } from '../services/api';
+import { AlertTriangle, CheckCircle2, FileText, Target, ShieldAlert, Building2, TrendingUp, Filter, Loader2 } from 'lucide-react';
+import { 
+  saveVendorEvaluationSummary,
+  fetchVendorEvaluationDepartments,
+  fetchVendorEvaluationTenders,
+  fetchVendorEvaluationVendors,
+  fetchVendorEvaluationData,
+  type VendorEvaluationDepartment,
+  type VendorEvaluationTender,
+  type VendorEvaluationVendor,
+} from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
 interface EvaluationMatrixVendorPageProps {
@@ -165,6 +174,19 @@ export function EvaluationMatrixVendorPage({
 }: EvaluationMatrixVendorPageProps) {
   const [data, setData] = useState<VendorEvaluationData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedTenderId, setSelectedTenderId] = useState<string>('');
+  const [selectedVendorName, setSelectedVendorName] = useState<string>('');
+  const [departments, setDepartments] = useState<VendorEvaluationDepartment[]>([]);
+  const [tenders, setTenders] = useState<VendorEvaluationTender[]>([]);
+  const [vendors, setVendors] = useState<VendorEvaluationVendor[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
+  const [isLoadingTenders, setIsLoadingTenders] = useState(false);
+  const [isLoadingVendors, setIsLoadingVendors] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isUserInitiatedTenderSelection, setIsUserInitiatedTenderSelection] = useState(false);
+  const [isUserInitiatedVendorSelection, setIsUserInitiatedVendorSelection] = useState(false);
   const { user } = useAuthStore();
   
   // Get logged-in user's name for approvedBy field
@@ -194,8 +216,173 @@ export function EvaluationMatrixVendorPage({
     return '';
   };
 
+  // Load departments on mount
   useEffect(() => {
-    // Read vendor evaluation response from localStorage (set by VendorIntakePage)
+    const loadDepartments = async () => {
+      try {
+        setIsLoadingDepartments(true);
+        setError(null);
+        const depts = await fetchVendorEvaluationDepartments();
+        setDepartments(depts);
+        
+        if (depts.length > 0) {
+          // Default to first department
+          setSelectedDepartment(depts[0].department);
+        }
+      } catch (err: any) {
+        console.error('Error loading departments:', err);
+        setError(err.message || 'Failed to load departments');
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
+  // Load tenders when department is selected
+  useEffect(() => {
+    const loadTenders = async () => {
+      if (!selectedDepartment) {
+        setTenders([]);
+        setSelectedTenderId('');
+        return;
+      }
+
+      try {
+        setIsLoadingTenders(true);
+        setError(null);
+        const tenderList = await fetchVendorEvaluationTenders(selectedDepartment);
+        setTenders(tenderList);
+        
+        if (tenderList.length > 0) {
+          // Default to first tender
+          setSelectedTenderId(tenderList[0].tenderId);
+          setIsUserInitiatedTenderSelection(false); // Mark as auto-selected
+        } else {
+          setSelectedTenderId('');
+          setData(null);
+        }
+      } catch (err: any) {
+        console.error('Error loading tenders:', err);
+        setError(err.message || 'Failed to load tenders');
+        setTenders([]);
+        setSelectedTenderId('');
+      } finally {
+        setIsLoadingTenders(false);
+      }
+    };
+
+    loadTenders();
+  }, [selectedDepartment]);
+
+  // Load vendors when both department and tender are selected
+  useEffect(() => {
+    const loadVendors = async () => {
+      if (!selectedDepartment || !selectedTenderId) {
+        setVendors([]);
+        setSelectedVendorName('');
+        return;
+      }
+
+      try {
+        setIsLoadingVendors(true);
+        setError(null);
+        const vendorList = await fetchVendorEvaluationVendors(selectedDepartment, selectedTenderId);
+        setVendors(vendorList);
+        
+        if (vendorList.length > 0) {
+          // Default to first vendor
+          setSelectedVendorName(vendorList[0].vendorName);
+          // Auto-select the first vendor and trigger data load
+          setIsUserInitiatedVendorSelection(true); // Allow auto-fetch for first vendor
+        } else {
+          setSelectedVendorName('');
+          setData(null);
+        }
+      } catch (err: any) {
+        console.error('Error loading vendors:', err);
+        setError(err.message || 'Failed to load vendors');
+        setVendors([]);
+        setSelectedVendorName('');
+      } finally {
+        setIsLoadingVendors(false);
+      }
+    };
+
+    loadVendors();
+  }, [selectedDepartment, selectedTenderId]);
+
+  // Load vendor evaluation data when department, tender, and vendor are selected
+  useEffect(() => {
+    const loadVendorEvaluationData = async () => {
+      if (!selectedDepartment || !selectedTenderId || !selectedVendorName) {
+        setData(null);
+        return;
+      }
+      
+      // Always fetch when all three filters are selected
+      // The isUserInitiatedVendorSelection flag is just for tracking, not blocking
+      // This ensures data loads automatically when filters are auto-selected
+
+      try {
+        setIsLoadingData(true);
+        setError(null);
+        const vendorData = await fetchVendorEvaluationData(selectedDepartment, selectedTenderId, selectedVendorName);
+        
+        if (!vendorData || !vendorData.evm_response) {
+          setData(null);
+          setIsLoadingData(false);
+          return;
+        }
+
+        // Parse the evm_response to get the vendor evaluation data
+        let parsedData: VendorEvaluationData | null = null;
+        const evmResponse = vendorData.evm_response;
+        
+        if (typeof evmResponse === 'string') {
+          try {
+            parsedData = JSON.parse(evmResponse);
+          } catch (e) {
+            console.error('Error parsing evm_response:', e);
+            parsedData = evmResponse as any;
+          }
+        } else if (typeof evmResponse === 'object') {
+          parsedData = evmResponse as VendorEvaluationData;
+        }
+
+        if (parsedData) {
+          // Add vendorName and other metadata from the fetched data
+          parsedData.vendorName = vendorData.vendorName;
+          parsedData.tenderId = vendorData.tenderId;
+          parsedData.tenderName = vendorData.tenderName;
+          parsedData.department = vendorData.department;
+          setData(parsedData);
+        } else {
+          setData(null);
+        }
+      } catch (err: any) {
+        console.error('Error loading vendor evaluation data:', err);
+        setError(err.message || 'Failed to load vendor evaluation data');
+        setData(null);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadVendorEvaluationData();
+  }, [selectedDepartment, selectedTenderId, selectedVendorName, isUserInitiatedVendorSelection]);
+
+  // Legacy: Read vendor evaluation response from localStorage (set by VendorIntakePage)
+  // This will be used as fallback if no filter selection is made
+  // Only load from localStorage if no department/tender is selected via filters
+  useEffect(() => {
+    // Skip localStorage loading if filters are being used
+    if (selectedDepartment && selectedTenderId) {
+      setIsLoading(false);
+      return;
+    }
+
     const loadAndIngestData = async () => {
       try {
         const storedResponse = localStorage.getItem('vendorEvaluationResponse');
@@ -408,31 +595,7 @@ export function EvaluationMatrixVendorPage({
     loadAndIngestData();
   }, []);
 
-  if (isLoading) {
-    return (
-      <>
-        <Sidebar currentPage="evaluation-matrix-vendor" onNavigate={onNavigate as any} />
-        <div className="app-shell min-h-screen bg-gray-50 pb-24 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-slate-600">Loading evaluation data...</p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (!data || Object.keys(data).length === 0) {
-    return (
-      <>
-        <Sidebar currentPage="evaluation-matrix-vendor" onNavigate={onNavigate as any} />
-        <div className="app-shell min-h-screen bg-gray-50 pb-24 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-slate-600">No evaluation data available.</p>
-          </div>
-        </div>
-      </>
-    );
-  }
+  // Removed early returns - filters should always be visible
 
   const getVerdictColor = (verdict?: string) => {
     if (!verdict) return 'text-slate-600';
@@ -469,26 +632,180 @@ export function EvaluationMatrixVendorPage({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                {data.tenderMeta?.tenderId || data.tenderId}
-              </span>
-              <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                {data.tenderMeta?.departmentName || data.department}
-              </span>
-              {data.vendorName && (
-                <span className="px-3 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                  {data.vendorName}
+            {data && (
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {data.tenderMeta?.tenderId || data.tenderId}
                 </span>
-              )}
-            </div>
+                <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  {data.tenderMeta?.departmentName || data.department}
+                </span>
+                {data.vendorName && (
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                    {data.vendorName}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+          {/* Filters */}
+          <section className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-white via-sky-50 to-sky-100 border border-sky-100">
+            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-sky-200 to-blue-200 opacity-50 blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-cyan-100 to-slate-100 opacity-60 blur-3xl pointer-events-none" />
+
+            <div className="relative flex items-center gap-2 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-inner">
+                <Filter className="w-5 h-5 text-indigo-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold tracking-[0.3em] text-indigo-500 uppercase">
+                  Filters
+                </p>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Select Department, Tender, and Vendor
+                </h2>
+              </div>
+            </div>
+
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+                  Department
+                </label>
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => {
+                    setSelectedDepartment(e.target.value);
+                    setSelectedTenderId(''); // Reset tender when department changes
+                    setSelectedVendorName(''); // Reset vendor when department changes
+                    setData(null); // Clear data when department changes
+                    setIsUserInitiatedTenderSelection(false); // Reset flag when department changes
+                    setIsUserInitiatedVendorSelection(false); // Reset vendor flag
+                  }}
+                  disabled={isLoadingDepartments}
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoadingDepartments ? (
+                    <option>Loading departments...</option>
+                  ) : departments.length === 0 ? (
+                    <option>No departments available</option>
+                  ) : (
+                    <>
+                      <option value="">Select Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept.department} value={dept.department}>
+                          {dept.department}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+                  Tender
+                </label>
+                <select
+                  value={selectedTenderId}
+                  onChange={(e) => {
+                    setSelectedTenderId(e.target.value);
+                    setSelectedVendorName(''); // Reset vendor when tender changes
+                    setIsUserInitiatedTenderSelection(true); // Mark as user-initiated selection
+                    setIsUserInitiatedVendorSelection(false); // Reset vendor flag
+                    setData(null); // Clear data when tender changes
+                  }}
+                  disabled={isLoadingTenders || !selectedDepartment || tenders.length === 0}
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoadingTenders ? (
+                    <option>Loading tenders...</option>
+                  ) : !selectedDepartment ? (
+                    <option>Select a department first</option>
+                  ) : tenders.length === 0 ? (
+                    <option>No tenders available for this department</option>
+                  ) : (
+                    <>
+                      <option value="">Select Tender</option>
+                      {tenders.map((tender) => (
+                        <option key={tender.tenderId} value={tender.tenderId}>
+                          {tender.tenderName}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+                  Vendor
+                </label>
+                <select
+                  value={selectedVendorName}
+                  onChange={(e) => {
+                    setSelectedVendorName(e.target.value);
+                    setIsUserInitiatedVendorSelection(true); // Mark as user-initiated selection
+                    setData(null); // Clear data when vendor changes
+                  }}
+                  disabled={isLoadingVendors || !selectedDepartment || !selectedTenderId || vendors.length === 0}
+                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoadingVendors ? (
+                    <option>Loading vendors...</option>
+                  ) : !selectedDepartment || !selectedTenderId ? (
+                    <option>Select department and tender first</option>
+                  ) : vendors.length === 0 ? (
+                    <option>No vendors available for this tender</option>
+                  ) : (
+                    <>
+                      <option value="">Select Vendor</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor.vendorName} value={vendor.vendorName}>
+                          {vendor.vendorName}
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {error && (
+              <div className="relative mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+          </section>
+
+          {/* Loading state */}
+          {isLoadingData && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 text-sky-600 animate-spin mx-auto mb-3" />
+                <p className="text-sm text-slate-600">Loading evaluation data...</p>
+              </div>
+            </div>
+          )}
+
+          {/* No data state */}
+          {!isLoadingData && !data && selectedDepartment && selectedTenderId && selectedVendorName && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-sm text-slate-600">No evaluation data available for the selected tender.</p>
+              </div>
+            </div>
+          )}
+
           {/* Vendor Summary & Tender Meta */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="col-span-2">
+          {data && !isLoadingData && (
+            <>
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="col-span-2">
               <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100 to-white p-5 shadow-sm">
                 <div className="absolute -right-14 -top-10 w-40 h-40 bg-indigo-200/40 rounded-full blur-3xl" />
                 <div className="relative space-y-2">
@@ -560,16 +877,16 @@ export function EvaluationMatrixVendorPage({
                   )}
                 </div>
               )}
-            </div>
-          </section>
+              </div>
+            </section>
 
-          {/* Evaluation Dimensions */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any]) => (
-              <div
-                key={key}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2"
-              >
+            {/* Evaluation Dimensions */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {data && data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any]) => (
+                <div
+                  key={key}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2"
+                >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Target className="w-4 h-4 text-indigo-600" />
@@ -678,11 +995,11 @@ export function EvaluationMatrixVendorPage({
                 )}
               </div>
             ))}
-          </section>
+            </section>
 
-          {/* Completeness Check Details */}
-          {data.completenessCheck && (
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Completeness Check Details */}
+            {data.completenessCheck && (
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-semibold text-slate-900 uppercase mb-3">
                   Expected Sections
@@ -728,12 +1045,12 @@ export function EvaluationMatrixVendorPage({
                   )}
                 </div>
               </div>
-            </section>
-          )}
+              </section>
+            )}
 
-          {/* Document Structure */}
-          <section className="space-y-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            {/* Document Structure */}
+            <section className="space-y-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="w-4 h-4 text-indigo-600" />
                 <h3 className="text-sm font-semibold text-slate-900">
@@ -759,11 +1076,11 @@ export function EvaluationMatrixVendorPage({
                 ))}
               </div>
             </div>
-          </section>
+            </section>
 
-          {/* Risk Assessment & Issues */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            {/* Risk Assessment & Issues */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-slate-900">
@@ -818,11 +1135,11 @@ export function EvaluationMatrixVendorPage({
                 )}
               </div>
             </div>
-          </section>
+            </section>
 
-          {/* Overall Recommendation */}
-          <section className="space-y-4">
-            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100 to-white p-5 shadow-sm space-y-3">
+            {/* Overall Recommendation */}
+            <section className="space-y-4">
+              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100 to-white p-5 shadow-sm space-y-3">
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-indigo-700" />
                 <h3 className="text-sm font-semibold text-slate-900">
@@ -888,6 +1205,8 @@ export function EvaluationMatrixVendorPage({
               </div>
             )}
           </section>
+          </>
+          )}
         </main>
       </div>
     </>

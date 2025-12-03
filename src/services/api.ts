@@ -2859,6 +2859,431 @@ export const fetchTenderOverviewSummaryByTender = async (
 // ============================================================================
 
 const VENDOR_EVALUATION_SCHEMA_ID = '692f5045fd9c66658f22d75b';
+const VENDOR_EVALUATION_SCHEMA_API_BASE_URL = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+
+export interface VendorEvaluationDepartment {
+  department: string;
+}
+
+export interface VendorEvaluationTender {
+  tenderName: string;
+  tenderId: string;
+  department: string;
+}
+
+export interface VendorEvaluationVendor {
+  vendorName: string;
+  tenderId: string;
+  department: string;
+}
+
+/**
+ * Fetch distinct departments from vendor evaluation schema
+ * @returns Promise with list of distinct departments
+ */
+export const fetchVendorEvaluationDepartments = async (): Promise<VendorEvaluationDepartment[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {},
+    distinctColumns: ['department'],
+  };
+
+  console.log('📥 Fetching distinct departments from vendor evaluation schema:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation departments response:', response.data);
+
+    // Handle different response formats
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    }
+
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor evaluation departments fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch departments: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch tenders filtered by department from vendor evaluation schema
+ * @param department - Department name to filter by
+ * @returns Promise with list of tenders for the department
+ */
+export const fetchVendorEvaluationTenders = async (
+  department: string
+): Promise<VendorEvaluationTender[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+    },
+    projections: ['tenderId', 'department', 'tenderName'],
+  };
+
+  console.log('📥 Fetching tenders for department from vendor evaluation schema:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    department,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation tenders response:', response.data);
+
+    // Handle different response formats and extract unique tenders
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Extract unique tenders by tenderId
+    const tenderMap = new Map<string, VendorEvaluationTender>();
+    rawData.forEach((item: any) => {
+      const tenderId = item.tenderId || item.tender_id || '';
+      const tenderName = item.tenderName || item.tender_name || '';
+      const dept = item.department || department;
+
+      if (tenderId && !tenderMap.has(tenderId)) {
+        tenderMap.set(tenderId, {
+          tenderId,
+          tenderName,
+          department: dept,
+        });
+      }
+    });
+
+    return Array.from(tenderMap.values());
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor evaluation tenders fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+      });
+      throw new Error(`Failed to fetch tenders: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch vendors filtered by department and tenderId from vendor evaluation schema
+ * @param department - Department name to filter by
+ * @param tenderId - Tender ID to filter by
+ * @returns Promise with list of vendors for the department and tender
+ */
+export const fetchVendorEvaluationVendors = async (
+  department: string,
+  tenderId: string
+): Promise<VendorEvaluationVendor[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+      tenderId: tenderId,
+    },
+    projections: ['vendorName', 'tenderId', 'department'],
+  };
+
+  console.log('📥 Fetching vendors for department and tender from vendor evaluation schema:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    department,
+    tenderId,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation vendors response:', response.data);
+
+    // Handle different response formats and extract unique vendors
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Extract unique vendors by vendorName
+    const vendorMap = new Map<string, VendorEvaluationVendor>();
+    rawData.forEach((item: any) => {
+      const vendorName = item.vendorName || '';
+      const tId = item.tenderId || tenderId;
+      const dept = item.department || department;
+
+      if (vendorName && !vendorMap.has(vendorName)) {
+        vendorMap.set(vendorName, {
+          vendorName,
+          tenderId: tId,
+          department: dept,
+        });
+      }
+    });
+
+    return Array.from(vendorMap.values());
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor evaluation vendors fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+        tenderId,
+      });
+      throw new Error(`Failed to fetch vendors: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch all vendor evaluation data from the schema (no filters)
+ * @returns Promise with list of all vendor evaluation data
+ */
+export const fetchAllVendorEvaluationData = async (): Promise<VendorEvaluationSummaryItem[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+  };
+
+  console.log('📥 Fetching all vendor evaluation data:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ All vendor evaluation data response:', response.data);
+
+    // Handle different response formats
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Map all instances to VendorEvaluationSummaryItem
+    const allData: VendorEvaluationSummaryItem[] = rawData.map((item: any) => {
+      // Parse evm_response if it's a string
+      let evmResponse = item.evm_response;
+      if (typeof evmResponse === 'string') {
+        try {
+          evmResponse = JSON.parse(evmResponse);
+        } catch (e) {
+          console.warn('Could not parse evm_response:', e);
+        }
+      }
+      
+      return {
+        tenderName: item.tenderName || '',
+        vendorName: item.vendorName || '',
+        tenderId: item.tenderId || '',
+        department: item.department || '',
+        timestamp: item.timestamp || '',
+        points_followed_to_score: item.points_followed_to_score || [],
+        approvedBy: item.approvedBy || '',
+        evaluation_scores: item.evaluation_scores || 0,
+        evm_response: evmResponse || {},
+      };
+    });
+
+    return allData;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ All vendor evaluation data fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch all vendor evaluation data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch vendor evaluation data filtered by department, tenderId, and vendorName
+ * @param department - Department name to filter by
+ * @param tenderId - Tender ID to filter by
+ * @param vendorName - Vendor name to filter by
+ * @returns Promise with vendor evaluation data
+ */
+export const fetchVendorEvaluationData = async (
+  department: string,
+  tenderId: string,
+  vendorName?: string
+): Promise<VendorEvaluationSummaryItem | null> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+      tenderId: tenderId,
+      ...(vendorName && { vendorName: vendorName }),
+    },
+  };
+
+  console.log('📥 Fetching vendor evaluation data:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    department,
+    tenderId,
+    vendorName,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation data response:', response.data);
+
+    // Handle different response formats
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Filter by vendorName if provided, then return the first matching instance
+    let filteredData = rawData;
+    if (vendorName) {
+      filteredData = rawData.filter((item: any) => {
+        const itemVendorName = item.vendorName || '';
+        return itemVendorName === vendorName;
+      });
+    }
+    
+    if (filteredData.length > 0) {
+      const item = filteredData[0];
+      // Parse evm_response if it's a string
+      let evmResponse = item.evm_response;
+      if (typeof evmResponse === 'string') {
+        try {
+          evmResponse = JSON.parse(evmResponse);
+        } catch (e) {
+          console.warn('Could not parse evm_response:', e);
+        }
+      }
+      
+      return {
+        tenderName: item.tenderName || '',
+        vendorName: item.vendorName || '',
+        tenderId: item.tenderId || '',
+        department: item.department || '',
+        timestamp: item.timestamp || '',
+        points_followed_to_score: item.points_followed_to_score || [],
+        approvedBy: item.approvedBy || '',
+        evaluation_scores: item.evaluation_scores || 0,
+        evm_response: evmResponse || {},
+      };
+    }
+
+    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor evaluation data fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+        tenderId,
+        vendorName,
+      });
+      throw new Error(`Failed to fetch vendor evaluation data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
 
 export interface VendorEvaluationSummaryItem {
  
