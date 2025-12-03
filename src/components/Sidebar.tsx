@@ -150,20 +150,6 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       path: '/tender-prebidding',
     },
     {
-      id: 'tender-article' as const,
-      label: 'Tender Article',
-      icon: ClipboardList,
-      description: 'Procurement Dashboard',
-      path: '/tender-article',
-    },
-    {
-      id: 'vendor-intake' as const,
-      label: 'Vendor Intake',
-      icon: Building2,
-      description: 'Upload Vendor Documents',
-      path: '/vendor-intake',
-    },
-    {
       id: 'evaluation' as const,
       label: 'Evaluation Matrix',
       icon: BarChart3,
@@ -192,6 +178,21 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         },
       ],
     },
+    {
+      id: 'tender-article' as const,
+      label: 'Tender Article',
+      icon: ClipboardList,
+      description: 'Procurement Dashboard',
+      path: '/tender-article',
+    },
+    {
+      id: 'vendor-intake' as const,
+      label: 'Vendor Intake',
+      icon: Building2,
+      description: 'Upload Vendor Documents',
+      path: '/vendor-intake',
+    },
+    
     {
       id: 'benchmark' as const,
       label: 'Benchmark Dashboard',

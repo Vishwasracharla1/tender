@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { FileSearch, AlertTriangle, CheckCircle2, FileText, ListTree, Target, ShieldAlert, Filter, Loader2 } from 'lucide-react';
 import {
@@ -374,7 +375,7 @@ export function EvaluationMatrixGovTenderPage({
   return (
     <>
       <Sidebar currentPage="evaluation-gov-tender" onNavigate={onNavigate as any} />
-      <div className="app-shell min-h-screen bg-gray-50 pb-24">
+      <div className="app-shell min-h-screen bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 pb-24">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -405,30 +406,54 @@ export function EvaluationMatrixGovTenderPage({
 
         <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
           {/* Filters */}
-          <section className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-white via-sky-50 to-sky-100 border border-sky-100">
-            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-sky-200 to-blue-200 opacity-50 blur-3xl pointer-events-none" />
-            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-cyan-100 to-slate-100 opacity-60 blur-3xl pointer-events-none" />
+          <motion.section 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative overflow-hidden rounded-2xl p-6 bg-white border border-indigo-200/50 shadow-lg"
+          >
+            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-indigo-200 to-purple-200 opacity-30 blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-purple-100 to-pink-100 opacity-40 blur-3xl pointer-events-none" />
 
-            <div className="relative flex items-center gap-2 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-inner">
-                <Filter className="w-5 h-5 text-indigo-500" />
-              </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="relative flex items-center gap-2 mb-6"
+            >
+              <motion.div 
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg"
+              >
+                <Filter className="w-5 h-5 text-white" />
+              </motion.div>
               <div>
-                <p className="text-xs font-semibold tracking-[0.3em] text-indigo-500 uppercase">
+                <p className="text-xs font-bold tracking-[0.3em] text-indigo-600 uppercase">
                   Filters
                 </p>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-bold text-black">
                   Select Department and Tender
                 </h2>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="relative grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label className="block text-xs font-bold text-black mb-2 tracking-wide">
                   Department
                 </label>
-                <select
+                <motion.select
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
                   value={selectedDepartment}
                   onChange={(e) => {
                     setSelectedDepartment(e.target.value);
@@ -438,7 +463,7 @@ export function EvaluationMatrixGovTenderPage({
                     setError(null); // Clear any errors
                   }}
                   disabled={isLoadingDepartments}
-                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-medium bg-white border border-indigo-200 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-black"
                 >
                   {isLoadingDepartments ? (
                     <option>Loading departments...</option>
@@ -451,14 +476,20 @@ export function EvaluationMatrixGovTenderPage({
                       </option>
                     ))
                   )}
-                </select>
-              </div>
+                </motion.select>
+              </motion.div>
 
-              <div>
-                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <label className="block text-xs font-bold text-black mb-2 tracking-wide">
                   Tender
                 </label>
-                <select
+                <motion.select
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
                   value={selectedTenderId}
                   onChange={(e) => {
                     setSelectedTenderId(e.target.value);
@@ -466,7 +497,7 @@ export function EvaluationMatrixGovTenderPage({
                     setData(null); // Clear data when tender changes
                   }}
                   disabled={isLoadingTenders || !selectedDepartment || tenders.length === 0}
-                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-medium bg-white border border-indigo-200 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-black"
                 >
                   {isLoadingTenders ? (
                     <option>Loading tenders...</option>
@@ -481,169 +512,264 @@ export function EvaluationMatrixGovTenderPage({
                       </option>
                     ))
                   )}
-                </select>
-              </div>
-            </div>
+                </motion.select>
+              </motion.div>
+            </motion.div>
 
             {error && (
-              <div className="relative mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative mt-4 p-3 bg-red-50 border border-red-200 rounded-lg shadow-md"
+              >
+                <p className="text-sm font-semibold text-red-900">{error}</p>
+              </motion.div>
             )}
-          </section>
+          </motion.section>
 
           {/* Loading state */}
           {isLoadingData && (
-            <div className="flex items-center justify-center py-12">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center py-12"
+            >
               <div className="text-center">
-                <Loader2 className="w-8 h-8 text-sky-600 animate-spin mx-auto mb-3" />
-                <p className="text-sm text-slate-600">Loading evaluation data...</p>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Loader2 className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
+                </motion.div>
+                <p className="text-sm font-semibold text-black">Loading evaluation data...</p>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* No data state */}
           {!isLoadingData && !data && selectedDepartment && selectedTenderId && (
-            <div className="flex items-center justify-center py-12">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center justify-center py-12"
+            >
               <div className="text-center">
-                <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                <p className="text-sm text-slate-600">No evaluation data found for the selected department and tender.</p>
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                </motion.div>
+                <p className="text-sm font-semibold text-black">No evaluation data found for the selected department and tender.</p>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Evaluation Data */}
           {!isLoadingData && data && Object.keys(data).length > 0 && (
             <>
               {/* Tender meta & completeness */}
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <div className="relative overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-sky-100 to-white p-5 shadow-sm">
-                    <div className="absolute -right-14 -top-10 w-40 h-40 bg-sky-200/40 rounded-full blur-3xl" />
+              <motion.section 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+              >
+                <motion.div 
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="col-span-2"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.01, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}
+                    className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-white p-5 shadow-md"
+                  >
+                    <div className="absolute -right-14 -top-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 opacity-30 rounded-full blur-3xl" />
                     <div className="relative space-y-2">
-                      <p className="text-xs font-semibold tracking-[0.35em] text-sky-700 uppercase">
+                      <p className="text-xs font-bold tracking-[0.35em] text-indigo-600 uppercase">
                         Tender Overview
                       </p>
-                      <h2 className="text-lg font-semibold text-slate-900">
+                      <h2 className="text-lg font-bold text-black">
                         {data.tenderMeta?.tenderTitle || selectedTender?.tenderName || 'N/A'}
                       </h2>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-black/80 font-medium">
                         {data.tenderMeta?.sourceFileName || 'N/A'} •{' '}
-                        <span className="font-medium">
+                        <span className="font-bold">
                           Version {data.tenderMeta?.documentVersion || 'N/A'}
                         </span>{' '}
                         • Currency: {data.tenderMeta?.currency || 'N/A'}
                       </p>
                     </div>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
 
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <motion.div 
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-3"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}
+                    className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-md"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        </motion.div>
+                        <p className="text-xs font-bold text-black uppercase tracking-wide">
                           Completeness
                         </p>
                       </div>
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-xs font-bold text-black">
                         {data.completenessCheck?.overallStatus || 'N/A'} •{' '}
                         {data.completenessCheck?.score ?? 0}/100
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-black/80 font-medium">
                       {data.completenessCheck?.remarks || 'No remarks available.'}
                     </p>
-                  </div>
-                </div>
-              </section>
+                  </motion.div>
+                </motion.div>
+              </motion.section>
 
               {/* Evaluation dimensions */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any]) => (
-                  <div
-                    key={key}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2"
-                  >
+              <motion.section 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+              >
+                {data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any], index: number) => (
+                    <motion.div
+                      key={key}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                      whileHover={{ scale: 1.02, boxShadow: "0 15px 35px rgba(0,0,0,0.08)" }}
+                      className="rounded-2xl border border-indigo-200 bg-white p-4 shadow-md space-y-2"
+                    >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4 text-sky-600" />
-                        <p className="text-sm font-semibold text-slate-900 capitalize">
+                        <motion.div
+                          whileHover={{ rotate: 360 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <Target className="w-4 h-4 text-indigo-600" />
+                        </motion.div>
+                        <p className="text-sm font-bold text-black capitalize">
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </p>
                       </div>
-                      <span className="text-xs font-semibold text-slate-600">
+                      <span className="text-xs font-bold text-black">
                         Score: {block.score ?? 0} • {block.verdict || 'N/A'}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-700">{block.summary || 'No summary available.'}</p>
+                    <p className="text-xs text-black/80 font-medium">{block.summary || 'No summary available.'}</p>
                     {block.strengths && block.strengths.length > 0 && (
-                      <div className="mt-1">
-                        <p className="text-[11px] font-semibold text-emerald-700 uppercase mb-1">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 + index * 0.1 }}
+                        className="mt-2 p-2 rounded-lg bg-emerald-50 border-2 border-emerald-200"
+                      >
+                        <p className="text-[11px] font-bold text-emerald-900 uppercase mb-1">
                           Strengths
                         </p>
-                        <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
+                        <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                           {block.strengths.map((s: string, idx: number) => (
                             <li key={idx}>{s}</li>
                           ))}
                         </ul>
-                      </div>
+                      </motion.div>
                     )}
                     {block.gaps && block.gaps.length > 0 && (
-                      <div className="mt-1">
-                        <p className="text-[11px] font-semibold text-amber-700 uppercase mb-1">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 + index * 0.1 }}
+                        className="mt-2 p-2 rounded-lg bg-amber-50 border-2 border-amber-200"
+                      >
+                        <p className="text-[11px] font-bold text-amber-900 uppercase mb-1">
                           Gaps
                         </p>
-                        <ul className="list-disc list-inside text-xs text-amber-800 space-y-1">
+                        <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                           {block.gaps.map((g: string, idx: number) => (
                             <li key={idx}>{g}</li>
                           ))}
                         </ul>
-                      </div>
+                      </motion.div>
                     )}
                     {block.keyRisks && block.keyRisks.length > 0 && (
-                      <div className="mt-1">
-                        <p className="text-[11px] font-semibold text-red-700 uppercase mb-1">
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.8 + index * 0.1 }}
+                        className="mt-2 p-2 rounded-lg bg-red-50 border-2 border-red-200"
+                      >
+                        <p className="text-[11px] font-bold text-red-900 uppercase mb-1">
                           Key Risks
                         </p>
-                        <ul className="list-disc list-inside text-xs text-red-800 space-y-1">
+                        <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                           {block.keyRisks.map((r: string, idx: number) => (
                             <li key={idx}>{r}</li>
                           ))}
                         </ul>
-                      </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
-              </section>
+              </motion.section>
 
               {/* Evaluation matrix categories */}
               {data.evaluationMatrix?.categories && data.evaluationMatrix.categories.length > 0 && (
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-                  <div className="flex items-center gap-2">
-                    <ListTree className="w-4 h-4 text-sky-600" />
-                    <h3 className="text-sm font-semibold text-slate-900">
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-md space-y-4"
+                >
+                  <motion.div 
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.div
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    >
+                      <ListTree className="w-4 h-4 text-indigo-600" />
+                    </motion.div>
+                    <h3 className="text-sm font-bold text-black">
                       Evaluation Matrix – Categories
                     </h3>
-                  </div>
+                  </motion.div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {data.evaluationMatrix.categories.map((cat: any, index: number) => {
                       const categoryName = cat.category_name || 'Unnamed Category';
                       const categoryDesc = cat.category_description || '';
                       
                       return (
-                        <div
+                        <motion.div
                           key={categoryName || `category-${index}`}
-                          className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-3"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.7 + index * 0.1 }}
+                          whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(0,0,0,0.08)" }}
+                          className="rounded-xl border border-indigo-200 bg-white p-4 space-y-3 shadow-sm"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-xs font-semibold text-slate-900">
+                              <p className="text-xs font-bold text-black">
                                 {categoryName}
                               </p>
                               {categoryDesc && (
-                                <p className="text-xs text-slate-600 mt-1">
+                                <p className="text-xs text-black/70 mt-1 font-medium">
                                   {categoryDesc}
                                 </p>
                               )}
@@ -656,209 +782,323 @@ export function EvaluationMatrixGovTenderPage({
                                 const subDesc = sub.subcategory_description || '';
                                 
                                 return (
-                                  <div
+                                  <motion.div
                                     key={subName || `subcategory-${subIndex}`}
-                                    className="rounded-lg bg-white border border-slate-200 px-3 py-2"
+                                    whileHover={{ scale: 1.02 }}
+                                    className="rounded-lg bg-indigo-50 border border-indigo-200 px-3 py-2 shadow-sm"
                                   >
-                                    <p className="text-xs font-semibold text-slate-800">
+                                    <p className="text-xs font-bold text-black">
                                       {subName}
                                     </p>
                                     {subDesc && (
-                                      <p className="text-xs text-slate-600 mt-0.5">
+                                      <p className="text-xs text-black/70 mt-0.5 font-medium">
                                         {subDesc}
                                       </p>
                                     )}
-                                  </div>
+                                  </motion.div>
                                 );
                               })}
                             </div>
                           )}
-                        </div>
+                        </motion.div>
                       );
                     })}
                   </div>
-                </section>
+                </motion.section>
               )}
 
               {/* Document structure */}
               {data.documentStructure && (
-                <section className="space-y-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <FileText className="w-4 h-4 text-sky-600" />
-                      <h3 className="text-sm font-semibold text-slate-900">
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="space-y-3"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(0,0,0,0.15)' }}
+                    className="rounded-2xl border-2 border-indigo-200 bg-white p-5 shadow-lg"
+                  >
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="flex items-center gap-2 mb-4"
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <FileText className="w-4 h-4 text-indigo-600" />
+                      </motion.div>
+                      <h3 className="text-sm font-bold text-black">
                         Document Structure
                       </h3>
-                    </div>
+                    </motion.div>
                     <div className="space-y-3">
                       {data.documentStructure.sections?.map((s, idx) => (
-                        <div
+                        <motion.div
                           key={s.sectionId || `section-${idx}`}
-                          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.9 + idx * 0.05 }}
+                          whileHover={{ scale: 1.02, x: 5 }}
+                          className="rounded-xl border-2 border-indigo-200 bg-white px-3 py-3 shadow-md"
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold text-slate-700 uppercase">
+                            <p className="text-xs font-bold text-black uppercase">
                               {s.sectionId || 'N/A'} • {s.title || 'N/A'}
                             </p>
                             {s.pageRange && (
-                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border-2 border-indigo-300 font-bold">
                                 Pages {s.pageRange[0]}–{s.pageRange[1]}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-700">{s.summary || 'No summary available.'}</p>
-                        </div>
+                          <p className="text-xs text-black/80 font-medium">
+                            {s.summary || 'No summary available.'}
+                          </p>
+                        </motion.div>
                       ))}
                     </div>
-                  </div>
+                  </motion.div>
 
                   {data.documentStructure.missingKeySections &&
                     data.documentStructure.missingKeySections.length > 0 && (
-                      <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 shadow-sm flex flex-wrap items-center gap-2">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 shadow-lg flex flex-wrap items-center gap-2"
+                      >
                         <div className="flex items-center gap-2 mr-1">
-                          <AlertTriangle className="w-4 h-4 text-amber-600" />
-                          <span className="text-xs font-semibold text-amber-800 uppercase">
+                          <motion.div
+                            animate={{ rotate: [0, 10, -10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          </motion.div>
+                          <span className="text-xs font-bold text-black uppercase">
                             Missing Key Sections
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {data.documentStructure.missingKeySections.map((m, idx) => (
-                            <span
+                            <motion.span
                               key={idx}
-                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white text-amber-700 border border-amber-200"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.1 }}
+                              whileHover={{ scale: 1.1 }}
+                              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white text-black border-2 border-amber-300 shadow-md"
                             >
                               {m}
-                            </span>
+                            </motion.span>
                           ))}
                         </div>
-                      </div>
+                      </motion.div>
                     )}
-                </section>
+                </motion.section>
               )}
 
               {/* Risk & issues */}
               {data.riskAssessment && (
-                <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-                    <div className="flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4 text-amber-600" />
-                      <h3 className="text-sm font-semibold text-slate-900">
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.01, boxShadow: "0 15px 35px rgba(0,0,0,0.15)" }}
+                    className="rounded-2xl border-2 border-amber-200 bg-white p-5 shadow-lg space-y-3"
+                  >
+                    <motion.div 
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="flex items-center gap-2"
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        <ShieldAlert className="w-4 h-4 text-amber-600" />
+                      </motion.div>
+                      <h3 className="text-sm font-bold text-black">
                         Risk Assessment – {data.riskAssessment.overallRiskLevel || 'N/A'}
                       </h3>
-                    </div>
+                    </motion.div>
                     <div className="space-y-2">
                       {data.riskAssessment.dimensions &&
                         Object.entries(data.riskAssessment.dimensions).map(
-                          ([name, dim]: [string, any]) => (
-                            <div
+                          ([name, dim]: [string, any], idx: number) => (
+                            <motion.div
                               key={name}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 1.0 + idx * 0.1 }}
+                              whileHover={{ scale: 1.02, x: 5 }}
+                              className="rounded-xl border-2 border-amber-200 bg-amber-50 px-3 py-2 shadow-md"
                             >
-                              <p className="text-xs font-semibold text-slate-800">
+                              <p className="text-xs font-bold text-black">
                                 {name.replace(/([A-Z])/g, ' $1').trim()} – {dim.level || 'N/A'}
                               </p>
                               {dim.reasons && dim.reasons.length > 0 && (
-                                <ul className="list-disc list-inside text-xs text-slate-700 mt-1 space-y-1">
+                                <ul className="list-disc list-inside text-xs text-black mt-1 space-y-1 font-medium">
                                   {dim.reasons.map((r: string, idx: number) => (
                                     <li key={idx}>{r}</li>
                                   ))}
                                 </ul>
                               )}
-                            </div>
+                            </motion.div>
                           )
                         )}
                     </div>
-                  </div>
+                  </motion.div>
 
                   {data.issuesAndClarifications && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-amber-500" />
-                        <h3 className="text-sm font-semibold text-slate-900">
+                    <motion.div 
+                      whileHover={{ scale: 1.01, boxShadow: "0 15px 35px rgba(0,0,0,0.15)" }}
+                      className="rounded-2xl border-2 border-orange-200 bg-white p-5 shadow-lg space-y-3"
+                    >
+                      <motion.div 
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        className="flex items-center gap-2"
+                      >
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        >
+                          <AlertTriangle className="w-4 h-4 text-orange-500" />
+                        </motion.div>
+                        <h3 className="text-sm font-bold text-black">
                           Issues &amp; Clarifications
                         </h3>
-                      </div>
+                      </motion.div>
                       <div className="space-y-2">
                         {data.issuesAndClarifications.clarificationQuestions?.map(
                           (q, idx) => (
-                            <div
+                            <motion.div
                               key={q.id || `question-${idx}`}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 1.1 + idx * 0.05 }}
+                              whileHover={{ scale: 1.02, x: -5 }}
+                              className="rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 shadow-md"
                             >
-                              <p className="text-[11px] font-semibold text-slate-500 uppercase">
+                              <p className="text-[11px] font-bold text-black uppercase">
                                 {q.id || 'N/A'} • {q.category || 'N/A'}
                               </p>
-                              <p className="text-sm text-slate-800">{q.question || 'No question available.'}</p>
-                            </div>
+                              <p className="text-sm text-black font-medium">{q.question || 'No question available.'}</p>
+                            </motion.div>
                           )
                         )}
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                </section>
+                </motion.section>
               )}
 
               {/* Overall recommendation */}
               {data.overallRecommendation && (
-                <section className="space-y-4">
-                  <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 via-sky-100 to-white p-5 shadow-sm space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-sky-700" />
-                      <h3 className="text-sm font-semibold text-slate-900">
+                <motion.section 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.2 }}
+                  className="space-y-4"
+                >
+                  <motion.div 
+                    whileHover={{ scale: 1.01, boxShadow: "0 15px 35px rgba(0,0,0,0.15)" }}
+                    className="rounded-2xl border-2 border-indigo-300 bg-white p-5 shadow-lg space-y-3"
+                  >
+                    <motion.div 
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      className="flex items-center gap-2"
+                    >
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                      >
+                        <Target className="w-4 h-4 text-indigo-600" />
+                      </motion.div>
+                      <h3 className="text-sm font-bold text-black">
                         Overall Recommendation
                       </h3>
-                    </div>
-                    <p className="text-sm text-slate-800">
+                    </motion.div>
+                    <p className="text-sm text-black font-medium">
                       {data.overallRecommendation.narrativeSummary || 'No summary available.'}
                     </p>
-                  </div>
+                  </motion.div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.3 }}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  >
                     {data.overallRecommendation.keyStrengths &&
                       data.overallRecommendation.keyStrengths.length > 0 && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-                          <p className="text-xs font-semibold text-emerald-700 uppercase mb-3">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.4 }}
+                          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                          className="rounded-2xl border-2 border-emerald-300 bg-white p-4 shadow-lg"
+                        >
+                          <p className="text-xs font-bold text-emerald-900 uppercase mb-3">
                             Strengths
                           </p>
-                          <ul className="list-disc list-inside text-xs text-slate-800 space-y-1.5">
+                          <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                             {data.overallRecommendation.keyStrengths.map((s: string, idx: number) => (
                               <li key={idx}>{s}</li>
                             ))}
                           </ul>
-                        </div>
+                        </motion.div>
                       )}
 
                     {data.overallRecommendation.keyConcerns &&
                       data.overallRecommendation.keyConcerns.length > 0 && (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-                          <p className="text-xs font-semibold text-amber-700 uppercase mb-3">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.5 }}
+                          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                          className="rounded-2xl border-2 border-amber-300 bg-white p-4 shadow-lg"
+                        >
+                          <p className="text-xs font-bold text-amber-900 uppercase mb-3">
                             Concerns
                           </p>
-                          <ul className="list-disc list-inside text-xs text-amber-800 space-y-1.5">
+                          <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                             {data.overallRecommendation.keyConcerns.map((c: string, idx: number) => (
                               <li key={idx}>{c}</li>
                             ))}
                           </ul>
-                        </div>
+                        </motion.div>
                       )}
 
                     {data.overallRecommendation.recommendedActionsBeforeBidding &&
                       data.overallRecommendation.recommendedActionsBeforeBidding.length > 0 && (
-                        <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-4 shadow-sm">
-                          <p className="text-xs font-semibold text-sky-700 uppercase mb-3">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.6 }}
+                          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                          className="rounded-2xl border-2 border-indigo-300 bg-white p-4 shadow-lg"
+                        >
+                          <p className="text-xs font-bold text-indigo-900 uppercase mb-3">
                             Recommended Actions
                           </p>
-                          <ul className="list-disc list-inside text-xs text-slate-800 space-y-1.5">
+                          <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                             {data.overallRecommendation.recommendedActionsBeforeBidding.map(
                               (a: string, idx: number) => (
                                 <li key={idx}>{a}</li>
                               )
                             )}
                           </ul>
-                        </div>
+                        </motion.div>
                       )}
-                  </div>
-                </section>
+                  </motion.div>
+                </motion.section>
               )}
             </>
           )}

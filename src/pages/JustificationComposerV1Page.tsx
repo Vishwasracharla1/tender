@@ -100,8 +100,19 @@ export function JustificationComposerV1Page({ onNavigate }: JustificationCompose
             const tenderName = i.tenderName || i.tender || '';
             return tenderName === selectedTenderName;
           });
-          if (tenderInstance && tenderInstance.tenderId) {
-            filters.tenderId = tenderInstance.tenderId;
+
+          if (tenderInstance) {
+            // Backend may return tender id in different field formats (tenderId, tender_id, etc.)
+            const tenderId =
+              tenderInstance.tenderId ||
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (tenderInstance as any).tender_id ||
+              // Fallbacks – in some schemas the tender id might be stored as generic id
+              (typeof tenderInstance.id === 'string' ? tenderInstance.id : undefined);
+
+            if (tenderId) {
+              filters.tenderId = String(tenderId);
+            }
           }
         }
         
@@ -186,14 +197,26 @@ export function JustificationComposerV1Page({ onNavigate }: JustificationCompose
       return tenderName === selectedTenderName;
     });
 
-    if (!tenderInstance || !tenderInstance.tenderId) {
+    if (!tenderInstance) {
+      alert('Tender ID not found for the selected tender');
+      return;
+    }
+
+    // Normalize tenderId from various possible field names
+    const tenderId =
+      tenderInstance.tenderId ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (tenderInstance as any).tender_id ||
+      (typeof tenderInstance.id === 'string' ? tenderInstance.id : '');
+
+    if (!tenderId) {
       alert('Tender ID not found for the selected tender');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await callJustificationComposerV1Agent(tenderInstance.tenderId);
+      const response = await callJustificationComposerV1Agent(String(tenderId));
       
       console.log('Agent response:', response);
       

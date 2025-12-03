@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { AlertTriangle, CheckCircle2, FileText, Target, ShieldAlert, Building2, TrendingUp, Filter, Loader2 } from 'lucide-react';
 import { 
@@ -616,66 +617,114 @@ export function EvaluationMatrixVendorPage({
   return (
     <>
       <Sidebar currentPage="evaluation-matrix-vendor" onNavigate={onNavigate as any} />
-      <div className="app-shell min-h-screen bg-gray-50 pb-24">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="app-shell min-h-screen bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 pb-24">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white/95 backdrop-blur-sm border-b-2 border-indigo-200/60 sticky top-0 z-10 shadow-sm"
+        >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-xl font-bold text-black">
                   Evaluation Matrix – Vendor
                 </h1>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-black/70 mt-0.5 font-medium">
                   Vendor proposal evaluation and assessment.
                 </p>
               </div>
-            </div>
+            </motion.div>
             {data && (
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center gap-3"
+              >
+                <motion.span
+                  whileHover={{ scale: 1.05 }}
+                  className="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-900 border border-indigo-200 shadow-sm"
+                >
                   {data.tenderMeta?.tenderId || data.tenderId}
-                </span>
-                <span className="px-3 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                </motion.span>
+                <motion.span
+                  whileHover={{ scale: 1.05 }}
+                  className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-900 border border-purple-200 shadow-sm"
+                >
                   {data.tenderMeta?.departmentName || data.department}
-                </span>
+                </motion.span>
                 {data.vendorName && (
-                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  <motion.span
+                    whileHover={{ scale: 1.05 }}
+                    className="px-3 py-1 text-xs font-semibold rounded-full bg-pink-100 text-pink-900 border border-pink-200 shadow-sm"
+                  >
                     {data.vendorName}
-                  </span>
+                  </motion.span>
                 )}
-              </div>
+              </motion.div>
             )}
           </div>
-        </header>
+        </motion.header>
 
         <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
           {/* Filters */}
-          <section className="relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-white via-sky-50 to-sky-100 border border-sky-100">
-            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-sky-200 to-blue-200 opacity-50 blur-3xl pointer-events-none" />
-            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-cyan-100 to-slate-100 opacity-60 blur-3xl pointer-events-none" />
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="relative overflow-hidden rounded-2xl p-6 bg-white border border-indigo-200/60 shadow-lg"
+          >
+            <div className="absolute -right-16 -top-16 w-56 h-56 bg-gradient-to-br from-indigo-200 to-purple-200 opacity-30 blur-3xl pointer-events-none" />
+            <div className="absolute -left-20 bottom-0 w-40 h-40 bg-gradient-to-tr from-purple-100 to-pink-100 opacity-40 blur-3xl pointer-events-none" />
 
-            <div className="relative flex items-center gap-2 mb-6">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white shadow-inner">
-                <Filter className="w-5 h-5 text-indigo-500" />
-              </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="relative flex items-center gap-2 mb-6"
+            >
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg"
+              >
+                <Filter className="w-5 h-5 text-white" />
+              </motion.div>
               <div>
-                <p className="text-xs font-semibold tracking-[0.3em] text-indigo-500 uppercase">
+                <p className="text-xs font-bold tracking-[0.3em] text-indigo-600 uppercase">
                   Filters
                 </p>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-bold text-black">
                   Select Department, Tender, and Vendor
                 </h2>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="relative grid grid-cols-1 md:grid-cols-3 gap-6"
+            >
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+              >
+                <label className="block text-xs font-bold text-black mb-2 tracking-wide">
                   Department
                 </label>
-                <select
+                <motion.select
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
                   value={selectedDepartment}
                   onChange={(e) => {
                     setSelectedDepartment(e.target.value);
@@ -686,7 +735,7 @@ export function EvaluationMatrixVendorPage({
                     setIsUserInitiatedVendorSelection(false); // Reset vendor flag
                   }}
                   disabled={isLoadingDepartments}
-                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-medium bg-white border border-indigo-200 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-black"
                 >
                   {isLoadingDepartments ? (
                     <option>Loading departments...</option>
@@ -702,14 +751,20 @@ export function EvaluationMatrixVendorPage({
                       ))}
                     </>
                   )}
-                </select>
-              </div>
+                </motion.select>
+              </motion.div>
 
-              <div>
-                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <label className="block text-xs font-bold text-black mb-2 tracking-wide">
                   Tender
                 </label>
-                <select
+                <motion.select
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
                   value={selectedTenderId}
                   onChange={(e) => {
                     setSelectedTenderId(e.target.value);
@@ -719,7 +774,7 @@ export function EvaluationMatrixVendorPage({
                     setData(null); // Clear data when tender changes
                   }}
                   disabled={isLoadingTenders || !selectedDepartment || tenders.length === 0}
-                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-medium bg-white border border-indigo-200 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-black"
                 >
                   {isLoadingTenders ? (
                     <option>Loading tenders...</option>
@@ -737,14 +792,20 @@ export function EvaluationMatrixVendorPage({
                       ))}
                     </>
                   )}
-                </select>
-              </div>
+                </motion.select>
+              </motion.div>
 
-              <div>
-                <label className="block text-xs font-semibold text-indigo-900 mb-2 tracking-wide">
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.45 }}
+              >
+                <label className="block text-xs font-bold text-black mb-2 tracking-wide">
                   Vendor
                 </label>
-                <select
+                <motion.select
+                  whileHover={{ scale: 1.02 }}
+                  whileFocus={{ scale: 1.02 }}
                   value={selectedVendorName}
                   onChange={(e) => {
                     setSelectedVendorName(e.target.value);
@@ -752,7 +813,7 @@ export function EvaluationMatrixVendorPage({
                     setData(null); // Clear data when vendor changes
                   }}
                   disabled={isLoadingVendors || !selectedDepartment || !selectedTenderId || vendors.length === 0}
-                  className="w-full px-4 py-2.5 text-sm bg-white/90 border border-white/60 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-2.5 text-sm font-medium bg-white border border-indigo-200 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-black"
                 >
                   {isLoadingVendors ? (
                     <option>Loading vendors...</option>
@@ -770,132 +831,203 @@ export function EvaluationMatrixVendorPage({
                       ))}
                     </>
                   )}
-                </select>
-              </div>
-            </div>
+                </motion.select>
+              </motion.div>
+            </motion.div>
 
             {error && (
-              <div className="relative mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative mt-4 p-3 bg-red-50 border-2 border-red-300 rounded-lg shadow-md"
+              >
+                <p className="text-sm font-semibold text-red-900">{error}</p>
+              </motion.div>
             )}
-          </section>
+          </motion.section>
 
           {/* Loading state */}
           {isLoadingData && (
-            <div className="flex items-center justify-center py-12">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center py-12"
+            >
               <div className="text-center">
-                <Loader2 className="w-8 h-8 text-sky-600 animate-spin mx-auto mb-3" />
-                <p className="text-sm text-slate-600">Loading evaluation data...</p>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Loader2 className="w-8 h-8 text-indigo-600 mx-auto mb-3" />
+                </motion.div>
+                <p className="text-sm font-semibold text-black">Loading evaluation data...</p>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* No data state */}
           {!isLoadingData && !data && selectedDepartment && selectedTenderId && selectedVendorName && (
-            <div className="flex items-center justify-center py-12">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center justify-center py-12"
+            >
               <div className="text-center">
-                <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-sm text-slate-600">No evaluation data available for the selected tender.</p>
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <FileText className="w-12 h-12 text-indigo-400 mx-auto mb-3" />
+                </motion.div>
+                <p className="text-sm font-semibold text-black">
+                  No evaluation data available for the selected tender.
+                </p>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Vendor Summary & Tender Meta */}
           {data && !isLoadingData && (
             <>
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="col-span-2">
-              <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100 to-white p-5 shadow-sm">
-                <div className="absolute -right-14 -top-10 w-40 h-40 bg-indigo-200/40 rounded-full blur-3xl" />
-                <div className="relative space-y-2">
-                  <p className="text-xs font-semibold tracking-[0.35em] text-indigo-700 uppercase">
-                    Tender Overview
-                  </p>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {data.tenderMeta?.tenderTitle || data.tenderName}
-                  </h2>
-                  <p className="text-sm text-slate-700">
-                    {data.tenderMeta?.sourceFileName} •{' '}
-                    <span className="font-medium">
-                      Version {data.tenderMeta?.documentVersion}
-                    </span>{' '}
-                    • Currency: {data.tenderMeta?.currency}
-                  </p>
-                  {data.vendorName && (
-                    <div className="mt-3 pt-3 border-t border-indigo-200">
-                      <p className="text-xs font-semibold text-indigo-700 uppercase mb-1">
-                        Vendor
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+              >
+                <motion.div
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="col-span-2"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.01, boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}
+                    className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-white p-5 shadow-md"
+                  >
+                    <div className="absolute -right-14 -top-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 opacity-30 rounded-full blur-3xl" />
+                    <div className="relative space-y-2">
+                      <p className="text-xs font-bold tracking-[0.35em] text-indigo-600 uppercase">
+                        Tender Overview
                       </p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {data.vendorName}
+                      <h2 className="text-lg font-bold text-black">
+                        {data.tenderMeta?.tenderTitle || data.tenderName}
+                      </h2>
+                      <p className="text-sm text-black/80 font-medium">
+                        {data.tenderMeta?.sourceFileName} •{' '}
+                        <span className="font-bold">
+                          Version {data.tenderMeta?.documentVersion}
+                        </span>{' '}
+                        • Currency: {data.tenderMeta?.currency}
                       </p>
+                      {data.vendorName && (
+                        <div className="mt-3 pt-3 border-t border-indigo-200">
+                          <p className="text-xs font-bold text-indigo-700 uppercase mb-1">
+                            Vendor
+                          </p>
+                          <p className="text-sm font-semibold text-black">
+                            {data.vendorName}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                  </motion.div>
+                </motion.div>
 
-            <div className="space-y-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Completeness
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-slate-600">
-                    {data.completenessCheck?.overallStatus} •{' '}
-                    {data.completenessCheck?.score ?? 0}/100
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600">
-                  {data.completenessCheck?.remarks}
-                </p>
-              </div>
-
-              {(data.evaluation_scores !== undefined || data.overallRecommendation?.overallScore !== undefined) && (
-                <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs font-semibold text-purple-900 uppercase tracking-wide">
-                        Overall Score
-                      </p>
+                <motion.div
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="space-y-3"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                    className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-md"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        </motion.div>
+                        <p className="text-xs font-bold text-black uppercase tracking-wide">
+                          Completeness
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-black">
+                        {data.completenessCheck?.overallStatus} •{' '}
+                        {data.completenessCheck?.score ?? 0}/100
+                      </span>
                     </div>
-                    <span className="text-lg font-bold text-purple-700">
-                      {typeof data.evaluation_scores === 'string' 
-                        ? parseInt(data.evaluation_scores) || 0
-                        : data.evaluation_scores ?? data.overallRecommendation?.overallScore ?? 0}
-                    </span>
-                  </div>
-                  {data.overallRecommendation?.summaryVerdict && (
-                    <p className="text-xs text-purple-700 mt-1">
-                      Verdict: {data.overallRecommendation.summaryVerdict.replace(/_/g, ' ')}
+                    <p className="text-xs text-black/80 font-medium">
+                      {data.completenessCheck?.remarks}
                     </p>
+                  </motion.div>
+
+                  {(data.evaluation_scores !== undefined ||
+                    data.overallRecommendation?.overallScore !== undefined) && (
+                    <motion.div
+                      whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                      className="rounded-2xl border border-purple-200 bg-white p-4 shadow-md"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-purple-600" />
+                          <p className="text-xs font-bold text-purple-900 uppercase tracking-wide">
+                            Overall Score
+                          </p>
+                        </div>
+                        <span className="text-lg font-extrabold text-purple-700">
+                          {typeof data.evaluation_scores === 'string'
+                            ? parseInt(data.evaluation_scores) || 0
+                            : data.evaluation_scores ??
+                              data.overallRecommendation?.overallScore ??
+                              0}
+                        </span>
+                      </div>
+                      {data.overallRecommendation?.summaryVerdict && (
+                        <p className="text-xs text-purple-800 mt-1 font-medium">
+                          Verdict:{' '}
+                          {data.overallRecommendation.summaryVerdict.replace(/_/g, ' ')}
+                        </p>
+                      )}
+                    </motion.div>
                   )}
-                </div>
-              )}
-              </div>
-            </section>
+                </motion.div>
+            </motion.section>
 
             {/* Evaluation Dimensions */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {data && data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any]) => (
-                <div
+            <motion.section
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            >
+              {data && data.evaluation && Object.entries(data.evaluation).map(([key, block]: [string, any], index: number) => (
+                <motion.div
                   key={key}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-2"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  whileHover={{ scale: 1.02, boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}
+                  className="rounded-2xl border border-indigo-200 bg-white p-4 shadow-md space-y-2"
                 >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-indigo-600" />
-                    <p className="text-sm font-semibold text-slate-900 capitalize">
+                    <motion.div
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Target className="w-4 h-4 text-indigo-600" />
+                    </motion.div>
+                    <p className="text-sm font-bold text-black capitalize">
                       {key.replace(/([A-Z])/g, ' $1')}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-600">
+                    <span className="text-xs font-bold text-black">
                       Score: {block.score ?? 0}
                     </span>
                     <span className={`text-xs font-semibold ${getVerdictColor(block.verdict)}`}>
@@ -903,84 +1035,104 @@ export function EvaluationMatrixVendorPage({
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-slate-700">{block.summary}</p>
+                <p className="text-xs text-black/80 font-medium">{block.summary}</p>
                 
                 {block.strengths && block.strengths.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-emerald-700 uppercase mb-1">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                    className="mt-2 pt-2 border-t border-emerald-200 bg-emerald-50/70 rounded-lg px-2 pb-2"
+                  >
+                    <p className="text-[11px] font-bold text-emerald-900 uppercase mb-1">
                       Strengths
                     </p>
-                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                       {block.strengths.map((s: string, idx: number) => (
                         <li key={idx}>{s}</li>
                       ))}
                     </ul>
-                  </div>
+                  </motion.div>
                 )}
                 
                 {block.gaps && block.gaps.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-amber-700 uppercase mb-1">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 + index * 0.1 }}
+                    className="mt-2 pt-2 border-t border-amber-200 bg-amber-50/70 rounded-lg px-2 pb-2"
+                  >
+                    <p className="text-[11px] font-bold text-amber-900 uppercase mb-1">
                       Gaps
                     </p>
-                    <ul className="list-disc list-inside text-xs text-amber-800 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                       {block.gaps.map((g: string, idx: number) => (
                         <li key={idx}>{g}</li>
                       ))}
                     </ul>
-                  </div>
+                  </motion.div>
                 )}
 
                 {block.keyPoints && block.keyPoints.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-sky-700 uppercase mb-1">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 + index * 0.1 }}
+                    className="mt-2 pt-2 border-t border-sky-200 bg-sky-50/70 rounded-lg px-2 pb-2"
+                  >
+                    <p className="text-[11px] font-bold text-sky-900 uppercase mb-1">
                       Key Points
                     </p>
-                    <ul className="list-disc list-inside text-xs text-slate-700 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                       {block.keyPoints.map((kp: string, idx: number) => (
                         <li key={idx}>{kp}</li>
                       ))}
                     </ul>
-                  </div>
+                  </motion.div>
                 )}
 
                 {block.keyRisks && block.keyRisks.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-red-700 uppercase mb-1">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.9 + index * 0.1 }}
+                    className="mt-2 pt-2 border-t border-red-200 bg-red-50/70 rounded-lg px-2 pb-2"
+                  >
+                    <p className="text-[11px] font-bold text-red-900 uppercase mb-1">
                       Key Risks
                     </p>
-                    <ul className="list-disc list-inside text-xs text-red-800 space-y-1">
+                    <ul className="list-disc list-inside text-xs text-black space-y-1 font-medium">
                       {block.keyRisks.map((kr: string, idx: number) => (
                         <li key={idx}>{kr}</li>
                       ))}
                     </ul>
-                  </div>
+                  </motion.div>
                 )}
 
                 {block.paymentTerms && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                  <div className="mt-2 pt-2 border-t border-slate-200">
+                    <p className="text-[11px] font-bold text-black uppercase mb-1">
                       Payment Terms
                     </p>
-                    <p className="text-xs text-slate-700">{block.paymentTerms}</p>
+                    <p className="text-xs text-black/80 font-medium">{block.paymentTerms}</p>
                   </div>
                 )}
 
                 {block.priceBasis && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                  <div className="mt-2 pt-2 border-t border-slate-200">
+                    <p className="text-[11px] font-bold text-black uppercase mb-1">
                       Price Basis
                     </p>
-                    <p className="text-xs text-slate-700">{block.priceBasis}</p>
+                    <p className="text-xs text-black/80 font-medium">{block.priceBasis}</p>
                   </div>
                 )}
 
                 {block.keyDates && (
-                  <div className="mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                  <div className="mt-2 pt-2 border-t border-slate-200">
+                    <p className="text-[11px] font-bold text-black uppercase mb-1">
                       Key Dates
                     </p>
-                    <div className="text-xs text-slate-700 space-y-1">
+                    <div className="text-xs text-black/80 space-y-1 font-medium">
                       {block.keyDates.maintenancePeriod && (
                         <p>Maintenance Period: {block.keyDates.maintenancePeriod}</p>
                       )}
@@ -993,218 +1145,316 @@ export function EvaluationMatrixVendorPage({
                     </div>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
-            </section>
+            </motion.section>
 
             {/* Completeness Check Details */}
             {data.completenessCheck && (
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold text-slate-900 uppercase mb-3">
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+              >
+              <motion.div
+                whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-indigo-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-black uppercase mb-3">
                   Expected Sections
                 </p>
                 <div className="space-y-1">
                   {data.completenessCheck.expectedSections?.map((section, idx) => (
-                    <div key={idx} className="text-xs text-slate-700 flex items-center gap-2">
+                    <div key={idx} className="text-xs text-black flex items-center gap-2 font-medium">
                       <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                       {section}
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-emerald-900 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-emerald-900 uppercase mb-3">
                   Found Sections
                 </p>
                 <div className="space-y-1">
                   {data.completenessCheck.foundSections?.map((section, idx) => (
-                    <div key={idx} className="text-xs text-emerald-800 flex items-center gap-2">
+                    <div key={idx} className="text-xs text-emerald-900 flex items-center gap-2 font-medium">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       {section}
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-amber-900 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-amber-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-amber-900 uppercase mb-3">
                   Missing Sections
                 </p>
                 <div className="space-y-1">
                   {data.completenessCheck.missingSections && data.completenessCheck.missingSections.length > 0 ? (
                     data.completenessCheck.missingSections.map((section, idx) => (
-                      <div key={idx} className="text-xs text-amber-800 flex items-center gap-2">
+                      <div key={idx} className="text-xs text-amber-900 flex items-center gap-2 font-medium">
                         <AlertTriangle className="w-3 h-3 text-amber-600" />
                         {section}
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-amber-700">No missing sections</p>
+                    <p className="text-xs text-amber-800 font-medium">No missing sections</p>
                   )}
                 </div>
-              </div>
-              </section>
+              </motion.div>
+              </motion.section>
             )}
 
             {/* Document Structure */}
-            <section className="space-y-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <FileText className="w-4 h-4 text-indigo-600" />
-                <h3 className="text-sm font-semibold text-slate-900">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="space-y-3"
+            >
+              <motion.div
+                whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-md"
+              >
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="flex items-center gap-2 mb-4"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                </motion.div>
+                <h3 className="text-sm font-bold text-black">
                   Document Structure
                 </h3>
-              </div>
+              </motion.div>
               <div className="space-y-3">
-                {data.documentStructure?.sections?.map((s) => (
-                  <div
-                    key={s.sectionId}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+                {data.documentStructure?.sections?.map((s, idx) => (
+                  <motion.div
+                    key={s.sectionId || `section-${idx}`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.9 + idx * 0.05 }}
+                    whileHover={{ scale: 1.02, x: 5 }}
+                    className="rounded-xl border-2 border-indigo-200 bg-white px-3 py-3 shadow-md"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-semibold text-slate-700 uppercase">
+                      <p className="text-xs font-bold text-black uppercase">
                         {s.sectionId} • {s.title}
                       </p>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border-2 border-indigo-300 font-bold">
                         Pages {s.pageRange?.[0]}–{s.pageRange?.[1]}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-700">{s.summary}</p>
-                  </div>
+                    <p className="text-xs text-black/80 font-medium">{s.summary}</p>
+                  </motion.div>
                 ))}
               </div>
-            </div>
-            </section>
+            </motion.div>
+            </motion.section>
 
             {/* Risk Assessment & Issues */}
-            <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            >
+              <motion.div
+                whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-amber-200 bg-white p-5 shadow-md space-y-3"
+              >
               <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-amber-600" />
-                <h3 className="text-sm font-semibold text-slate-900">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-600" />
+                </motion.div>
+                <h3 className="text-sm font-bold text-black">
                   Risk Assessment – {data.riskAssessment?.overallRiskLevel}
                 </h3>
               </div>
               <div className="space-y-2">
                 {data.riskAssessment?.dimensions &&
                   Object.entries(data.riskAssessment.dimensions).map(
-                    ([name, dim]: [string, any]) => (
-                      <div
+                    ([name, dim]: [string, any], idx: number) => (
+                      <motion.div
                         key={name}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1.1 + idx * 0.1 }}
+                        whileHover={{ scale: 1.02, x: 5 }}
+                        className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 shadow-sm"
                       >
-                        <p className="text-xs font-semibold text-slate-800">
+                        <p className="text-xs font-bold text-black">
                           {name.replace(/([A-Z])/g, ' $1')} –{' '}
                           <span className={getRiskLevelColor(dim.level)}>
                             {dim.level}
                           </span>
                         </p>
-                        <ul className="list-disc list-inside text-xs text-slate-700 mt-1 space-y-1">
+                        <ul className="list-disc list-inside text-xs text-black mt-1 space-y-1 font-medium">
                           {dim.reasons?.map((r: string, idx: number) => (
                             <li key={idx}>{r}</li>
                           ))}
                         </ul>
-                      </div>
+                      </motion.div>
                     )
                   )}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+            <motion.div
+              whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}
+              className="rounded-2xl border border-orange-200 bg-white p-5 shadow-md space-y-3"
+            >
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-slate-900">
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                </motion.div>
+                <h3 className="text-sm font-bold text-black">
                   Issues &amp; Clarifications
                 </h3>
               </div>
               <div className="space-y-2">
                 {data.issuesAndClarifications?.clarificationQuestions?.map(
-                  (q) => (
-                    <div
-                      key={q.id}
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                  (q, idx: number) => (
+                    <motion.div
+                      key={q.id || `question-${idx}`}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.1 + idx * 0.05 }}
+                      whileHover={{ scale: 1.02, x: -5 }}
+                      className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 shadow-sm"
                     >
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase">
+                      <p className="text-[11px] font-bold text-black uppercase">
                         {q.id} • {q.category}
                       </p>
-                      <p className="text-sm text-slate-800">{q.question}</p>
-                    </div>
+                      <p className="text-sm text-black font-medium">{q.question}</p>
+                    </motion.div>
                   )
                 )}
               </div>
-            </div>
-            </section>
+            </motion.div>
+            </motion.section>
 
             {/* Overall Recommendation */}
-            <section className="space-y-4">
-              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-indigo-100 to-white p-5 shadow-sm space-y-3">
-              <div className="flex items-center gap-2">
-                <Target className="w-4 h-4 text-indigo-700" />
-                <h3 className="text-sm font-semibold text-slate-900">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 }}
+              className="space-y-4"
+            >
+              <motion.div
+                whileHover={{ scale: 1.01, boxShadow: '0 15px 35px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-indigo-200 bg-white p-5 shadow-md space-y-3"
+              >
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="flex items-center gap-2"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+                >
+                  <Target className="w-4 h-4 text-indigo-600" />
+                </motion.div>
+                <h3 className="text-sm font-bold text-black">
                   Overall Recommendation
                 </h3>
-              </div>
-              <p className="text-sm text-slate-800">
+              </motion.div>
+              <p className="text-sm text-black font-medium">
                 {data.overallRecommendation?.narrativeSummary}
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.3 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            >
               {/* Strengths Box */}
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-emerald-700 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-emerald-900 uppercase mb-3">
                   Strengths
                 </p>
-                <ul className="list-disc list-inside text-xs text-slate-800 space-y-1.5">
+                <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                   {data.overallRecommendation?.keyStrengths?.map((s: string, idx: number) => (
                     <li key={idx}>{s}</li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
 
               {/* Concerns Box */}
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-amber-700 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-amber-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-amber-900 uppercase mb-3">
                   Concerns
                 </p>
-                <ul className="list-disc list-inside text-xs text-amber-800 space-y-1.5">
+                <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                   {data.overallRecommendation?.keyConcerns?.map((c: string, idx: number) => (
                     <li key={idx}>{c}</li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
 
               {/* Recommended Actions Box */}
-              <div className="rounded-2xl border border-indigo-200 bg-indigo-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-indigo-700 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-indigo-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-indigo-900 uppercase mb-3">
                   Recommended Actions
                 </p>
-                <ul className="list-disc list-inside text-xs text-slate-800 space-y-1.5">
+                <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                   {data.overallRecommendation?.recommendedActionsBeforeBidding?.map(
                     (a: string, idx: number) => (
                       <li key={idx}>{a}</li>
                     )
                   )}
                 </ul>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Points for Score */}
             {data.pointsForScore && data.pointsForScore.length > 0 && (
-              <div className="rounded-2xl border border-purple-200 bg-purple-50/50 p-4 shadow-sm">
-                <p className="text-xs font-semibold text-purple-700 uppercase mb-3">
+              <motion.div
+                whileHover={{ scale: 1.02, boxShadow: '0 10px 25px rgba(0,0,0,0.08)' }}
+                className="rounded-2xl border border-purple-200 bg-white p-4 shadow-md"
+              >
+                <p className="text-xs font-bold text-purple-900 uppercase mb-3">
                   Points for Score
                 </p>
-                <ul className="list-disc list-inside text-xs text-slate-800 space-y-1.5">
+                <ul className="list-disc list-inside text-xs text-black space-y-1.5 font-medium">
                   {data.pointsForScore.map((point: string, idx: number) => (
                     <li key={idx}>{point}</li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             )}
-          </section>
+          </motion.section>
           </>
           )}
         </main>
