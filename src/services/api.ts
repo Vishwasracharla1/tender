@@ -3179,6 +3179,107 @@ export const fetchAllVendorEvaluationData = async (): Promise<VendorEvaluationSu
 };
 
 /**
+ * Fetch vendor evaluation data filtered by department and tenderId
+ * Mirrors the curl:
+ * POST https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0/schemas/692f5045fd9c66658f22d75b/instances/list
+ * {
+ *   "dbType": "TIDB",
+ *   "filter": {
+ *     "department": "Roads & Construction",
+ *     "tenderId": "971ed088-b647-4acb-acd4-1e7f197c9c9a"
+ *   }
+ * }
+ */
+export const fetchVendorEvaluationDataByDepartmentAndTender = async (
+  department: string,
+  tenderId: string
+): Promise<VendorEvaluationSummaryItem[]> => {
+  const token = getAuthToken();
+
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department,
+      tenderId,
+    },
+  };
+
+  console.log('📥 Fetching vendor evaluation data by department and tender:', {
+    url: `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+    schemaId: VENDOR_EVALUATION_SCHEMA_ID,
+    department,
+    tenderId,
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${VENDOR_EVALUATION_SCHEMA_API_BASE_URL}/schemas/${VENDOR_EVALUATION_SCHEMA_ID}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+
+    console.log('✅ Vendor evaluation data (filtered) response:', response.data);
+
+    // Handle different response formats
+    let rawData: any[] = [];
+    if (Array.isArray(response.data)) {
+      rawData = response.data;
+    } else if (response.data.data && Array.isArray(response.data.data)) {
+      rawData = response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      rawData = response.data.content;
+    }
+
+    // Map instances to VendorEvaluationSummaryItem
+    const filteredData: VendorEvaluationSummaryItem[] = rawData.map((item: any) => {
+      // Parse evm_response if it's a string
+      let evmResponse = item.evm_response;
+      if (typeof evmResponse === 'string') {
+        try {
+          evmResponse = JSON.parse(evmResponse);
+        } catch (e) {
+          console.warn('Could not parse evm_response:', e);
+        }
+      }
+
+      return {
+        tenderName: item.tenderName || '',
+        vendorName: item.vendorName || '',
+        tenderId: item.tenderId || '',
+        department: item.department || '',
+        timestamp: item.timestamp || '',
+        points_followed_to_score: item.points_followed_to_score || [],
+        approvedBy: item.approvedBy || '',
+        evaluation_scores: item.evaluation_scores || 0,
+        evm_response: evmResponse || {},
+      };
+    });
+
+    return filteredData;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Vendor evaluation data (filtered) fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        department,
+        tenderId,
+      });
+      throw new Error(
+        `Failed to fetch vendor evaluation data: ${error.response?.data?.msg || error.message}`
+      );
+    }
+    throw error;
+  }
+};
+
+/**
  * Fetch vendor evaluation data filtered by department, tenderId, and vendorName
  * @param department - Department name to filter by
  * @param tenderId - Tender ID to filter by
