@@ -3335,7 +3335,7 @@ export const fetchVendorEvaluationData = async (
       rawData = response.data.content;
     }
 
-    // Filter by vendorName if provided, then return the first matching instance
+    // Filter by vendorName if provided, then sort by timestamp to get the latest one
     let filteredData = rawData;
     if (vendorName) {
       filteredData = rawData.filter((item: any) => {
@@ -3344,8 +3344,23 @@ export const fetchVendorEvaluationData = async (
       });
     }
     
+    // Sort by timestamp (most recent first) to get the latest entry
+    filteredData.sort((a: any, b: any) => {
+      const timestampA = a.timestamp || a.created_at || a.updated_at || '';
+      const timestampB = b.timestamp || b.created_at || b.updated_at || '';
+      // Convert to dates for comparison (most recent first)
+      try {
+        const dateA = new Date(timestampA).getTime();
+        const dateB = new Date(timestampB).getTime();
+        return dateB - dateA; // Descending order (latest first)
+      } catch (e) {
+        // If timestamp parsing fails, maintain original order
+        return 0;
+      }
+    });
+    
     if (filteredData.length > 0) {
-      const item = filteredData[0];
+      const item = filteredData[0]; // Get the latest (first after sorting)
       // Parse evm_response if it's a string
       let evmResponse = item.evm_response;
       if (typeof evmResponse === 'string') {

@@ -150,6 +150,20 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       path: '/tender-prebidding',
     },
     {
+      id: 'evaluation-gov-tender' as const,
+      label: 'Gov Tender Evaluation',
+      icon: FileSearch,
+      description: 'Government Tender Analysis',
+      path: '/evaluation-gov-tender',
+    },
+    {
+      id: 'vendor-intake' as const,
+      label: 'Vendor Intake',
+      icon: Building2,
+      description: 'Upload Vendor Documents',
+      path: '/vendor-intake',
+    },
+    {
       id: 'evaluation' as const,
       label: 'Evaluation Matrix',
       icon: BarChart3,
@@ -167,16 +181,18 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           path: '/evaluation-recommendation',
         },
         {
-          id: 'evaluation-gov-tender' as const,
-          label: 'Gov Tender Evaluation',
-          path: '/evaluation-gov-tender',
-        },
-        {
           id: 'evaluation-matrix-vendor' as const,
           label: 'Vendor Evaluation',
           path: '/evaluation-matrix-vendor',
         },
       ],
+    },
+    {
+      id: 'justification-composer-v1' as const,
+      label: 'Justification Composer V1',
+      icon: FileEdit,
+      description: 'Vendor Evaluation Report',
+      path: '/justification-composer-v1',
     },
     {
       id: 'tender-article' as const,
@@ -185,13 +201,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       description: 'Procurement Dashboard',
       path: '/tender-article',
     },
-    {
-      id: 'vendor-intake' as const,
-      label: 'Vendor Intake',
-      icon: Building2,
-      description: 'Upload Vendor Documents',
-      path: '/vendor-intake',
-    },
+   
     
     {
       id: 'benchmark' as const,
@@ -214,13 +224,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
     //   description: 'Report Writing',
     //   path: '/justification',
     // },
-    {
-      id: 'justification-composer-v1' as const,
-      label: 'Justification Composer V1',
-      icon: FileEdit,
-      description: 'Vendor Evaluation Report',
-      path: '/justification-composer-v1',
-    },
+    
     {
       id: 'award' as const,
       label: 'Award Simulation',
@@ -412,7 +416,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
                     )}
                   </div>
                   
-                  {hasSubMenu && isExpanded && (
+                  {hasSubMenu && isExpanded && item.subMenu && (
                     <div className="ml-4 mt-2 space-y-1">
                       {item.subMenu.map((subItem) => {
                         const isSubActive = activePageId === subItem.id;

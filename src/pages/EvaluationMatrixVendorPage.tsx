@@ -174,7 +174,7 @@ export function EvaluationMatrixVendorPage({
   onNavigate,
 }: EvaluationMatrixVendorPageProps) {
   const [data, setData] = useState<VendorEvaluationData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Changed to false - will be set true when loading departments
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
   const [selectedTenderId, setSelectedTenderId] = useState<string>('');
   const [selectedVendorName, setSelectedVendorName] = useState<string>('');
@@ -217,8 +217,15 @@ export function EvaluationMatrixVendorPage({
     return '';
   };
 
-  // Load departments on mount
+  // Reset state and load departments on mount/remount
   useEffect(() => {
+    // Reset all state when component mounts
+    setData(null);
+    setSelectedDepartment('');
+    setSelectedTenderId('');
+    setSelectedVendorName('');
+    setError(null);
+    
     const loadDepartments = async () => {
       try {
         setIsLoadingDepartments(true);
@@ -227,7 +234,7 @@ export function EvaluationMatrixVendorPage({
         setDepartments(depts);
         
         if (depts.length > 0) {
-          // Default to first department
+          // Default to first department - this will trigger the cascade to load tenders, vendors, and data
           setSelectedDepartment(depts[0].department);
         }
       } catch (err: any) {
@@ -293,10 +300,8 @@ export function EvaluationMatrixVendorPage({
         setVendors(vendorList);
         
         if (vendorList.length > 0) {
-          // Default to first vendor
+          // Default to first vendor - this will automatically trigger data load via useEffect
           setSelectedVendorName(vendorList[0].vendorName);
-          // Auto-select the first vendor and trigger data load
-          setIsUserInitiatedVendorSelection(true); // Allow auto-fetch for first vendor
         } else {
           setSelectedVendorName('');
           setData(null);
@@ -372,7 +377,7 @@ export function EvaluationMatrixVendorPage({
     };
 
     loadVendorEvaluationData();
-  }, [selectedDepartment, selectedTenderId, selectedVendorName, isUserInitiatedVendorSelection]);
+  }, [selectedDepartment, selectedTenderId, selectedVendorName]);
 
   // Legacy: Read vendor evaluation response from localStorage (set by VendorIntakePage)
   // This will be used as fallback if no filter selection is made
@@ -546,13 +551,20 @@ export function EvaluationMatrixVendorPage({
                 
                 // Get logged-in user's name for approvedBy
                 const approvedBy = getApprovedBy();
-                
-                // Prepare data for ingestion
-                // Use tenderId and department from Vendor Intake, not from agent response
+
+                // IMPORTANT: tenderId must always come from the primary key captured in Vendor Intake,
+                // not from the EVM/agent response body. This ensures all downstream modules
+                // (Evaluation Matrix, Justification Composer, etc.) use the same tender PK.
+                if (!vendorIntakeTenderId) {
+                  console.error('❌ Tender primary key (tenderId) is missing from vendorIntakeMetadata. Aborting ingestion to avoid wrong tender linkage.');
+                  throw new Error('Tender primary key (tenderId) is required but was not found in vendorIntakeMetadata');
+                }
+
+                // Prepare data for ingestion using the primary-key tenderId
                 const ingestionData = {
                   tenderName: vendorIntakeTenderName || parsedData.tenderName || parsedData.tenderMeta?.tenderTitle || '',
                   vendorName: vendorName, // Extracted with multiple fallbacks
-                  tenderId: vendorIntakeTenderId || parsedData.tenderId || parsedData.tenderMeta?.tenderId || '',
+                  tenderId: vendorIntakeTenderId,
                   department: vendorIntakeDepartment || parsedData.department || parsedData.tenderMeta?.departmentName || '',
                   timestamp: new Date().toISOString(),
                   points_followed_to_score: parsedData.pointsForScore || [],
@@ -660,7 +672,7 @@ export function EvaluationMatrixVendorPage({
                   whileHover={{ scale: 1.05 }}
                   className="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-900 border border-purple-200 shadow-sm"
                 >
-                  {data.tenderMeta?.departmentName || data.department}
+                  {selectedDepartment || data.tenderMeta?.departmentName || data.department}
                 </motion.span>
                 {data.vendorName && (
                   <motion.span
