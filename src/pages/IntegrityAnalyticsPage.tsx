@@ -8,7 +8,7 @@ import { FlaggedEvaluatorsList } from '../components/FlaggedEvaluatorsList';
 import { CalendarPicker } from '../components/CalendarPicker';
 import { ShieldAlert, TrendingUp, CheckCircle, Filter } from 'lucide-react';
 import { RAK_DEPARTMENTS } from '../data/departments';
-import { fetchIntegrityAnalyticsInstances, IntegrityAnalyticsInstanceItem, callIntegrityAnalyticsAgent, INTEGRITY_ANALYTICS_AGENT_ID_2 } from '../services/api';
+import { fetchIntegrityAnalyticsInstances, IntegrityAnalyticsInstanceItem, callIntegrityAnalyticsAgent, INTEGRITY_ANALYTICS_AGENT_ID_2, fetchIntegrityAnalyticsFilterData, fetchIntegrityAnalyticsFilteredInstances } from '../services/api';
 // Agent-driven Integrity Analytics JSON
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
@@ -110,8 +110,14 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
   const [selectedTender, setSelectedTender] = useState('all');
   const [dateRange, setDateRange] = useState({ start: '2024-01-01', end: '2025-12-31' });
   const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [selectedDepartmentName, setSelectedDepartmentName] = useState<string>('');
+  const [selectedTenderId, setSelectedTenderId] = useState<string>('');
   const [integrityAnalyticsInstances, setIntegrityAnalyticsInstances] = useState<IntegrityAnalyticsInstanceItem[]>([]);
+  const [filterData, setFilterData] = useState<any[]>([]);
+  const [filteredInstances, setFilteredInstances] = useState<any[]>([]);
   const [isLoadingInstances, setIsLoadingInstances] = useState(false);
+  const [isLoadingFilterData, setIsLoadingFilterData] = useState(false);
+  const [isLoadingFilteredInstances, setIsLoadingFilteredInstances] = useState(false);
   const [isLoadingAgent, setIsLoadingAgent] = useState(false);
   const [agentAnalytics, setAgentAnalytics] = useState<any>(null);
   const [agent2Analytics, setAgent2Analytics] = useState<any>(null);
@@ -169,6 +175,25 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
     loadInstances();
   }, []);
 
+  // Fetch filter data (department and tender ID) from the new API endpoint
+  useEffect(() => {
+    const loadFilterData = async () => {
+      setIsLoadingFilterData(true);
+      try {
+        const data = await fetchIntegrityAnalyticsFilterData();
+        setFilterData(data);
+      } catch (error) {
+        console.error('Failed to fetch integrity analytics filter data:', error);
+        // Fallback to empty array on error
+        setFilterData([]);
+      } finally {
+        setIsLoadingFilterData(false);
+      }
+    };
+
+    loadFilterData();
+  }, []);
+
   // Extract unique company names from API instances
   const companyNames = useMemo(() => {
     const companies = new Set<string>();
@@ -182,12 +207,89 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
     return Array.from(companies).sort();
   }, [integrityAnalyticsInstances]);
 
+  // Extract unique department names from filter data
+  const departmentNames = useMemo(() => {
+    const departments = new Set<string>();
+    filterData.forEach(item => {
+      const department = item.department || item.departmentName || '';
+      if (department && typeof department === 'string' && department.trim()) {
+        departments.add(department.trim());
+      }
+    });
+    return Array.from(departments).sort();
+  }, [filterData]);
+
+  // Extract unique tender IDs - filter by selected department from filterData
+  const tenderIds = useMemo(() => {
+    const tenders = new Set<string>();
+    
+    filterData.forEach(item => {
+      // If department is selected, only include tender IDs that match the department
+      if (selectedDepartmentName && selectedDepartmentName !== 'all') {
+        const itemDepartment = item.department || item.departmentName || '';
+        if (itemDepartment && typeof itemDepartment === 'string' && itemDepartment.trim() !== selectedDepartmentName.trim()) {
+          return; // Skip items that don't match the selected department
+        }
+      }
+      
+      const tenderId = item.tenderId || item.tender_id || item.tenderID || '';
+      if (tenderId && typeof tenderId === 'string' && tenderId.trim()) {
+        tenders.add(tenderId.trim());
+      }
+    });
+    return Array.from(tenders).sort();
+  }, [filterData, selectedDepartmentName]);
+
+  // Reset tender ID when department changes
+  useEffect(() => {
+    setSelectedTenderId('');
+  }, [selectedDepartmentName]);
+
   // Set default company on mount
   useEffect(() => {
     if (!selectedCompany && companyNames.length > 0) {
       setSelectedCompany(companyNames[0]);
     }
   }, [companyNames, selectedCompany]);
+
+  // Fetch filtered instances when BOTH department and tender ID are selected
+  useEffect(() => {
+    const loadFilteredInstances = async () => {
+      // Only fetch if both department and tender ID are selected and not "all"
+      if (
+        !selectedDepartmentName ||
+        selectedDepartmentName === 'all' ||
+        !selectedTenderId ||
+        selectedTenderId === 'all'
+      ) {
+        setFilteredInstances([]);
+        return;
+      }
+
+      setIsLoadingFilteredInstances(true);
+      try {
+        // Fetch instances matching both department and tender ID
+        const instances = await fetchIntegrityAnalyticsFilteredInstances(
+          selectedDepartmentName,
+          selectedTenderId
+        );
+        setFilteredInstances(instances);
+        console.log('✅ Filtered instances loaded:', {
+          department: selectedDepartmentName,
+          tenderId: selectedTenderId,
+          count: instances.length,
+        });
+        console.log('📄 Instances data:', instances);
+      } catch (error) {
+        console.error('Failed to fetch filtered instances:', error);
+        setFilteredInstances([]);
+      } finally {
+        setIsLoadingFilteredInstances(false);
+      }
+    };
+
+    loadFilteredInstances();
+  }, [selectedDepartmentName, selectedTenderId]);
 
   // Extract CDN URLs from selected company instances and common URLs
   const getCdnUrlsForCompany = useMemo(() => {
@@ -339,25 +441,61 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
   // Handle submit button click to call both agents
   const handleSubmit = async () => {
     if (!selectedCompany) {
+      alert('Please select a Company Name to generate analytics.');
+      return;
+    }
+
+    // Require both department and tender ID to be selected
+    if (!selectedDepartmentName || selectedDepartmentName === 'all') {
+      alert('Please select a Department Name to generate analytics.');
+      return;
+    }
+
+    if (!selectedTenderId || selectedTenderId === 'all') {
+      alert('Please select a Tender ID to generate analytics.');
+      return;
+    }
+
+    // Ensure filtered instances are available
+    if (filteredInstances.length === 0) {
+      alert('No data found for the selected department and tender ID. Please wait for data to load or try different filters.');
       return;
     }
 
     setIsLoadingAgent(true);
     try {
-      const query = buildAgentQuery(selectedCompany);
       const cdnUrls = getCdnUrlsForCompany;
       
+      // First agent: Use filtered instances (stringified) as the query
+      const queryForAgent1 = JSON.stringify(filteredInstances);
+      
+      // Second agent: Use the original buildAgentQuery format
+      const queryForAgent2 = buildAgentQuery(selectedCompany);
+      
+      // First agent: Use constant CDN URL
+      const fileUrlsForAgent1 = [
+        "https://cdn.gov-cloud.ai/_ENC(nIw4FQRwLOQd0b8T2HcImBUJ5a9zjZEImv/UhJi8/+yUl7Ez+m0qAiCCaOJbNgi5)/CMS/94b90898-cb67-411c-896d-bb61fd06752e_$$_V1_PSD%20-%20SAP%20Implementation%20Program%20-%20Technical%20Evaluation%20Form%201.0_17-03-2020.pdf"
+      ];
+      
+      // Second agent: Use original CDN URLs from company
+      const fileUrlsForAgent2 = cdnUrls;
+      
       console.log('Calling both integrity analytics agents:', {
-        query,
+        agent1QueryPreview: queryForAgent1.substring(0, 200) + '...',
+        agent1FileUrls: fileUrlsForAgent1,
+        agent2Query: queryForAgent2,
+        agent2FileUrls: fileUrlsForAgent2,
         company: selectedCompany,
+        department: selectedDepartmentName,
+        tenderId: selectedTenderId,
+        filteredInstancesCount: filteredInstances.length,
         totalFileCount: cdnUrls.length,
-        fileUrls: cdnUrls
       });
 
-      // Call both agents in parallel
+      // Call both agents in parallel with different queries and file URLs
       const [response1, response2] = await Promise.all([
-        callIntegrityAnalyticsAgent(query, cdnUrls), // First agent (default)
-        callIntegrityAnalyticsAgent(query, cdnUrls, 'gaian@123', INTEGRITY_ANALYTICS_AGENT_ID_2) // Second agent
+        callIntegrityAnalyticsAgent(queryForAgent1, fileUrlsForAgent1), // First agent with filtered instances and constant CDN URL
+        callIntegrityAnalyticsAgent(queryForAgent2, fileUrlsForAgent2, 'gaian@123', INTEGRITY_ANALYTICS_AGENT_ID_2) // Second agent with original query and company CDN URLs
       ]);
       
       console.log('Agent 1 response:', response1);
@@ -544,9 +682,13 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
     );
   };
 
+  // Use resolved/total alerts from kpiWidgets if available, otherwise calculate from alerts
+  const resolvedAlertsFromKpi = analytics?.kpiWidgets?.resolvedAlerts;
+  const totalAlertsFromKpi = analytics?.kpiWidgets?.totalAlerts;
+  
   const openAlerts = alerts.filter(a => a.status === 'open');
-  const totalAlerts = alerts.length;
-  const resolvedAlerts = alerts.filter(a => a.status !== 'open').length;
+  const totalAlerts = totalAlertsFromKpi ?? alerts.length;
+  const resolvedAlerts = resolvedAlertsFromKpi ?? alerts.filter(a => a.status !== 'open').length;
   const resolutionRate = totalAlerts > 0 ? (resolvedAlerts / totalAlerts) * 100 : 0;
 
   const evaluatorBiasScores = networkNodes
@@ -556,31 +698,42 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
     evaluatorBiasScores.reduce((sum, score) => sum + score, 0) /
     (evaluatorBiasScores.length || 1);
 
-  // KPI values from agent JSON with safe fallbacks
-  const avgBiasFromJson = analytics?.kpiWidgets?.avgBiasScore?.value;
+  // KPI values from agent JSON with safe fallbacks - Mapping all fields from agent response
+  const kpiWidgets = analytics?.kpiWidgets || {};
+  
+  // Avg Bias Score
+  const avgBiasFromJson = kpiWidgets.avgBiasScore?.value;
   const kpiAvgBiasValue = avgBiasFromJson ?? avgBiasScore;
-  const kpiAvgBiasSubtitle =
-    analytics?.kpiWidgets?.avgBiasScore?.subtitle || 'Per evaluator';
+  const kpiAvgBiasSubtitle = kpiWidgets.avgBiasScore?.subtitle || 'per evaluator';
+  const kpiAvgBiasTrend = kpiWidgets.avgBiasScore?.trend;
+  const kpiAvgBiasIsPositive = kpiWidgets.avgBiasScore?.isPositive ?? false;
 
-  const maxCollusionProbabilityFromJson =
-    analytics?.kpiWidgets?.highestDetected ?? 0.0;
-  const maxCollusionProbability =
-    maxCollusionProbabilityFromJson || 0.0;
+  // Collusion Probability
+  const collusionValueFromJson = kpiWidgets.collusionProbability?.value;
+  const highestDetectedFromJson = kpiWidgets.highestDetected ?? 0.0;
+  const kpiCollusionValue = collusionValueFromJson ?? (highestDetectedFromJson * 100);
+  const kpiCollusionSubtitle = kpiWidgets.collusionProbability?.subtitle || 'highest detected';
 
-  const collusionValueFromJson =
-    analytics?.kpiWidgets?.collusionProbability?.value;
-  const kpiCollusionValue =
-    collusionValueFromJson ?? maxCollusionProbability * 100;
-  const kpiCollusionSubtitle =
-    analytics?.kpiWidgets?.collusionProbability?.subtitle ||
-    'Highest detected';
-
-  const resolutionValueFromJson =
-    analytics?.kpiWidgets?.resolutionRate?.value;
+  // Resolution Rate
+  const resolutionValueFromJson = kpiWidgets.resolutionRate?.value;
+  const resolvedAlertsFromJson = kpiWidgets.resolvedAlerts;
+  const totalAlertsFromJson = kpiWidgets.totalAlerts;
   const kpiResolutionValue = resolutionValueFromJson ?? resolutionRate;
-  const kpiResolutionSubtitle =
-    analytics?.kpiWidgets?.resolutionRate?.subtitle ||
-    `${resolvedAlerts}/${totalAlerts} alerts closed`;
+  const kpiResolutionSubtitle = kpiWidgets.resolutionRate?.subtitle || 
+    (resolvedAlertsFromJson !== undefined && totalAlertsFromJson !== undefined
+      ? `${resolvedAlertsFromJson} out of ${totalAlertsFromJson} alerts closed`
+      : `${resolvedAlerts}/${totalAlerts} alerts closed`);
+  const kpiResolutionTrend = kpiWidgets.resolutionRate?.trend;
+  const kpiResolutionIsPositive = kpiWidgets.resolutionRate?.isPositive ?? true;
+
+  // Top Impacted Vendors
+  const topImpactedVendors = kpiWidgets.topImpactedVendors || [];
+
+  // Involved Vendor
+  const involvedVendor = kpiWidgets.involvedVendor || null;
+
+  // Vendors with Resolved Alerts
+  const vendorsWithResolvedAlerts = kpiWidgets.vendorsWithResolvedAlerts || [];
 
   return (
     <>
@@ -731,8 +884,56 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
               </div>
             </div>
 
-            <div className="flex items-end gap-4">
-              <div className="flex-1 max-w-md">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
+                  Department Name
+                </label>
+                <select
+                  value={selectedDepartmentName}
+                  onChange={(e) => setSelectedDepartmentName(e.target.value)}
+                  disabled={isLoadingFilterData}
+                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {isLoadingFilterData ? 'Loading...' : 'Select Department'}
+                  </option>
+                  <option value="all">All Departments</option>
+                  {departmentNames.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                  {!isLoadingFilterData && departmentNames.length === 0 && (
+                    <option value="" disabled>No departments available</option>
+                  )}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
+                  Tender ID
+                </label>
+                <select
+                  value={selectedTenderId}
+                  onChange={(e) => setSelectedTenderId(e.target.value)}
+                  disabled={isLoadingFilterData}
+                  className="w-full px-4 py-2.5 text-sm border-2 border-blue-200 rounded-xl bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {isLoadingFilterData ? 'Loading...' : 'Select Tender ID'}
+                  </option>
+                  <option value="all">All Tenders</option>
+                  {tenderIds.map((tenderId) => (
+                    <option key={tenderId} value={tenderId}>
+                      {tenderId}
+                    </option>
+                  ))}
+                  {!isLoadingFilterData && tenderIds.length === 0 && (
+                    <option value="" disabled>No tender IDs available</option>
+                  )}
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-blue-700 mb-2 uppercase tracking-wider">
                   Company Name
                 </label>
@@ -756,25 +957,36 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
                   )}
                 </select>
               </div>
-              <div>
+              <div className="flex items-end">
                 <button
                   onClick={handleSubmit}
-                  disabled={!selectedCompany || isLoadingInstances || isLoadingAgent}
-                  className="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl hover:from-blue-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
+                  disabled={
+                    !selectedCompany ||
+                    !selectedDepartmentName ||
+                    selectedDepartmentName === 'all' ||
+                    !selectedTenderId ||
+                    selectedTenderId === 'all' ||
+                    isLoadingFilterData ||
+                    isLoadingFilteredInstances ||
+                    isLoadingInstances ||
+                    isLoadingAgent ||
+                    filteredInstances.length === 0
+                  }
+                  className="w-full px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl hover:from-blue-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
                 >
                   {isLoadingAgent ? 'Loading Analytics...' : 'Submit'}
                 </button>
               </div>
-              {selectedCompany && (
-                <div className="flex-1 text-xs text-blue-600">
-                  <p className="mt-2">
-                    {isLoadingAgent 
-                      ? 'Fetching integrity analytics data from agent...' 
-                      : `Ready to generate analytics for: ${selectedCompany}`}
-                  </p>
-                </div>
-              )}
             </div>
+            {selectedCompany && (
+              <div className="text-xs text-blue-600">
+                <p>
+                  {isLoadingAgent 
+                    ? 'Fetching integrity analytics data from agent...' 
+                    : `Ready to generate analytics for: ${selectedCompany}`}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-6 mb-8">
@@ -783,12 +995,12 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
               value={kpiAvgBiasValue.toFixed(2)}
               subtitle={kpiAvgBiasSubtitle}
               icon={TrendingUp}
-              trend={{ value: '8%', isPositive: false }}
+              trend={kpiAvgBiasTrend !== undefined ? { value: `${kpiAvgBiasTrend}%`, isPositive: kpiAvgBiasIsPositive } : undefined}
             />
 
             <KPIWidget
               title="Collusion Probability"
-              value={`${kpiCollusionValue.toFixed(0)}%`}
+              value={kpiCollusionValue <= 1 ? `${(kpiCollusionValue * 100).toFixed(0)}%` : `${kpiCollusionValue.toFixed(0)}%`}
               subtitle={kpiCollusionSubtitle}
               icon={ShieldAlert}
             />
@@ -798,9 +1010,84 @@ export function IntegrityAnalyticsPage({ onNavigate }: IntegrityAnalyticsPagePro
               value={`${kpiResolutionValue.toFixed(0)}%`}
               subtitle={kpiResolutionSubtitle}
               icon={CheckCircle}
-              trend={{ value: '15%', isPositive: true }}
+              trend={kpiResolutionTrend !== undefined ? { value: `${kpiResolutionTrend}%`, isPositive: kpiResolutionIsPositive } : undefined}
             />
           </div>
+
+          {/* Top Impacted Vendors Section */}
+          {topImpactedVendors.length > 0 && (
+            <div className="mb-8 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 shadow-[0_20px_45px_rgba(59,130,246,0.12)] overflow-hidden p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Impacted Vendors</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {topImpactedVendors.map((vendor: any, index: number) => (
+                  <div key={vendor.vendorId || index} className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">{vendor.vendorName || vendor.vendorId}</span>
+                      <span className="text-xs font-semibold text-blue-600">#{index + 1}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{(vendor.impactScore * 100).toFixed(1)}%</div>
+                    <div className="text-xs text-gray-500 mt-1">Impact Score</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Highest Risk Vendor + Vendors with Resolved Alerts side-by-side */}
+          {(involvedVendor || vendorsWithResolvedAlerts.length > 0) && (
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Involved Vendor Section */}
+              {involvedVendor && (
+                <div className="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 via-white to-red-50 shadow-sm overflow-hidden p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900">Highest Risk Vendor</h3>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                        involvedVendor.riskRating === 'high' || involvedVendor.riskRating === 'critical'
+                          ? 'bg-red-100 text-red-800 border border-red-300'
+                          : involvedVendor.riskRating === 'medium'
+                          ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                          : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                      }`}
+                    >
+                      {involvedVendor.riskRating?.toUpperCase() || 'UNKNOWN'}
+                    </span>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-orange-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="text-base font-bold text-gray-900">{involvedVendor.vendorName || involvedVendor.vendorId}</h4>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <span>ID: {involvedVendor.vendorId}</span>
+                      <span>•</span>
+                      <span>{involvedVendor.sector || 'Unknown Sector'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vendors with Resolved Alerts Section */}
+              {vendorsWithResolvedAlerts.length > 0 && (
+                <div className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 via-white to-emerald-50 shadow-sm overflow-hidden p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Vendors with Resolved Alerts</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {vendorsWithResolvedAlerts.map((vendor: any, index: number) => (
+                      <div
+                        key={vendor.vendorId || index}
+                        className="bg-white rounded-md px-3 py-1.5 border border-green-200 shadow-sm"
+                      >
+                        <span className="text-xs font-medium text-gray-900">
+                          {vendor.vendorName || vendor.vendorId}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mb-8">
             <EnhancedNetworkGraph
