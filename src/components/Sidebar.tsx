@@ -195,6 +195,13 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       path: '/justification-composer-v1',
     },
     {
+      id: 'integrity' as const,
+      label: 'Integrity Analytics',
+      icon: ShieldAlert,
+      description: 'Fraud Detection',
+      path: '/integrity',
+    },
+    {
       id: 'tender-article' as const,
       label: 'Tender Article',
       icon: ClipboardList,
@@ -210,13 +217,7 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       description: 'Market Analysis',
       path: '/benchmark',
     },
-    {
-      id: 'integrity' as const,
-      label: 'Integrity Analytics',
-      icon: ShieldAlert,
-      description: 'Fraud Detection',
-      path: '/integrity',
-    },
+ 
     // {
     //   id: 'justification' as const,
     //   label: 'Justification Composer',

@@ -2644,6 +2644,148 @@ export const fetchIntegrityAnalyticsInstances = async (
   }
 };
 
+/**
+ * Fetch department and tender ID data with projections for Integrity Analytics filters
+ * @returns Promise with list of instances containing only department and tenderId fields
+ */
+export interface IntegrityAnalyticsFilterItem {
+  department?: string;
+  tenderId?: string;
+  [key: string]: any;
+}
+
+export interface IntegrityAnalyticsFilterListResponse {
+  status?: string;
+  msg?: string;
+  data?: IntegrityAnalyticsFilterItem[];
+  content?: IntegrityAnalyticsFilterItem[];
+  [key: string]: any;
+}
+
+export const fetchIntegrityAnalyticsFilterData = async (): Promise<IntegrityAnalyticsFilterItem[]> => {
+  const token = getAuthToken();
+  
+  const requestData = {
+    dbType: 'TIDB',
+    projections: ['department', 'tenderId'],
+  };
+
+  const schemaId = '692f5045fd9c66658f22d75b'; // Schema ID from the curl request
+  const apiBaseUrl = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+
+  console.log('📥 Fetching integrity analytics filter data (department & tenderId):', {
+    url: `${apiBaseUrl}/schemas/${schemaId}/instances/list`,
+  });
+
+  try {
+    const response = await axios.post<IntegrityAnalyticsFilterListResponse>(
+      `${apiBaseUrl}/schemas/${schemaId}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Integrity analytics filter data response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Integrity analytics filter data fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch integrity analytics filter data: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
+/**
+ * Fetch filtered instances based on department and tender ID for Integrity Analytics
+ * Fetches instances matching both department and tender ID filters
+ * @param department - Department name to filter by
+ * @param tenderId - Tender ID to filter by
+ * @returns Promise with filtered instances
+ */
+export const fetchIntegrityAnalyticsFilteredInstances = async (
+  department: string,
+  tenderId: string
+): Promise<any[]> => {
+  const token = getAuthToken();
+  
+  const requestData = {
+    dbType: 'TIDB',
+    filter: {
+      department: department,
+      tenderId: tenderId,
+    },
+  };
+
+  const schemaId = '692f5045fd9c66658f22d75b'; // Schema ID from the curl request
+  const apiBaseUrl = 'https://igs.gov-cloud.ai/pi-entity-instances-service/v2.0';
+
+  console.log('📥 Fetching filtered instances for integrity analytics:', {
+    url: `${apiBaseUrl}/schemas/${schemaId}/instances/list`,
+    filters: { department, tenderId },
+  });
+
+  try {
+    const response = await axios.post<any>(
+      `${apiBaseUrl}/schemas/${schemaId}/instances/list`,
+      requestData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          'origin': window.location.origin,
+          'referer': window.location.href,
+        },
+      }
+    );
+
+    console.log('✅ Filtered instances response:', response.data);
+    
+    // Handle different response formats
+    if (response.data.data && Array.isArray(response.data.data)) {
+      return response.data.data;
+    } else if (response.data.content && Array.isArray(response.data.content)) {
+      return response.data.content;
+    } else if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Filtered instances fetch error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      throw new Error(`Failed to fetch filtered instances: ${error.response?.data?.msg || error.message}`);
+    }
+    throw error;
+  }
+};
+
 // Integrity Analytics Agent API
 const INTEGRITY_ANALYTICS_AGENT_API_BASE_URL = 'https://ig.gov-cloud.ai/bob-service-aof/v1.0';
 const INTEGRITY_ANALYTICS_AGENT_ID = '019ac4ce-da3d-7fdc-84a1-dd459c0bff54';
