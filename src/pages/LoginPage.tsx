@@ -22,7 +22,7 @@ export function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) {
       const accessibleRoute = getFirstAccessibleRoute();
-      const redirectPath = accessibleRoute || '/monitoring';
+      const redirectPath = accessibleRoute || '/';
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, navigate, getFirstAccessibleRoute]);
@@ -72,7 +72,7 @@ export function LoginPage() {
       const accessibleRoute = getFirstAccessibleRoute();
       
       // Redirect to first accessible page, or default to monitoring if none found
-      const redirectPath = accessibleRoute || '/monitoring';
+      const redirectPath = accessibleRoute || '/';
       console.log('🔄 Redirecting to:', redirectPath);
       navigate(redirectPath, { replace: true });
     } catch (err) {
