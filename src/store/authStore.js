@@ -314,8 +314,8 @@ const useAuthStore = create(
         
         // Map of page names to routes (in priority order)
         const pageRoutes = [
-          { pageName: 'Admin panel', route: '/admin' },
           { pageName: 'Leadership Dashboard', route: '/' },
+          { pageName: 'Admin panel', route: '/admin' },
           { pageName: 'Tender Intake', route: '/intake' },
           { pageName: 'Tender Overview', route: '/tender-overview' },
           { pageName: 'Tender Article', route: '/tender-article' },
