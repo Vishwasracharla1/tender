@@ -226,6 +226,108 @@ export function EvaluationMatrixVendorPage({
     setSelectedVendorName('');
     setError(null);
     
+    // First, check localStorage for vendor evaluation response (from VendorIntakePage)
+    let hasLocalStorageData = false;
+    let localStorageDepartment = '';
+    let localStorageTenderId = '';
+    let localStorageVendorName = '';
+    
+    try {
+      const storedResponse = localStorage.getItem('vendorEvaluationResponse');
+      const storedMetadata = localStorage.getItem('vendorIntakeMetadata');
+      
+      if (storedResponse && storedMetadata) {
+        console.log('📋 Found vendor evaluation response in localStorage, auto-loading...');
+        hasLocalStorageData = true;
+        
+        // Parse metadata to get department, tenderId
+        const metadata = JSON.parse(storedMetadata);
+        localStorageDepartment = metadata.department || '';
+        localStorageTenderId = metadata.tenderId || '';
+        
+        // Parse response to get vendorName and data
+        const response = JSON.parse(storedResponse);
+        let vendorName = '';
+        
+        // Extract vendorName from response
+        if (response.data?.text) {
+          try {
+            const parsedText = typeof response.data.text === 'string' 
+              ? JSON.parse(response.data.text) 
+              : response.data.text;
+            vendorName = parsedText.vendorName || parsedText.vendor_name || '';
+          } catch (e) {
+            // Try direct access
+            vendorName = response.data.vendorName || response.data.vendor_name || '';
+          }
+        } else if (response.text) {
+          try {
+            const parsedText = typeof response.text === 'string' 
+              ? JSON.parse(response.text) 
+              : response.text;
+            vendorName = parsedText.vendorName || parsedText.vendor_name || '';
+          } catch (e) {
+            vendorName = response.vendorName || response.vendor_name || '';
+          }
+        } else {
+          vendorName = response.vendorName || response.vendor_name || response.data?.vendorName || '';
+        }
+        
+        localStorageVendorName = vendorName;
+        
+        // Set filters if we have the data
+        if (localStorageDepartment) {
+          setSelectedDepartment(localStorageDepartment);
+        }
+        if (localStorageTenderId) {
+          setSelectedTenderId(localStorageTenderId);
+        }
+        if (localStorageVendorName) {
+          setSelectedVendorName(localStorageVendorName);
+        }
+        
+        // Also load and display the localStorage data immediately
+        try {
+          let parsedData: VendorEvaluationData | null = null;
+          
+          if (response.data) {
+            if (response.data.text && typeof response.data.text === 'string') {
+              try {
+                parsedData = JSON.parse(response.data.text);
+              } catch (e) {
+                parsedData = response.data;
+              }
+            } else {
+              parsedData = response.data;
+            }
+          } else if (response.text && typeof response.text === 'string') {
+            try {
+              parsedData = JSON.parse(response.text);
+            } catch (e) {
+              parsedData = response;
+            }
+          } else {
+            parsedData = response;
+          }
+          
+          if (parsedData) {
+            // Add metadata
+            parsedData.vendorName = localStorageVendorName || parsedData.vendorName;
+            parsedData.tenderId = localStorageTenderId || parsedData.tenderId;
+            parsedData.tenderName = metadata.tenderName || parsedData.tenderName;
+            parsedData.department = localStorageDepartment || parsedData.department;
+            
+            setData(parsedData);
+            console.log('✅ Loaded vendor evaluation data from localStorage');
+          }
+        } catch (parseError) {
+          console.error('Error parsing localStorage response:', parseError);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking localStorage:', error);
+    }
+    
     const loadDepartments = async () => {
       try {
         setIsLoadingDepartments(true);
@@ -233,8 +335,8 @@ export function EvaluationMatrixVendorPage({
         const depts = await fetchVendorEvaluationDepartments();
         setDepartments(depts);
         
-        if (depts.length > 0) {
-          // Default to first department - this will trigger the cascade to load tenders, vendors, and data
+        // Only auto-select first department if no localStorage data was found
+        if (depts.length > 0 && !hasLocalStorageData) {
           setSelectedDepartment(depts[0].department);
         }
       } catch (err: any) {
@@ -264,12 +366,21 @@ export function EvaluationMatrixVendorPage({
         setTenders(tenderList);
         
         if (tenderList.length > 0) {
-          // Default to first tender
-          setSelectedTenderId(tenderList[0].tenderId);
-          setIsUserInitiatedTenderSelection(false); // Mark as auto-selected
+          // Only auto-select first tender if no tender is already selected (e.g., from localStorage)
+          const currentTenderId = selectedTenderId;
+          if (!currentTenderId || !tenderList.find(t => t.tenderId === currentTenderId)) {
+            setSelectedTenderId(tenderList[0].tenderId);
+            setIsUserInitiatedTenderSelection(false); // Mark as auto-selected
+          } else {
+            // Keep the current selection (from localStorage)
+            setIsUserInitiatedTenderSelection(false);
+          }
         } else {
-          setSelectedTenderId('');
-          setData(null);
+          // Only clear data if we're not keeping localStorage data
+          if (!selectedTenderId) {
+            setSelectedTenderId('');
+            setData(null);
+          }
         }
       } catch (err: any) {
         console.error('Error loading tenders:', err);
@@ -300,11 +411,19 @@ export function EvaluationMatrixVendorPage({
         setVendors(vendorList);
         
         if (vendorList.length > 0) {
-          // Default to first vendor - this will automatically trigger data load via useEffect
-          setSelectedVendorName(vendorList[0].vendorName);
+          // Only auto-select first vendor if no vendor is already selected (e.g., from localStorage)
+          const currentVendorName = selectedVendorName;
+          if (!currentVendorName || !vendorList.find(v => v.vendorName === currentVendorName)) {
+            // Default to first vendor - this will automatically trigger data load via useEffect
+            setSelectedVendorName(vendorList[0].vendorName);
+          }
+          // If current vendor is in the list, keep it (don't override)
         } else {
-          setSelectedVendorName('');
-          setData(null);
+          // Only clear data if we're not keeping localStorage data
+          if (!selectedVendorName) {
+            setSelectedVendorName('');
+            setData(null);
+          }
         }
       } catch (err: any) {
         console.error('Error loading vendors:', err);
